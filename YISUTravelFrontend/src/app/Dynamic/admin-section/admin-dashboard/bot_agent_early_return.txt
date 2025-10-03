@@ -1,0 +1,15 @@
+
+    // ✅ WICHTIG: Bot und Agent-Nachrichten NIEMALS benachrichtigen - FRÜH RETURNEN!
+    if (messageData && (messageData.from === 'bot' || messageData.from === 'agent')) {
+      console.log(`🚫 ${messageData.from.toUpperCase()} message - NO notification (from: ${messageData.from}, text: "${messageData.text}")`);
+
+      // Trotzdem die Nachricht zum Chat hinzufügen (falls nicht duplicate)
+      if (!this.isMessageDuplicate(sessionId, messageData.id)) {
+        const chatIndex = this.activeChats.findIndex(chat => chat.id === sessionId);
+        if (chatIndex !== -1) {
+          this.addMessageToChat(sessionId, messageData);
+          this.cdRef.detectChanges();
+        }
+      }
+      return; // ✅ FRÜH RETURNEN - keine weitere Verarbeitung für Bot/Agent Nachrichten!
+    }

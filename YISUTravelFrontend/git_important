@@ -1,0 +1,33 @@
+#Phase 1: Erster Push / Repo einrichten
+#Das machst du einmalig, um dein lokales Projekt mit GitHub zu verbinden und die erste Version hochzuladen:
+# 1. Branch umbenennen auf main
+git branch -M main
+
+# 2. Remote-Repo setzen und Push
+git push -u origin main
+
+
+#Phase 2: Normale Änderungen / Arbeiten im Feature-Branch
+#Wenn du jetzt weiterarbeitest und mal etwas kaputt machst, willst du schnell zurück auf den stabilen Stand von GitHub.
+#Das geht so:
+#Änderungen machen, committen, testen
+git add .
+git commit -m "Neues Feature XYZ"
+git push
+
+#Wenn etwas kaputt ist und du GitHub als stabile Version zurückhaben willst
+git reset --hard origin/main
+#Setzt den aktuellen Branch zurück auf die GitHub-Version von main
+#Alle lokalen Änderungen/Commits, die noch nicht auf GitHub sind, gehen verloren
+#Dein main auf GitHub bleibt sicher
+
+#Tipp: Feature-Branches verwenden (best practice)
+#Immer neuen Branch für Experimente anlegen:
+git checkout main
+git reset --hard origin/main
+
+
+
+#Commit zurücksetzen, Dateien behalten (zur Bearbeitung)
+#Du nimmst genau den Commit-Hash, den du als „sauberen Stand“ haben willst.
+git reset --hard <commit-hash>

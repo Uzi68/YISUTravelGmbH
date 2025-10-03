@@ -1,0 +1,85 @@
+/* Hero Section Styling */
+.hero-section {
+  background-image: url('/about-us/about-us1.jpg');
+  background-size: cover;
+  background-position: center;
+  height: 60vh;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* Versteckt Überlauf, um Animationen zu vermeiden */
+}
+
+/* Hero Content */
+.hero-content {
+  position: relative;
+  z-index: 2; /* Text über Overlay */
+  padding: 2rem;
+  animation: fadeIn 1s ease-in; /* Fade-In-Animation */
+}
+
+/* Overlay für dunklere Hintergründe */
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5); /* Dunkles Overlay */
+  z-index: 1; /* Overlay hinter dem Text */
+  transition: background 0.3s ease; /* Sanfter Übergang */
+}
+
+.hero-section:hover::before {
+  background: rgba(40, 74, 101, 0.65); /* Farbwechsel beim Hover */
+}
+
+/* Überschrift */
+.display-1 {
+  font-family: "Anton", sans-serif; /* Schriftart */
+  font-size: 5rem; /* Schriftgröße */
+  font-weight: 700;
+  color: #fff; /* Helle Schriftfarbe */
+  text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8); /* Angepasste Schattierung für bessere Lesbarkeit */
+  animation: slideIn 1s ease-out; /* Slide-In-Animation */
+}
+
+/* Beschreibung */
+.lead {
+  font-family: "Open Sans", sans-serif; /* Schriftart */
+  font-size: 1.5rem;
+  color: #f8f9fa; /* Helle Schriftfarbe */
+  margin-bottom: 1.5rem;
+  text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8); /* Angepasste Schattierung für bessere Lesbarkeit */
+  opacity: 0; /* Start mit Unsichtbarkeit */
+  animation: fadeIn 1.5s ease forwards; /* Fade-In-Animation */
+  animation-delay: 0.5s; /* Verzögerung für mehr Dynamik */
+}
+
+/* Animationen */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 768px) {
+  .hero-section {
+    height: 40vh; /* Reduzierte Höhe auf Mobilgeräten */
+  }
+
+  .display-1 {
+    font-size: 3rem; /* Kleinere Schriftgröße auf Mobilgeräten */
+  }
+
+  .lead {
+    font-size: 1.25rem; /* Kleinere Schriftgröße für die Beschreibung */
+  }
+}

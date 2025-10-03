@@ -1,0 +1,54 @@
+section {
+  margin-top: 50px;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--amt-section-color)!important;
+}
+
+img {
+  border-radius: 10px;
+  @media (max-width: 768px) {
+    margin-top: 30px;
+  }
+}
+
+h5 {
+  color: white;
+}
+
+lead {
+  color: white;
+}
+
+.custom-svg {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  opacity: 0.1;
+}
+
+.btn-primary {
+  background-color: #ffffff; /* Button primary color */
+  border-color: #ffffff; /* Button border color */
+}
+
+.mat-mdc-unelevated-button {
+  border-radius: 6px; /* Example: new border radius */
+}
+
+.custom-button {
+  width: 250px; /* Adjust width as needed */
+  font-size: 20px; /* Larger text */
+  padding: 30px 0px; /* Adjust padding for better appearance */
+  border-radius: 6px; /* Optional: rounded corners */
+  color: #000000;
+}
+
+@media (max-width: 768px) { /* Targeting mobile devices */
+  .custom-svg {
+    bottom: 10px; /* Adjusts distance from bottom */
+    right: 10px;  /* Adjusts distance from right */
+  }
+}
+
+

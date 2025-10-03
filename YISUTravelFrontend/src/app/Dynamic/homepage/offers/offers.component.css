@@ -1,0 +1,178 @@
+
+section {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap; /* Ermöglicht Umbruch bei kleineren Bildschirmen */
+  gap: 30px; /* Abstand zwischen den Elementen */
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+  background: var(--offer-background-color);
+  border-radius: 15px; /* Abgerundete Ecken für das gesamte Layout */
+  box-shadow: var(--offershadow-background-color); /* Schatten für Gesamtwirkung */
+}
+
+.offer-card {
+  flex: 1 1 calc(50% - 20px); /* 50% der Breite, sodass beide Seiten nebeneinander passen */
+  max-width: 500px; /* Maximale Breite für größere Bildschirme */
+  border-radius: 15px;
+  overflow: hidden;
+  background: var(--offer-background-color);
+  box-shadow: var(--offershadow-background-color);
+  transition: transform 0.3s, box-shadow 0.3s;
+  margin-bottom: 20px; /* Abstand zum unteren Teil */
+}
+
+.offer-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.offer-image-container {
+  position: relative;
+}
+
+.offer-image {
+  width: 100%;
+  height: 220px; /* Größere Bildhöhe */
+  object-fit: cover;
+}
+
+.offer-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: #e63946;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.offer-content {
+  padding: 15px;
+}
+
+.offer-location {
+  font-size: 0.9rem;
+  color: var(--offertextTitle-color);
+  margin-bottom: 5px;
+}
+
+.offer-title {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--offertext-color);
+  margin: 10px 0;
+}
+
+.offer-rating {
+  color: #ffc107;
+  font-size: 1.1rem;
+}
+
+.offer-price-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 15px 0;
+}
+
+.offer-price {
+  font-size: 1rem;
+  color: var(--offertextPrice-color);
+}
+
+.offer-price strong {
+  font-size: 1.3rem;
+  color: #e63946;
+}
+
+.offer-button {
+  background: #e63946;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.offer-button:hover {
+  background: #d32f2f;
+}
+
+.offer-description {
+  font-size: 0.9rem;
+  color: var(--offertextTitle-color);
+  margin-top: 10px;
+}
+
+.offer-description-box {
+  flex: 1 1 calc(50% - 20px);
+  background: var(--offer-background-color);
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow:var(--offershadow-background-color);
+  margin-bottom: 20px; /* Abstand nach unten */
+}
+
+.description-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--offertext-color);
+}
+
+.description-text {
+  margin: 15px 0;
+  color: var(--offertextTitle-color);
+}
+
+#alloffers {
+  margin-top: 10px;
+}
+
+.description-highlights {
+  list-style-type: none;
+  padding: 0;
+  color: var(--offertext-color);
+}
+
+.description-highlights li {
+  margin: 10px 0;
+}
+
+/* Media Queries für Responsiveness */
+@media (max-width: 1024px) {
+  .offer-card, .offer-description-box {
+    flex: 1 1 calc(50% - 20px); /* Zwei Spalten nebeneinander */
+    max-width: 480px; /* Größere Breite für mittlere Bildschirme */
+  }
+}
+
+@media (max-width: 768px) {
+  .offer-card, .offer-description-box {
+    flex: 1 1 100%; /* Eine Spalte pro Zeile */
+    max-width: 100%;
+  }
+  @media (max-width: 768px) {
+    .offer-card, .offer-description-box {
+      flex: 1 1 100%; /* Eine Spalte pro Zeile */
+      max-width: 100%;
+    }
+
+    /* Tausche die Reihenfolge der Elemente im mobilen View */
+    .offer-card {
+      order: 2; /* Setzt das Angebot nach der Beschreibung */
+    }
+
+    .offer-description-box {
+      order: 1; /* Setzt die Beschreibung vor das Angebot */
+    }
+  }
+
+}

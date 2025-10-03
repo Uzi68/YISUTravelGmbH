@@ -1,0 +1,59 @@
+<div class="container py-6 custom-class" #box>
+  <div class="row align-items-center">
+    <div class="col-xl-6 col-md-12 mb-4">
+      <div class="mb-3">
+        <p class="fw-bold display-5 text-center title">Unsere Unternehmenszahlen</p>
+      </div>
+      <div class="mb-3">
+        <p class="lead">Herzlichen Dank für Ihre kontinuierliche Unterstützung! Ihre Loyalität und Ihr Vertrauen in unser Unternehmen sind für uns von unschätzbarem Wert.<br>Sie motivieren uns, jeden Tag unser Bestes zu geben.</p><br>
+        <p class="lead">Wir sind stolz darauf, eine Vielzahl von Reiseleistungen anzubieten, die auf die Bedürfnisse unserer Kunden zugeschnitten sind. Egal, ob Sie eine Geschäftsreise oder einen Familienurlaub planen, wir sind hier, um Ihnen zu helfen!</p>
+      </div>
+    </div>
+
+    <div class="col-xl-6 col-md-12">
+      <div class="row row-cols-1 row-cols-sm-2 g-4">
+        <div class="col" *ngFor="let counter of counters">
+          <div class="card card-body shadow border-0 text-center custom-counter">
+            <div class="d-flex align-items-center justify-content-center flex-column" style="min-height: 196px;">
+              <div class="mb-2">
+                <svg width="3em" height="3em" style="display: none;">
+                  <symbol id="icon1" viewBox="0 0 32 32">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-card-list svgs" viewBox="0 0 16 16">
+                      <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2z"/>
+                      <path d="M5 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 5 8m0-2.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m0 5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-1-5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0M4 8a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0m0 2.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"/>
+                    </svg>
+                  </symbol>
+                  <symbol id="icon2" viewBox="0 0 32 32">
+                    <svg xmlns="http://www.w3.org/2000/svg"  class="bi bi-emoji-smile svgs" viewBox="0 0 16 16">
+                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                      <path d="M4.285 9.567a.5.5 0 0 1 .683.183A3.5 3.5 0 0 0 8 11.5a3.5 3.5 0 0 0 3.032-1.75.5.5 0 1 1 .866.5A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1-3.898-2.25.5.5 0 0 1 .183-.683M7 6.5C7 7.328 6.552 8 6 8s-1-.672-1-1.5S5.448 5 6 5s1 .672 1 1.5m4 0c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S9.448 5 10 5s1 .672 1 1.5"/>
+                    </svg>
+                  </symbol>
+                  <symbol id="icon3" viewBox="0 0 32 32">
+                    <svg xmlns="http://www.w3.org/2000/svg"  class="bi bi-journal-text svgs" viewBox="0 0 16 16">
+                      <path d="M5 10.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
+                      <path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2"/>
+                      <path d="M1 5v-.5a.5.5 0 0 1 1 0V5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm0 3v-.5a.5.5 0 0 1 1 0V8h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm0 3v-.5a.5.5 0 0 1 1 0v.5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1z"/>
+                    </svg>
+                  </symbol>
+                  <symbol id="icon4" viewBox="0 0 32 32">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-lightbulb svgs" viewBox="0 0 16 16">
+                      <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a2 2 0 0 0-.453-.618A5.98 5.98 0 0 1 2 6m6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1"/>
+                    </svg>
+                  </symbol>
+                </svg>
+                <svg width="3em" height="3em">
+                  <use [attr.href]="counter.icon"></use>
+                </svg>
+              </div>
+              <div>
+                <span class="fw-bold display-5 mb-1 counterb">{{counter.currentValue}}</span>
+                <p class="lead"><strong>{{counter.label}}</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

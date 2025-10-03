@@ -1,0 +1,181 @@
+<!-- Additional Info Layer Above the Navigation Bar -->
+<div class="additional-info-top">
+  <div class="logo-social-container">
+    <!-- Logo -->
+    <img src="/logo.png" class="logo-img" routerLink="/" alt="YISU Travel Logo">
+
+    <!-- Social Media Icons -->
+    <div class="social-icons">
+      <mat-slide-toggle #darkModeSwitch (click)="toggleDarkMode()" [checked]="darkMode"></mat-slide-toggle>
+
+
+      <!-- Facebook -->
+      <a class="btn btn-social" id="btntransition1" style="background-color: #3b5998;"
+         href="https://www.facebook.com/p/Yisu-Travel-GmbH-100063462493141/?locale=de_DE" target="_blank" role="button">
+        <i class="fab fa-facebook-f"></i>
+      </a>
+      <!-- Instagram -->
+      <a class="btn btn-social instagram-btn" id="btntransition2" style="background-color: #ac2bac;"
+         href="https://www.instagram.com/yisu.travel/?hl=de" target="_blank" role="button">
+        <i class="fab fa-instagram"></i>
+      </a>
+      <!-- WhatsApp -->
+      <a class="btn btn-social" id="btntransition3" style="background-color: #25D366;" href="https://wa.me/491773948537"
+         target="_blank" role="button">
+        <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+
+<div class="toolbarbackground">
+  <mat-toolbar class="main-toolbar">
+    <!-- Logo -->
+    <img src="/logo.png" class="logo-imgMobile" routerLink="/" alt="YISU Travel Logo Mobile">
+
+    <!-- Spacer -->
+    <span class="spacer"></span>
+
+
+    <div class="desktop-menu2">
+      <a routerLink="/in-bearbeitung" class="icon-button">
+        <i class="fas fa-hotel"></i>
+        Hotel
+      </a>
+      <a routerLink="/in-bearbeitung" class="icon-button">
+        <i class="fas fa-plane"></i>
+        Flug
+      </a>
+      <a routerLink="/in-bearbeitung" class="icon-button">
+        <i class="fas fa-suitcase-rolling"></i>
+        Reise
+      </a>
+      <a routerLink="/in-bearbeitung" class="icon-button">
+        <i class="fas fa-car"></i>
+        Mietwagen
+      </a>
+    </div>
+
+    <!-- Desktop Links -->
+    <div class="desktop-menu">
+      <a mat-button routerLink="/" routerLinkActive="active-list-item">Startseite</a>
+      <a mat-button routerLink="/ueber-uns">Über Uns</a>
+      <a mat-button routerLink="/dienstleistung">Dienstleistungen</a>
+      <a mat-button routerLink="/kontakt">Kontakt</a>
+
+
+      <a mat-button [matMenuTriggerFor]="menu" class="adminicon">
+        <!-- Dein SVG-Login-Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" id="iconAdmin">
+          <path d="M480-120v-80h280v-560H480v-80h280q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H480Zm-80-160-55-58 102-102H120v-80h327L345-622l55-58 200 200-200 200Z"/>
+        </svg>
+      </a>
+
+
+
+      <mat-menu #menu="matMenu">
+        <button mat-menu-item *ngIf="authenticated | async" routerLink="/admin-dashboard">Dashboard</button>
+        <button mat-menu-item *ngIf="!(authenticated | async)" routerLink="admin-login">Admin Login</button>
+        <button mat-menu-item *ngIf="authenticated | async" (click)="onLogout()">Logout</button>
+      </mat-menu>
+
+    </div>
+
+    <mat-slide-toggle #darkModeSwitchMobile (click)="toggleDarkMode()" [checked]="darkMode"
+                      class="darkmode-button"></mat-slide-toggle>
+    <!-- Burger Icon for Mobile -->
+    <button
+      mat-icon-button
+      (click)="toggleSidenav(sidenav)"
+      class="mobile-menu-btn"
+      [class.open]="isOpen">
+      <ng-container *ngIf="!isOpen; else closeIcon">
+        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#e8eaed">
+          <path
+            d="M96.75-220.83v-89.42h766.66v89.42H96.75Zm0-214.97v-89.26h766.66v89.26H96.75Zm0-215.05v-89.42h766.66v89.42H96.75Z"/>
+        </svg>
+      </ng-container>
+      <ng-template #closeIcon>
+        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#e8eaed">
+          <path
+            d="m249.14-185.88-62.17-63.26L417.49-480 186.97-711.71l62.17-63.51 231.62 231.71 230.1-231.71 62.17 63.51L543.17-480l229.86 230.86-62.17 63.26-230.1-231.71-231.62 231.71Z"/>
+        </svg>
+      </ng-template>
+    </button>
+  </mat-toolbar>
+</div>
+
+<!-- Additional Text Layer Below the Navigation Bar -->
+<div class="additional-info">
+  <span id="additiona-info-left" (click)="checkAuth()">✨ Exklusive Angebote</span>
+  <span>🕒 Immer für Sie da</span>
+  <span id="additiona-info-right" (click)="test()">🗺️ Individuelle Reiseplanung</span>
+</div>
+
+
+<!-- Side Navigation for Mobile -->
+<mat-sidenav-container class="sidenav-container" (click)="sidenav.close(); closeSidenav()">
+  <mat-sidenav #sidenav mode="push" class="mobile-sidenav" [autoFocus]="false">
+    <mat-nav-list>
+      <!-- Main Navigation Section -->
+      <h3 class="sidenav-header">Allgemein</h3>
+      <a mat-list-item routerLink="/" (click)="sidenav.close(); closeSidenav()">
+        <i class="fas fa-home sidenav-icon"></i> <span class="sidenav-text">Startseite</span>
+      </a>
+      <a mat-list-item routerLink="/ueber-uns" (click)="sidenav.close(); closeSidenav()">
+        <i class="fas fa-info-circle sidenav-icon"></i> <span class="sidenav-text">Über Uns</span>
+      </a>
+      <a mat-list-item routerLink="/dienstleistung" (click)="sidenav.close(); closeSidenav()">
+        <i class="fas fa-cog sidenav-icon"></i> <span class="sidenav-text">Dienstleistungen</span>
+      </a>
+      <a mat-list-item routerLink="/kontakt" (click)="sidenav.close(); closeSidenav()">
+        <i class="fas fa-envelope sidenav-icon"></i> <span class="sidenav-text">Kontakt</span>
+      </a>
+
+      <!-- Travel Services Section -->
+      <h3 class="sidenav-header">Reiseangebote</h3>
+      <a mat-list-item routerLink="/in-bearbeitung" (click)="sidenav.close(); closeSidenav()">
+        <i class="fas fa-hotel sidenav-icon"></i> <span class="sidenav-text">Hotel</span>
+      </a>
+      <a mat-list-item routerLink="/in-bearbeitung" (click)="sidenav.close(); closeSidenav()">
+        <i class="fas fa-plane sidenav-icon"></i> <span class="sidenav-text">Flug</span>
+      </a>
+      <a mat-list-item routerLink="/in-bearbeitung" (click)="sidenav.close(); closeSidenav()">
+        <i class="fas fa-suitcase-rolling sidenav-icon"></i> <span class="sidenav-text">Reise</span>
+      </a>
+      <a mat-list-item routerLink="/in-bearbeitung" (click)="sidenav.close(); closeSidenav()">
+        <i class="fas fa-car sidenav-icon"></i> <span class="sidenav-text">Mietwagen</span>
+      </a>
+
+      <!-- Admin Login -->
+      <h3 class="sidenav-header">Admin Dashboard</h3>
+      <a mat-list-item routerLink="/admin-login" *ngIf="!authenticated" (click)="sidenav.close(); closeSidenav(); " class="adminiconMobile">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" class="sidenav-icon iconAdminMobile">
+          <path d="M480-120v-80h280v-560H480v-80h280q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H480Zm-80-160-55-58 102-102H120v-80h327L345-622l55-58 200 200-200 200Z"/>
+        </svg>
+        <span class="sidenav-text">Login</span>
+      </a>
+
+      <a mat-list-item routerLink="/admin-login" *ngIf="authenticated" (click)="sidenav.close(); closeSidenav(); onLogout()" class="adminiconMobile">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" class="sidenav-icon iconAdminMobile">
+          <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z"/>
+        </svg>
+        <span class="sidenav-text">Logout</span>
+      </a>
+
+
+
+
+
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <router-outlet></router-outlet>
+   <!-- <app-footer></app-footer> -->
+    <app-footer *ngIf="!isAdminDashboardRoute"></app-footer>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+
+

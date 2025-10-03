@@ -1,0 +1,447 @@
+body {
+  background-color: #000;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.header-container {
+  margin-top: 50px;
+}
+
+mat-grid-list {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+mat-grid-tile {
+
+  cursor: pointer;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.3s ease;
+}
+
+mat-grid-tile:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);  /* Hover effect for shadow */
+}
+
+.tile-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.tile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+mat-grid-tile:hover .tile-image {
+  transform: scale(1.1);  /* Zoom effect on image */
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+mat-grid-tile:hover .overlay {
+  opacity: 1;  /* Show overlay on hover */
+}
+
+.tile-text {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  transform: translateY(50px);  /* Start off below */
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+
+mat-grid-tile:hover .tile-text {
+  opacity: 1;
+  transform: translateY(0);  /* Slide up effect on hover */
+}
+
+
+h2 {
+  font-size: 2.5rem;
+  line-height: 36px;
+  color: var(--header-color);
+  font-weight: 600;
+  margin-bottom: 20px; /* Abstand nach unten zum Icon-Container */
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.header-description {
+  max-width: 1315px;
+  margin: 0 auto;
+}
+
+.headerdescription {
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--text-color);
+  font-weight: 400;
+  margin-bottom: 20px; /* Abstand nach unten zum Icon-Container */
+  text-align: left;
+}
+
+/* Container für Icons */
+.container2 {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; /* Zentriert die Icons */
+  width: 100%;
+  gap: 20px; /* Abstand zwischen den Figures */
+  padding: 20px;
+  @media (max-width: 1400px) {
+    padding: 0px;
+  }
+}
+
+.snip1571 {
+  flex: 1 1 300px; /* Dynamische Breite für bessere Responsive-Fähigkeit */
+  max-width: 300px; /* Maximale Breite */
+  height: 350px; /* Höhere Figure */
+  position: relative;
+  text-align: center;
+  background-color: #000;
+  overflow: hidden;
+  opacity: 0; /* Anfangszustand für Fade-In */
+  margin: 10px; /* Abstand rundherum */
+  border-radius: 10px; /* Abgerundete Ecken */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Schatten für Tiefe */
+  transition: transform 0.3s; /* Übergang für Hover-Effekt */
+  animation: fadeInUp 1s ease-in-out forwards; /* Fade-In Animation */
+}
+
+.snip1571:hover {
+  transform: scale(1.05); /* Leichtes Vergrößern beim Hover */
+}
+
+.snip1571 img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Bild proportional einpassen */
+  transition: opacity 0.3s; /* Übergang für den Bild-Effekt */
+}
+
+.snip1571 figcaption {
+  bottom: 30px;
+  left: 0;
+  position: absolute;
+  z-index: 1;
+}
+
+.snip1571 figcaption:before {
+  background-color: #ffffff;
+  bottom: -5px;
+  content: '';
+  left: 0;
+  position: absolute;
+  right: 100%;
+  top: -5px;
+  z-index: -1;
+  transition: right 0.35s ease;
+}
+
+.snip1571 h3 {
+  background-color: #007afd;
+  color: #ffffff;
+  font-family: "Anton", Sans-serif;
+  font-size: 1.1em;
+  letter-spacing: 1px;
+  margin: 0;
+  padding: 5px 10px;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+.snip1571 a {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+}
+
+/* Overlay für den Hover-Effekt */
+.snip1571::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0); /* Keine Transparenz, standardmäßig unsichtbar */
+  z-index: 1;
+  transition: background-color 0.35s ease;
+}
+
+.snip1571:hover::before {
+  background-color: rgba(0, 0, 0, 0.5); /* Leichtes Verdunkeln bei Hover */
+}
+
+.snip1571:hover figcaption:before {
+  right: -5px;
+}
+
+.snip1571:hover img {
+  opacity: 0.8; /* Leichtes Einblenden des Bildes beim Hover */
+}
+
+/* Animation fade in */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 992px) {
+  .header-container {
+    margin-top: 70px;
+  }
+}
+
+@media (max-width: 991px) {
+  .header-container {
+    margin-top: 40px;
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 1s ease-in-out forwards; /* Um sicherzustellen, dass die Animation funktioniert */
+}
+
+/* Media Queries für bessere Responsivität */
+@media (max-width: 1400px) {
+  .snip1571 {
+    flex: 1 1 45%; /* 2 Boxen pro Reihe */
+    max-width: 45%; /* Maximale Breite */
+    height: 250px;
+  }
+  .header-description {
+    max-width: 94%;
+  }
+}
+
+@media (max-width: 580px) {
+  .header-description {
+    margin-left: 10px;
+    margin-top: -30px;
+  }
+}
+
+@media (max-width: 470px) {
+  .header-description {
+    max-width: 86%;
+  }
+  }
+
+  @media (max-width: 370px) {
+    .header-description {
+      max-width: 84%;
+    }
+}
+
+@media (max-width: 350px) {
+  .header-description {
+    max-width: 82%;
+  }
+}
+
+
+
+@media (max-width: 800px) {
+  .snip1571 {
+    flex: 1 1 100%; /* 1 Box pro Reihe */
+    max-width: 100%; /* Maximale Breite */
+  }
+}
+
+
+
+
+
+
+
+
+
+.container {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 20px;
+  margin-top: 50px;
+}
+.header {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  font-family: "Roboto",Sans-serif;
+  color: #333;
+  margin: 0;
+}
+
+
+.description {
+  font-size: 1rem;
+  color: #555;
+  margin-top: 10px;
+}
+
+h1 {
+  text-align: center;
+}
+
+img {
+  border-radius: 8px;
+}
+
+/* Flexbox für die Bildreihen */
+.image-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.image-tile {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;  /* This ensures that the shadow will stay inside */
+  cursor: pointer;
+  transition: box-shadow 0.3s ease;
+}
+
+.image-tile img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease;
+  padding: 5px;
+}
+
+/* Hover-Effekte für den Container */
+.image-tile:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); /* Hover-Effekt für Schatten */
+}
+
+.image-tile:hover img {
+  transform: scale(1.1); /* Zoom-Effekt auf das Bild */
+}
+
+/* Overlay mit Text */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-tile:hover .overlay {
+  opacity: 1; /* Overlay sichtbar bei Hover */
+}
+
+.tile-text {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  transform: translateY(50px);  /* Text startet unterhalb */
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+
+.image-tile:hover .tile-text {
+  opacity: 1;
+  transform: translateY(0); /* Text bewegt sich nach oben */
+}
+
+/* Erste Reihe mit vier Bildern */
+.image-row:first-of-type .image-tile {
+  flex: 1 1 22%; /* Jedes Bild bekommt 22% der Breite */
+  height: 300px; /* Einheitliche Höhe für alle Bilder */
+}
+
+/* Große Bilder (Bild 5) */
+.image-row.large .image-tile {
+  width: 100%;
+  height: 400px; /* Einheitliche Höhe für Bild 5 */
+}
+
+/* Weitere Reihen mit Bildern */
+.image-row:nth-of-type(2) .image-tile,
+.image-row:nth-of-type(3) .image-tile {
+  flex: 1 1 30%; /* Alle Bilder haben 30% Breite */
+  height: 300px; /* Einheitliche Höhe */
+}
+
+.image-row:nth-of-type(2) .image-tile:nth-of-type(2),
+.image-row:nth-of-type(3) .image-tile:nth-of-type(2) {
+  flex: 1 1 35%; /* Mittleres Bild ist etwas breiter */
+}
+
+/* Bilder in der vierten Reihe */
+.image-row:nth-of-type(4) .image-tile {
+  flex: 1 1 48%; /* Jedes Bild nimmt fast 50% der Breite ein */
+  height: 300px; /* Einheitliche Höhe */
+}
+
+/* Responsive Anpassungen für kleine Bildschirme */
+@media (max-width: 768px) {
+  .image-row {
+    flex-direction: column; /* Bilder stapeln sich vertikal */
+    align-items: center; /* Zentrieren der Bilder */
+  }
+
+  .image-tile {
+    width: 100%; /* Bilder nehmen 100% der Breite auf mobilen Geräten */
+  }
+
+  /* Für Bild 5 */
+  .image-row.large .image-tile {
+    flex: 1 1 30%; /* Alle Bilder haben 30% Breite */
+  }
+
+  /* Für die mittleren Bilder in der zweiten Reihe */
+  .image-row:nth-of-type(2) .image-tile:nth-of-type(2) {
+    flex: 1 1 100%; /* Bild 3 nimmt die ganze Breite ein */
+  }
+}

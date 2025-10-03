@@ -1,0 +1,502 @@
+.main-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 0 0; /* Optional padding adjustment */
+  font-size: 18px; /* Increase base font size */
+  max-width: 1400px;
+  margin: 0 auto;
+  background: transparent;
+  @media (max-width: 768px) {
+    padding: 0 20px;
+  }
+}
+
+.toolbarbackground {
+  background: var(--toolbarkit-color);
+  @media (max-width: 768px) {
+    background: var(--toolbarkit-mobile-color)!important;
+  }
+}
+::ng-deep .mat-mdc-menu-content {
+  padding: 0px !important;
+}
+
+.adminicon{
+  fill: white;
+}
+
+.adminicon:hover {
+  fill: rgb(3, 56, 94);
+}
+
+.adminiconMobile {
+  fill: var(--header-color);
+  margin-bottom: 2px;
+}
+
+#iconAdmin {
+  margin-bottom: 2px;
+}
+
+.iconAdminMobile {
+  margin-bottom: 2px;
+}
+
+
+
+
+
+.logo {
+  font-size: 24px; /* Logo font size */
+  font-weight: bold; /* Bold logo */
+  margin-left: 10px; /* Add slight margin to the left */
+}
+
+.logo-img {
+  height: 100px;
+  margin-bottom: -25px;
+  margin-top: -25px;
+  cursor: pointer;
+  @media (min-width: 1200px) {
+    margin-right: auto; /* Push the menu to the right */
+    padding-left: 10%; /* Add right padding for a better layout */
+  }
+}
+
+.instagram-btn {
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+  color: white;
+  border: none;
+  border-radius: 50%; /* Makes it circular */
+  font-size: 20px;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.instagram-btn:hover {
+  transform: scale(1.1); /* Grows slightly on hover */
+}
+
+.instagram-btn i {
+  margin-right: 0; /* Remove margin inside icon */
+}
+
+.logo-imgMobile {
+  height: 80px;
+  cursor: pointer;
+  @media (min-width: 769px) {
+    display: none;
+  }
+}
+
+
+.spacer {
+  flex: 1;
+}
+
+/*checked*/
+::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked:not(.mat-disabled) .mdc-switch__shadow {
+  background-color: rgb(255, 255, 255);
+}
+
+::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked:not(.mat-disabled) .mdc-switch__track::after {
+  background-color: #333 !important;
+}
+
+/*unchecked*/
+/* Background Icon */
+::ng-deep .mat-mdc-slide-toggle:not(.mat-mdc-slide-toggle-checked):not(.mat-disabled) .mdc-switch__shadow {
+  background-color: #9c9c9c /* White shadow color */
+}
+
+/* Hintergrundfarbe Schieberegler nicht aktiviert ist */
+::ng-deep .mat-mdc-slide-toggle:not(.mat-mdc-slide-toggle-checked) .mdc-switch__track::before {
+  background-color: #dcdcdc !important; /* Rot für das ::before Pseudoelement */
+}
+
+/* Icon Farbe */
+::ng-deep .mat-mdc-slide-toggle:not(.mat-mdc-slide-toggle-checked) .mdc-switch__icon {
+  fill: #ffffff !important;  /* Ändere die Farbe des Icons auf rot */
+}
+
+::ng-deep .mat-mdc-slide-toggle .mdc-switch__track::before,
+::ng-deep .mat-mdc-slide-toggle .mdc-switch__track::after {
+  border-color: transparent !important;
+}
+
+mat-slide-toggle {
+  align-content: center;
+}
+
+
+.desktop-menu {
+  display: flex;
+  justify-content: center; /* Center the items horizontally */
+  /* Style the links */
+  a {
+    font-size: 18px; /* Larger font size for the links */
+    padding: 20px 15px; /* Increased padding for a larger clickable area */
+    text-transform: uppercase; /* Optional: Make text uppercase */
+    position: relative; /* For the hover effect */
+    color: white; /* Link color */
+    border-radius: 0px; /* Rounded corners for buttons */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
+  }
+
+  /* Hover effect */
+  a:hover {
+    background-color: #f3f3f3; /* Light background on hover */
+    color: rgb(3, 56, 94); /* Change link color on hover */
+  }
+
+  /* On larger screens (like desktop), slightly move the menu to the right */
+  @media (min-width: 1200px) {
+    margin-left: auto; /* Push the menu to the right */
+    padding-right: 8%; /* Add right padding for a better layout */
+  }
+
+
+  /* Hide desktop menu on tablet/mobile screens */
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+
+/*Linke Seite der Navigation bar*/
+.desktop-menu2 {
+  display: flex;
+  justify-content: center; /* Center the items horizontally */
+
+  /* Style the links */
+  a {
+    font-size: 14px; /* Larger font size for the links */
+    margin: 0 5px; /* Reduced space between the links */
+    padding: 10px 13px; /* Increased padding for a larger clickable area */
+    position: relative; /* For the hover effect */
+    border-radius: 5px; /* Rounded corners for buttons */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
+    box-shadow: 3px 3px 7px rgba(0, 97, 124, 1); /* Add specific color to shadow */
+  }
+
+  a:hover {
+    background-color: rgb(16, 138, 189); /* Light background on hover */
+    box-shadow: 3px 3px 7px rgba(0, 97, 124, 1); /* Maintain consistent shadow color */
+    color: #ffffff; /* Change link color on hover */
+  }
+
+
+  /* On larger screens (like desktop), slightly move the menu to the right */
+  @media (min-width: 1200px) {
+    margin-left: auto; /* Push the menu to the right */
+    padding-right: 5%; /* Add right padding for a better layout */
+  }
+
+  @media (max-width: 900px) {
+    margin-left: 0;
+    padding-right: 0!important;
+  }
+
+
+  @media (max-width: 1200px) {
+    margin-right: auto; /* Push the menu to the right */
+    padding-right: 5%;
+  }
+
+  /* Hide desktop menu on tablet/mobile screens */
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+.desktop-menu2 a {
+  @media (max-width: 1070px) {
+    font-size: 9px;
+    padding: 3px 4px;
+  }
+}
+
+.desktop-menu a {
+  @media (max-width: 950px) {
+    font-size: 14px;
+    margin: -5px;
+  }
+}
+
+/* Burger menu button for mobile */
+.mobile-menu-btn {
+  display: none;
+
+  /* Show burger button on tablet/mobile screens */
+  @media (max-width: 768px) {
+    display: block;
+    position: relative; /* For the animation */
+    border-radius: 50%; /* Make the button circular for better aesthetics */
+  }
+
+  /* Icon styles */
+  .mat-icon {
+    transition: transform 0.3s ease, opacity 0.3s ease; /* Smooth transition for rotation */
+    color: white; /* Burger icon color */
+    font-size: 25px; /* Increase icon size for better visibility */
+    display: inline-block; /* Use inline-block to allow padding adjustments */
+    margin: 0; /* Remove any default margins */
+  }
+
+  /* Sidenav animation when open */
+  .open {
+    transform: rotate(90deg); /* Rotate the icon to 90 degrees */
+  }
+}
+
+/* For the main icon */
+.mat-sidenav.open .mobile-menu-btn mat-icon {
+  transition: transform 0.3s ease; /* Smooth transition for rotation */
+}
+
+mat-sidenav-content {
+  background-color: var(--background-color);
+}
+mat-sidenav {
+  background-color: var(--background-color);
+}
+
+.mobile-sidenav {
+  width: 250px; /* Side menu width on mobile */
+}
+
+/* Hide mobile menu button on desktop */
+@media (min-width: 769px) {
+  .mobile-menu-btn {
+    display: none;
+  }
+  .logoMobile {
+    display: none;
+  }
+  .darkmode-button {
+    display: none;
+  }
+}
+
+/* Sidenav animation when open */
+.mat-sidenav.open .mobile-menu-btn mat-icon {
+  transform: rotate(90deg); /* Rotate the burger icon to X */
+}
+
+.mobile-sidenav a {
+  padding: 10px 15px; /* Increased padding for better hover area */
+  text-decoration: none; /* Remove underline */
+  color: black; /* Link color in the sidenav */
+  border-radius: 5px; /* Rounded corners for buttons */
+}
+
+/* Hover effect for sidenav links */
+.mobile-sidenav a:hover {
+  background-color: rgba(0, 0, 0, 0.1); /* Background color on hover */
+}
+
+
+.social-icons {
+  display: flex; /* Display icons in a row */
+  margin-right: 40px;
+}
+
+
+svg {
+  font-size: 30px;
+}
+
+.social-icons a {
+  margin: 0 8px; /* Space between social icons */
+  color: white; /* Color for social icons */
+  font-size: 20px; /* Size for social icons */
+  transition: color 0.3s; /* Transition for hover effect */
+}
+
+.social-icons a:hover {
+  color: #ffffff; /* Color change on hover */
+}
+
+.social-icons mat-icon {
+  color: white; /* Icon color */
+  font-size: 24px; /* Icon size */
+}
+
+/* Additional info styles */
+.additional-info {
+  background-color: var(--additional-info-color); /* Light background color */
+  text-align: center; /* Center text */
+  padding: 10px 0; /* Vertical padding */
+  font-size: 14px; /* Font size */
+  color: #333; /* Darker text color */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  @media (max-width: 768px) {
+    display: none;
+  }
+
+}
+
+.additional-info span {
+  display: inline-block; /* Allow spacing between items */
+  margin: 0 70px; /* Increased margin for more horizontal spacing */
+  color: var(--text-color);
+}
+
+#additiona-info-left {
+  margin-left: 0px;
+}
+
+.mobile-menu-btn {
+  transition: transform 0.3s ease; /* Ensure the button itself has a transition */
+}
+
+.mobile-menu-btn.open {
+  transform: rotate(90deg); /* Adjust rotation angle to suit your design */
+}
+
+/* Optional: Apply additional styles to the SVG if needed */
+.mobile-menu-btn svg {
+  transition: transform 0.3s ease; /* Ensure the SVGs also have a smooth transition */
+}
+
+
+#additiona-info-right {
+  margin-right: 0px;
+}
+
+
+/* Hide the additional info when the burger menu is open */
+.hidden {
+  display: none; /* Hide the layer */
+}
+
+
+.additional-info-top {
+  background-color: #ffffff; /* Change color as needed */
+  color: black; /* Text color */
+  text-align: center; /* Center text */
+  padding: 10px 0; /* Vertical padding */
+  font-size: 18px; /* Font size */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+
+
+.logo-social-container {
+  display: flex; /* Align items in a row */
+  justify-content: space-between; /* Space out logo and social icons */
+  align-items: center; /* Center vertically */
+  padding: 0 30px; /* Horizontal padding to add space from the edges */
+  max-width: 1400px; /* Maximal Breite für den Container */
+  margin: 0 auto; /* Zentriert den Container horizontal */
+}
+
+
+
+/* Other existing styles remain unchanged */
+
+
+.btn-social {
+  display: inline-flex; /* Flexbox für zentriertes Layout */
+  align-items: center; /* Vertikale Zentrierung */
+  justify-content: center; /* Horizontale Zentrierung */
+  width: 40px; /* Breite der Schaltfläche */
+  height: 40px; /* Höhe der Schaltfläche */
+  border-radius: 50%; /* Runde Schaltflächen */
+  color: white; /* Schriftfarbe */
+  text-decoration: none; /* Unterstreichung entfernen */
+  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Schatten für Tiefe */
+}
+
+.btn-social:hover {
+  transform: scale(1.1); /* Schaltfläche bei Hover vergrößern */
+}
+
+/* Icon-Stile */
+.btn-social i {
+  font-size: 20px; /* Größe der Icons */
+}
+
+#btntransition1 {
+  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
+}
+#btntransition2 {
+  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
+}
+#btntransition3 {
+  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
+}
+
+
+.icon-button {
+  display: flex;
+  align-items: center; /* Center icon and text vertically */
+  text-decoration: none; /* Remove underline from links */
+  color: #0077b6; /* Text color */
+  background-color: #f5f5f5; /* Background color for buttons */
+  padding: 10px 15px; /* Padding around buttons */
+  border-radius: 5px; /* Rounded corners */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth transitions */
+}
+
+.icon-button:hover {
+  background-color: #e1e1e1; /* Change background on hover */
+  transform: scale(1.05); /* Slightly scale up */
+}
+
+.icon-button i {
+  margin-right: 8px; /* Space between icon and text */
+  font-size: 20px; /* Icon size */
+}
+
+/* Media Query for Responsive Design */
+@media (max-width: 768px) {
+  .icon-buttons {
+    position: fixed; /* Fix position for mobile */
+    bottom: 10px; /* Position at the bottom */
+    left: 10px; /* Adjust horizontal position */
+    flex-direction: row; /* Keep buttons in a row on mobile */
+    gap: 5px; /* Reduced space for mobile */
+  }
+
+  .icon-button {
+    padding: 8px 10px; /* Adjust padding for mobile */
+  }
+}
+
+
+
+.sidenav-icon {
+  margin-right: 10px; /* Adjust this value to increase or decrease the space */
+  font-size: 20px; /* Adjust icon size if needed */
+  color: var(--header-color); /* You can change the color of the icons if desired */
+}
+
+.sidenav-header {
+  font-size: 1.2rem; /* Increase font size for headers */
+  color: var(--header-color); /* Header color */
+  margin: 10px 0; /* Space above and below headers */
+  padding: 0 16px; /* Align with nav items */
+}
+
+.mat-nav-list a {
+  padding: 10px 16px; /* Add padding to nav items */
+}
+
+.sidenav-text {
+  color: var(--text-color);
+}
+
+
+mat-sidenav-container {
+  background-color: var(--background-color);
+}
+
+
+
+

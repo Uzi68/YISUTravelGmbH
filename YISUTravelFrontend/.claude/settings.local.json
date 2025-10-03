@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/uezey/Desktop/Personal Stuff/Business/YISUTravelGmbH/HTTPOnlyVersion/Claude/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

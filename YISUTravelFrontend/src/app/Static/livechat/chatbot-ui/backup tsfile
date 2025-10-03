@@ -1,0 +1,410 @@
+import {
+  AfterViewInit,
+  Component,
+  effect,
+  ElementRef,
+  Inject,
+  PLATFORM_ID,
+  signal,
+  viewChild
+} from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
+import { animate, style, transition, trigger } from "@angular/animations";
+import { MatButton, MatFabButton, MatIconButton } from "@angular/material/button";
+import { DatePipe, isPlatformBrowser } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { MatInput } from "@angular/material/input";
+import { ChatbotService } from "../../../Services/chatbot-service/chatbot.service";
+
+@Component({
+  selector: 'app-chatbot-ui',
+  standalone: true,
+  imports: [MatIconModule, MatFabButton, MatButton, DatePipe, FormsModule, MatIconButton, MatInput],
+  templateUrl: './chatbot-ui.component.html',
+  styleUrl: './chatbot-ui.component.css',
+  animations: [
+    trigger('windowAnimation', [
+      transition(':enter', [
+        style({ transform: 'translateY(20px)', opacity: 0 }),
+        animate('200ms ease-out', style({ transform: 'translateY(0)', opacity: 1 }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-in', style({ transform: 'translateY(20px)', opacity: 0 }))
+      ])
+    ]),
+    trigger('formAnimation', [
+      transition(':enter', [
+        style({ height: 0, opacity: 0 }),
+        animate('200ms ease-out', style({ height: '*', opacity: 1 }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-in', style({ height: 0, opacity: 0 }))
+      ])
+    ])
+  ]
+})
+export class ChatUiComponent implements AfterViewInit {
+  // State signals
+  isOpen = signal(false);
+  unreadMessages = signal(0);
+  isTyping = signal(false);
+  inputMessage = signal('');
+  showScrollButton = signal(false);
+  showHumanSupportForm = signal(false);
+  isWaitingForHuman = signal(false);
+  sessionId = signal<string | null>(null);
+
+  // Human support form data
+  humanSupportData = {
+    name: '',
+    email: '',
+    phone: ''
+  };
+
+  // Template references
+  messageContainer = viewChild<ElementRef>('messageContainer');
+  inputField = viewChild<ElementRef>('inputField');
+
+  // Data
+  messages = signal<any[]>([]);
+  quickQuestions = signal([
+    'Was sind Ihre Öffnungszeiten?',
+    'Kann ich meine Buchung stornieren?',
+    'Welche Reiseziele bieten Sie an?'
+  ]);
+
+  // SSR browser check
+  isBrowser: boolean;
+
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private chatbotService: ChatbotService
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+
+    // Initialize session
+    const savedSession = localStorage.getItem('chat_session_id');
+    this.sessionId.set(savedSession || this.generateSessionId());
+    if (!savedSession) {
+      localStorage.setItem('chat_session_id', this.sessionId()!);
+    }
+
+    if (this.isBrowser) {
+      // Auto-scroll to bottom when messages change or typing stops
+      effect(() => {
+        const messages = this.messages();
+        const isTyping = this.isTyping();
+        const isOpen = this.isOpen();
+
+        if (isOpen && (messages.length > 0 || !isTyping)) {
+          queueMicrotask(() => {
+            this.scrollToBottom();
+            this.checkScrollPosition();
+          });
+        }
+      });
+    }
+  }
+
+  ngAfterViewInit() {
+    if (this.isBrowser) {
+      const container = this.messageContainer()?.nativeElement;
+      if (container) {
+        container.addEventListener('scroll', () => this.checkScrollPosition());
+      }
+    }
+  }
+
+  private generateSessionId(): string {
+    return 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+  }
+
+  toggleChat() {
+    this.isOpen.update(v => !v);
+    if (this.isOpen()) {
+      this.unreadMessages.set(0);
+      if (this.messages().length === 0) {
+        this.messages.set([{
+          from: 'bot',
+          text: 'Hallo! 👋 Wie kann ich Ihnen helfen?',
+          timestamp: new Date()
+        }]);
+      }
+    }
+  }
+
+  onAnimationDone() {
+    this.scrollToBottom();
+    this.inputField()?.nativeElement.focus();
+  }
+
+  sendMessage(message?: string) {
+    const msg = message || this.inputMessage().trim();
+    if (!msg || !this.sessionId()) return;
+
+    // Add user message
+    this.messages.update(m => [...m, {
+      from: 'user',
+      text: msg,
+      timestamp: new Date()
+    }]);
+
+    if (!message) this.inputMessage.set('');
+    this.isTyping.set(true);
+
+    // Send to backend
+    this.chatbotService.sendMessageAnonymous(msg, this.sessionId()).subscribe({
+      next: (response) => {
+        this.messages.set(response.messages);
+        this.isTyping.set(false);
+
+        if (response.requires_human) {
+          this.showHumanSupportForm.set(true);
+        }
+      },
+      error: (err) => {
+        console.error('Chat error:', err);
+        this.messages.update(m => [...m, {
+          from: 'bot',
+          text: 'Entschuldigung, ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.',
+          timestamp: new Date()
+        }]);
+        this.isTyping.set(false);
+      }
+    });
+  }
+
+  submitHumanSupport() {
+    if (!this.humanSupportData.name || !this.humanSupportData.phone || !this.sessionId()) return;
+
+    this.isWaitingForHuman.set(true);
+    this.showHumanSupportForm.set(false);
+
+    this.chatbotService.requestHumanSupport(
+      this.sessionId()!,
+      this.humanSupportData.name,
+      this.humanSupportData.email,
+      this.humanSupportData.phone
+    ).subscribe({
+      next: () => {
+        this.messages.update(m => [...m, {
+          from: 'bot',
+          text: 'Ein Mitarbeiter wurde benachrichtigt. Bitte warten Sie...',
+          timestamp: new Date()
+        }]);
+      },
+      error: (err) => {
+        console.error('Support request failed:', err);
+        this.isWaitingForHuman.set(false);
+      }
+    });
+  }
+
+  cancelHumanSupport() {
+    this.showHumanSupportForm.set(false);
+  }
+
+  public scrollToBottom() {
+    if (!this.isBrowser) return;
+
+    const containerRef = this.messageContainer();
+    if (!containerRef) return;
+
+    const container = containerRef.nativeElement;
+    if (container) {
+      setTimeout(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 100);
+    }
+  }
+
+  private checkScrollPosition() {
+    if (!this.isBrowser) return;
+
+    const container = this.messageContainer()?.nativeElement;
+    if (container) {
+      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+      this.showScrollButton.set(!isAtBottom);
+    }
+  }
+}
+
+
+
+
+
+
+Funktionierende:
+import {
+  afterNextRender,
+  AfterViewInit,
+  Component,
+  effect,
+  ElementRef,
+  Inject,
+  PLATFORM_ID,
+  signal,
+  viewChild
+} from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
+import { animate, style, transition, trigger } from "@angular/animations";
+import { MatButton, MatFabButton, MatIconButton } from "@angular/material/button";
+import {DatePipe, isPlatformBrowser} from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { MatInput } from "@angular/material/input";
+
+@Component({
+  selector: 'app-chatbot-ui',
+  standalone: true,
+  imports: [MatIconModule, MatFabButton, MatButton, DatePipe, FormsModule, MatIconButton, MatInput],
+  templateUrl: './chatbot-ui.component.html',
+  styleUrl: './chatbot-ui.component.css',
+  animations: [
+    trigger('windowAnimation', [
+      transition(':enter', [
+        style({ transform: 'translateY(20px)', opacity: 0 }),
+        animate('200ms ease-out', style({ transform: 'translateY(0)', opacity: 1 }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-in', style({ transform: 'translateY(20px)', opacity: 0 }))
+      ])
+    ])
+  ]
+})
+export class ChatUiComponent implements AfterViewInit {
+  // State signals
+  isOpen = signal(false);
+  unreadMessages = signal(0);
+  isTyping = signal(false);
+  inputMessage = signal('');
+  showScrollButton = signal(false);
+
+  // Template references
+  messageContainer = viewChild<ElementRef>('messageContainer');
+  inputField = viewChild<ElementRef>('inputField');
+
+  // Data
+  messages = signal<any[]>([]);
+  quickQuestions = signal([
+    'Was sind Ihre Öffnungszeiten?',
+    'Kann ich meine Buchung stornieren?',
+    'Welche Reiseziele bieten Sie an?'
+  ]);
+
+  // SSR browser check
+  isBrowser: boolean;
+
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+
+    if (this.isBrowser) {
+      // Auto-scroll to bottom when messages change or typing stops
+      effect(() => {
+        const messages = this.messages();
+        const isTyping = this.isTyping();
+        const isOpen = this.isOpen();
+
+        if (isOpen && (messages.length > 0 || !isTyping)) {
+          queueMicrotask(() => {
+            this.scrollToBottom();
+            this.checkScrollPosition();
+          });
+        }
+      });
+    }
+  }
+
+  ngAfterViewInit() {
+    if (this.isBrowser) {
+      const container = this.messageContainer()?.nativeElement;
+      if (container) {
+        container.addEventListener('scroll', () => this.checkScrollPosition());
+      }
+    }
+  }
+
+  toggleChat() {
+    this.isOpen.update(v => !v);
+    if (this.isOpen()) {
+      this.unreadMessages.set(0);
+    }
+  }
+
+  onAnimationDone() {
+    this.scrollToBottom();
+    this.inputField()?.nativeElement.focus();
+  }
+
+  sendMessage(message?: string) {
+    const msg = message || this.inputMessage().trim();
+    if (!msg) return;
+
+    this.messages.update(m => [...m, {
+      from: 'user',
+      text: msg,
+      timestamp: new Date()
+    }]);
+
+    if (!message) this.inputMessage.set('');
+
+    this.scrollToBottom();
+
+    this.isTyping.set(true);
+
+    setTimeout(() => {
+      this.messages.update(m => [...m, {
+        from: 'bot',
+        text: this.generateBotResponse(msg),
+        timestamp: new Date()
+      }]);
+      this.isTyping.set(false);
+      this.scrollToBottom();
+    }, 1000 + Math.random() * 1000);
+  }
+
+  private generateBotResponse(message: string): string {
+    const lowerMsg = message.toLowerCase();
+
+    if (lowerMsg.includes('öffnungszeit')) {
+      return 'Wir sind Montag bis Freitag von 9-18 Uhr für Sie da!';
+    }
+    if (lowerMsg.includes('storn')) {
+      return 'Für Stornierungen benötige ich Ihre Buchungsnummer.';
+    }
+    if (lowerMsg.includes('reiseziel')) {
+      return 'Wir bieten Reisen weltweit an. Wohin möchten Sie reisen?';
+    }
+
+    return 'Vielen Dank für Ihre Nachricht. Wie kann ich Ihnen weiterhelfen?';
+  }
+
+  public scrollToBottom() {
+    if (!this.isBrowser) return;
+
+    const containerRef = this.messageContainer();
+    if (!containerRef) return;
+
+    const container = containerRef.nativeElement;
+    if (container) {
+      setTimeout(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 100);
+    }
+  }
+
+  private checkScrollPosition() {
+    if (!this.isBrowser) return;
+
+    const container = this.messageContainer()?.nativeElement;
+    if (container) {
+      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+      this.showScrollButton.set(!isAtBottom);
+    }
+  }
+}

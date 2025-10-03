@@ -1,0 +1,15 @@
+<div class="test-pusher">
+  <h2>Live Nachrichten</h2>
+
+  <ul *ngIf="messages.length > 0; else noMessages">
+    <li *ngFor="let msg of messages">
+      <span class="from">{{ msg.from }}:</span>
+      <span class="text">{{ msg.text }}</span>
+      <span class="time">{{ msg.created_at | date:'shortTime' }}</span>
+    </li>
+  </ul>
+
+  <ng-template #noMessages>
+    <p>Keine Nachrichten empfangen.</p>
+  </ng-template>
+</div>

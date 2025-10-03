@@ -1,0 +1,293 @@
+<div class="chatbot-container" [class.open]="isOpen()">
+  <!-- Floating Button -->
+  <button
+    class="chatbot-button"
+    [class.open]="isOpen()"
+    (click)="toggleChat()"
+    aria-label="Chat öffnen">
+    <img src="/livechat/livechat_icon.png" alt="Chat Icon" class="chat-icon-img" />
+    @if (unreadMessages() > 0) {
+      <span class="unread-badge">{{ unreadMessages() }}</span>
+    }
+  </button>
+
+  <!-- Chat Window -->
+  @if (isOpen()) {
+    <div class="chatbot-window" @windowAnimation (@windowAnimation.done)="onAnimationDone()">
+      <div class="chatbot-header">
+        <div class="header-content">
+          <div class="avatar">
+            <img src="/livechat/livechat_icon.png" alt="Chatbot" width="40" height="40">
+          </div>
+          <div class="header-text">
+            <h3>YISU Travel-Assistent</h3>
+            <p>Online</p>
+          </div>
+        </div>
+
+        <!-- Schließen-Button -->
+        <div>
+          <button mat-icon-button (click)="onCloseClicked()" aria-label="Chat schließen">
+            <img src="/livechat/closeChat.svg" alt="Close" width="24" height="24">
+          </button>
+
+          <button mat-icon-button (click)="toggleChat()" aria-label="Chat minimieren">
+            <img src="/livechat/close.svg" alt="Minimize" width="24" height="24">
+          </button>
+        </div>
+      </div>
+
+      <div class="chatbot-messages" #messageContainer>
+
+        @if (showAgentConnection() && assignedAgentName()) {
+          <div class="chat-status-indicator stable-connection" [@fadeInOut]>
+            <div class="status-message">
+              <mat-icon>support_agent</mat-icon>
+              <span>Sie sind mit {{ assignedAgentName() }} verbunden</span>
+            </div>
+          </div>
+        }
+
+        <!-- Waiting for Assignment Indicator -->
+        @if (chatStatus() === 'human' && isEscalated() && !assignedAgentName()) {
+          <div class="chat-status-indicator">
+            <div class="status-message waiting">
+              <mat-icon>hourglass_empty</mat-icon>
+              <span>Warten auf Mitarbeiter...</span>
+            </div>
+          </div>
+        }
+
+        <!-- Registrierungsformular -->
+        @if (showRegistrationForm() && !isEscalated()) {
+          <div class="registration-form">
+            <div class="welcome-bubble">
+              <h3>Willkommen beim YISU Travel-Assistenten! 👋</h3>
+              <p>Bitte geben Sie Ihre Daten ein, um fortzufahren:</p>
+
+              <form (ngSubmit)="submitRegistration()" class="registration-form-fields">
+                <input type="text" placeholder="Vorname" required
+                       [(ngModel)]="registrationForm().first_name"
+                       name="first_name"
+                       [disabled]="isTyping()">
+                <input type="text" placeholder="Nachname" required
+                       [(ngModel)]="registrationForm().last_name"
+                       name="last_name"
+                       [disabled]="isTyping()">
+
+                <input type="email" placeholder="E-Mail Adresse" required
+                       [(ngModel)]="registrationForm().email"
+                       name="email"
+                       [disabled]="isTyping()">
+
+                <input type="tel" placeholder="Telefonnummer" required
+                       [(ngModel)]="registrationForm().phone"
+                       name="phone"
+                       [disabled]="isTyping()">
+
+                <div class="terms-checkbox">
+                  <mat-checkbox
+                    [(ngModel)]="registrationForm().agb_accepted"
+                    name="agb_accepted"
+                    [disabled]="isTyping()">
+                    Ich akzeptiere die
+                    <a routerLink="agb" target="_blank" class="terms-link">AGB</a>
+                    und
+                    <a routerLink="datenschutzerklaerung" target="_blank" class="terms-link">Datenschutzbestimmungen</a>
+                  </mat-checkbox>
+                </div>
+
+                @if (registrationError()) {
+                  <div class="error-message">{{ registrationError() }}</div>
+                }
+
+                <button type="submit" class="submit-btn" [disabled]="isTyping()">
+                  @if (isTyping()) {
+                    <span>Wird gespeichert...</span>
+                  } @else {
+                    <span>Starten</span>
+                  }
+                </button>
+              </form>
+            </div>
+          </div>
+        }
+
+        <!-- Welcome Message -->
+        @if ((showQuickQuestions() || messages().length === 0) && !showRegistrationForm()) {
+          <div class="welcome-message" [class.after-messages]="messages().length > 0">
+            <div class="welcome-bubble">
+              <p>Hallo! 👋 Wie kann ich Ihnen helfen?</p>
+              <div class="quick-questions">
+                @for (question of quickQuestions(); track question) {
+                  <button mat-stroked-button (click)="sendMessage(question)">
+                    {{ question }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Messages -->
+        @for (message of messages(); track $index) {
+          <div class="message"
+               [class.user-message]="message.from === 'user'"
+               [class.bot-message]="message.from === 'bot' || message.from === 'agent'"
+               [class.system-message]="message.from === 'system'">
+            <div class="message-bubble"
+                 [class.system-bubble]="message.from === 'system'">
+              <span>{{ message.text }}</span>
+
+              <!-- File Attachment Display -->
+              @if (message.attachment) {
+                <div class="message-attachment">
+                  <!-- Image Preview -->
+                  @if (message.attachment.file_type === 'image') {
+                    <div class="image-preview" (click)="downloadFile(message.attachment)">
+                      <img [src]="message.attachment.download_url" [alt]="message.attachment.file_name" />
+                      <div class="image-overlay">
+                        <mat-icon>download</mat-icon>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Other Files -->
+                  @if (message.attachment.file_type !== 'image') {
+                    <div class="attachment-card" (click)="downloadFile(message.attachment)">
+                      <div class="attachment-icon-wrapper">
+                        <mat-icon class="attachment-icon">{{getFileIcon(message.attachment.file_type)}}</mat-icon>
+                      </div>
+                      <div class="attachment-info">
+                        <div class="attachment-name">
+                          {{message.attachment.file_name}}
+                        </div>
+                        <div class="attachment-meta">
+                          <span class="attachment-type">{{message.attachment.file_type.toUpperCase()}}</span>
+                          <span class="attachment-size">{{formatFileSize(message.attachment.file_size)}}</span>
+                        </div>
+                      </div>
+                      <mat-icon class="download-icon">download</mat-icon>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- ✅ VEREINHEITLICHTE Escalation Options -->
+              @if (message.message_type === 'escalation_prompt' &&
+              (message.metadata?.is_manual || message.metadata?.is_automatic)) {
+                <div class="escalation-options">
+                  <button
+                    mat-stroked-button
+                    (click)="handleEscalationResponse('decline', message.metadata)"
+                    class="decline-btn">
+                    Nein, danke
+                  </button>
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    (click)="handleEscalationResponse('accept', message.metadata)"
+                    class="accept-btn">
+                    Ja, gerne
+                  </button>
+                </div>
+              }
+
+              <div class="message-meta">
+                <!-- Message Type Badge -->
+                @if (message.from === 'system') {
+                  <span class="message-badge system">System</span>
+                } @else if (message.from === 'agent') {
+                  <span class="message-badge agent">{{ assignedAgentName() || 'Agent' }}</span>
+                } @else if (message.from === 'bot') {
+                  <span class="message-badge bot">Bot</span>
+                }
+                <span class="message-time">{{ message.timestamp | date:'HH:mm' }}</span>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Bestätigungsnachricht für Chat-Beendigung -->
+        @if (showCloseConfirmationInChat()) {
+          <div class="message bot-message confirm-close-message">
+            <div class="message-bubble">
+              <p>Möchten Sie den Chat wirklich beenden?</p>
+              <div class="confirm-buttons">
+                <button mat-stroked-button color="warn" (click)="confirmCloseChat()">Ja</button>
+                <button mat-stroked-button (click)="cancelCloseChat()">Nein</button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Typing Indicator -->
+        @if (isTyping()) {
+          <div class="typing-indicator">
+            <div class="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Contact Flow Indicator -->
+      @if (contactFlowActive()) {
+        <div class="contact-flow-active-indicator">
+          <p>Bitte geben Sie Ihre Kontaktdaten ein:</p>
+          <div class="contact-steps">
+            <span [class.active]="currentContactStep() === 'first_name'">Vorname</span>
+            <span [class.active]="currentContactStep() === 'last_name'">Nachname</span>
+            <span [class.active]="currentContactStep() === 'email'">E-Mail</span>
+            <span [class.active]="currentContactStep() === 'phone'">Telefon</span>
+          </div>
+        </div>
+      }
+
+      <!-- Input Area -->
+      @if ((isRegistered() || isAuthenticated) && !showRegistrationForm()) {
+        <div class="chatbot-input">
+          <form (ngSubmit)="sendMessage()" class="input-form">
+            <input
+              type="file"
+              #fileInput
+              (change)="onFileSelected($event)"
+              style="display: none"
+              accept="*/*"
+            />
+
+            <button mat-icon-button
+                    type="button"
+                    class="attach-button"
+                    (click)="fileInput.click()"
+                    matTooltip="Datei anhängen">
+              <mat-icon>attach_file</mat-icon>
+            </button>
+
+            <textarea matInput
+                      #inputField
+                      [ngModel]="inputMessage()"
+                      (ngModelChange)="inputMessage.set($event)"
+                      name="message"
+                      [placeholder]="chatStatus() === 'human' ?
+                        (assignedAgentName() ? 'Nachricht an ' + assignedAgentName() + '...' : 'Nachricht an Mitarbeiter...') :
+                        'Ihre Nachricht...'"
+                      autocomplete="off"
+                      class="input-field"
+                      (keydown)="onKeyDown($event)">
+            </textarea>
+
+            <button mat-icon-button
+                    type="submit"
+                    class="send-button"
+                    [disabled]="!inputMessage().trim()">
+              <img src="/livechat/sending.svg" alt="Send" width="24" height="24">
+            </button>
+          </form>
+        </div>
+      }
+    </div>
+  }
+</div>

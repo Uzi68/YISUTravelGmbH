@@ -1,0 +1,195 @@
+/* You can add global styles to this file, and also import other style files */
+@import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
+
+/* DSGVO-konform: Lokale Material Icons (keine Google Fonts) */
+@import '@fontsource/material-icons';
+@import '@fontsource/roboto/300.css';
+@import '@fontsource/roboto/400.css';
+@import '@fontsource/roboto/500.css';
+@import '@fontsource/roboto/700.css';
+
+html, body {
+  height: 100%;
+  /* Skip animation  */
+  scroll-behavior: auto !important;
+}
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Ensure Material Icons render correctly */
+.mat-icon {
+  font-family: 'Material Icons' !important;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
+}
+body.dark-mode {
+  background-color: #121212;
+}
+
+/* Default (Light Mode) */
+:root {
+  --background-color: #f7faff;
+  --text-color: #333333;
+  --offertext-color: #333;
+  --offertextTitle-color: #666;
+  --offertextPrice-color: #444;
+  --offer-background-color: #fff;
+  --offershadow-background-color: 0 6px 15px rgba(0, 0, 0, 0.1);
+  --primary-color: #1E90FF;
+  --secondary-color: #87CEEB;
+  --link-color: #1E90FF;
+  --box-color: #d9d8de;
+  --dropdown-color: #ffffff;
+  --header-color:#0077b6;
+  --lc-block-color: white;
+  --lc-block-text-color: #666;
+  --lc-block-header-color: #333;
+  --lc-block-hover1-color: #e6faff;
+  --lc-block-hover2-color: #ffffff;
+  --lc-block-hover3-color: rgba(23, 177, 241, 0.05);
+  --amt-section-color: #0077b6;
+  --ueber-uns-color: rgba(0, 123, 255, 0.1);
+  --customer-ratings-color: linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(9,121,202,1) 35%, rgba(0,212,255,1) 100%);
+  --additional-info-color: #f5f5f5;
+  --toolbarkit-color: linear-gradient(90deg,#fff 15%,#0077b6 75%);
+  --toolbarkit-mobile-color: linear-gradient(90deg,#fff 15%,#0077b6 75%);
+  --shadow-color: 0 8px 20px rgba(0, 0, 0, 0.2);
+  --formfield-color: #73767e;
+  --formfield-error-color: #b91a1a;
+}
+
+/* Dark Mode */
+body.dark-mode {
+  --background-color: #121212;
+  --text-color: #E1E1E1;
+  --offertext-color: #fff;
+  --offertextTitle-color: #fff;
+  --offertextPrice-color: #fff;
+  --offer-background-color: #2b2b2b;
+  --offershadow-background-color: 0 6px 15px rgba(255, 255, 255, 0.1);
+  --primary-color: #1E90FF;
+  --secondary-color: #4682B4;
+  --link-color: #87CEFA;
+  --box-color: #3e3e3e;
+  --dropdown-color:#202020;
+  --header-color:#1ab0ff;
+  --lc-block-color: #3e3e3e;
+  --lc-block-text-color: white;
+  --lc-block-header-color: white;
+  --lc-block-hover1-color: #505050;
+  --lc-block-hover2-color: #000000;
+  --lc-block-hover3-color: rgba(0, 85, 124, 0.32);
+  --amt-section-color: #003d5e;
+  --ueber-uns-color: rgba(78, 158, 255, 0.44);
+  --customer-ratings-color: linear-gradient(90deg,#000,#124468 35%,#256775);
+  --additional-info-color: #121212;
+  --toolbarkit-color: linear-gradient(90deg, #000000 15%, #00456a 75%);
+  --toolbarkit-mobile-color: linear-gradient(90deg, #44a5ff 15%, #000000 80%);
+  --shadow-color: 0 8px 20px rgba(255, 255, 255, 0.2);
+  --formfield-color: white;
+  --formfield-error-color: red;
+}
+
+.icon path {
+  fill: var(--header-color); /* Verwende die Variable */
+}
+
+
+.foe {
+  /* Default colors for all states */
+  --mdc-outlined-text-field-outline-color: var(--text-color);
+  --mdc-outlined-text-field-label-text-color: var(--text-color);
+
+  /*Text input color*/
+  --mdc-outlined-text-field-input-text-color: var(--text-color);
+
+  --mdc-outlined-text-field-caret-color: var(--text-color);
+  --mdc-outlined-text-field-placeholder-text-color: var(--text-color);
+
+  /* Hover text input color, label and outline */
+  --mdc-outlined-text-field-hover-outline-color: var(--header-color);
+  --mdc-outlined-text-field-hover-label-text-color: var(--header-color);
+
+
+  --mdc-outlined-text-field-hover-input-text-color: var(--text-color);
+  --mdc-outlined-text-field-hover-caret-color: var(--text-color);
+
+  /* Focused state */
+  --mdc-outlined-text-field-focus-outline-color: var(--header-color);
+  --mdc-outlined-text-field-focus-label-text-color: var(--header-color);
+  --mdc-outlined-text-field-focus-input-text-color: #0076b5;
+
+  /* Error state (locks red color) */
+  --mdc-outlined-text-field-error-outline-color: var(--formfield-error-color);
+  --mdc-outlined-text-field-error-label-text-color: var(--formfield-error-color);
+  --mdc-outlined-text-field-error-hover-outline-color: var(--formfield-error-color);
+
+  /* Hover state (keeps everything white) */
+  --mdc-outlined-text-field-errorhover-outline-color: var(--formfield-error-color);
+  --mdc-outlined-text-field-error-hover-label-text-color: var(--formfield-error-color);
+  --mdc-outlined-text-field-error-hover-input-text-color: var(--formfield-error-color);
+  --mdc-outlined-text-field-error-hover-caret-color: var(--formfield-error-color);
+
+}
+
+
+
+/* Roboto Font Faces */
+@font-face {
+  font-family: 'Roboto';
+  font-weight: 100; /* Thin */
+  font-style: normal;
+  src: url('/fonts/Roboto-Thin.ttf') format('truetype'),
+  url('/fonts/Roboto-ThinItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Roboto';
+  font-weight: 300; /* Light */
+  font-style: normal;
+  src: url('/fonts/Roboto-Light.ttf') format('truetype'),
+  url('/fonts/Roboto-LightItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Roboto';
+  font-weight: 400; /* Regular */
+  font-style: normal;
+  src: url('/fonts/Roboto-Regular.ttf') format('truetype'),
+  url('/fonts/Roboto-Italic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Roboto';
+  font-weight: 500; /* Medium */
+  font-style: normal;
+  src: url('/fonts/Roboto-Medium.ttf') format('truetype'),
+  url('/fonts/Roboto-MediumItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Roboto';
+  font-weight: 700; /* Bold */
+  font-style: normal;
+  src: url('/fonts/Roboto-Bold.ttf') format('truetype'),
+  url('/fonts/Roboto-BoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Roboto';
+  font-weight: 900; /* Black */
+  font-style: normal;
+  src: url('/fonts/Roboto-Black.ttf') format('truetype'),
+  url('/fonts/Roboto-BlackItalic.ttf') format('truetype');
+}

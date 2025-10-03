@@ -1,0 +1,118 @@
+<!-- <div class="container mt-5" #carouselanimation> -->
+<div class="container mt-5">
+  <div class="row">
+    <!-- Left Side Slider -->
+    <div class="col-lg-6 col-md-12">
+      <div id="imageCarousel" class="carousel slide" data-bs-ride="carousel">
+
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <img src="/homepage/contact1.jpg" class="d-block w-100" alt="Image 1">
+          </div>
+          <div class="carousel-item">
+            <img src="/homepage/contact2.jpg" class="d-block w-100" alt="Image 2">
+          </div>
+          <div class="carousel-item">
+            <img src="/homepage/contact3.jpg" class="d-block w-100" alt="Image 3">
+          </div>
+        </div>
+
+        <!-- Carousel Controls -->
+        <button class="carousel-control-prev" type="button" data-bs-target="#imageCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#imageCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+        <!-- Carousel Indicators -->
+        <div class="carousel-indicators">
+          <button type="button" data-bs-target="#imageCarousel" data-bs-slide-to="0" class="active"></button>
+          <button type="button" data-bs-target="#imageCarousel" data-bs-slide-to="1"></button>
+          <button type="button" data-bs-target="#imageCarousel" data-bs-slide-to="2"></button>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- Right Side Contact Info -->
+    <div class="col-lg-6 col-md-12 d-flex flex-column">
+      <h2 class="mb-3" id="titleRight">YISU Travel GmbH Hanau</h2>
+
+      <div class="contact-info">
+        <a href="https://maps.app.goo.gl/LNGXjt9hFe8KuUwt9" target="_blank" class="address-link">
+          <span>
+            <i class="fas fa-map-marker-alt icon" style="margin-right: 8px"></i>
+            Schnurstraße 15, 63450 Hanau
+          </span>
+        </a>
+        <br>
+        <span>
+    <i class="fas fa-phone icon" style="margin-right: 8px"></i>
+    Tel.: <a href="tel:061814341810">06181 4341810</a>
+  </span><br>
+        <span>
+    <i class="fas fa-fax icon" style="margin-right: 8px"></i>
+    Fax: 06181 4341811
+  </span><br>
+        <span>
+    <i class="fas fa-mobile-alt icon" style="margin-right: 8px"></i>
+    Mobil: <a href="tel:01727049131">0172 7049131</a>
+  </span><br>
+        <span>
+    <i class="fas fa-envelope icon" style="margin-right: 8px"></i>
+    E-Mail: <a href="mailto:info@yisu-travel.de">info&#64;yisu-travel.de</a>
+  </span>
+      </div>
+
+
+      <!-- Buttons below Öffnungszeiten -->
+      <div class="mt-3">
+        <div class="languages-container">
+          <div class="languages">
+            <img class="imagelanguage" src="/imagebox/turkiye.svg" alt="türkei">
+            <div>Türkisch</div>
+          </div>
+          <div class="languages">
+            <img class="imagelanguage" src="/imagebox/de.svg" alt="deutsch">
+            <div>Deutsch</div>
+          </div>
+          <div class="languages">
+            <img class="imagelanguage" src="/imagebox/gb.svg" alt="englisch">
+            <div>Englisch</div>
+          </div>
+        </div>
+
+        <button mat-flat-button class="mb-3 btn-primary" (click)="openDialog()">Termin vereinbaren</button>
+      </div>
+
+
+      <li class="dropdown dropdown-2" (click)="toggleDropdown()" [class.active]="isOpen">
+          <span id="titledropdown" class="titledropdownclass">
+            Öffnungszeiten
+            <span class="arrow titledropdownclass" [class.rotate]="isOpen">&#x25BE;</span> <!-- ▾ Eleganter Pfeil -->
+          </span>
+
+        <ul class="dropdown_menu dropdown_menu-2" [class.show]="isOpen">
+          <li class="dropdown_item"><strong>Montag:</strong> 10:00 - 18:00 Uhr</li>
+          <li class="dropdown_item"><strong>Dienstag:</strong> 10:00 - 18:00 Uhr</li>
+          <li class="dropdown_item"><strong>Mittwoch:</strong> 10:00 - 18:00 Uhr</li>
+          <li class="dropdown_item"><strong>Donnerstag:</strong> 10:00 - 18:00 Uhr</li>
+          <li class="dropdown_item"><strong>Freitag:</strong> 10:00 - 18:00 Uhr</li>
+          <li class="dropdown_item"><strong>Samstag:</strong> 10:30 - 15:30 Uhr</li>
+          <li class="dropdown_item"><strong>Sonntag:</strong> Geschlossen</li>
+        </ul>
+      </li>
+
+
+      <!-- Social Media Icons -->
+      <div class="mt-3">
+        <a href="https://www.instagram.com/yisu.travel/?hl=de" class="me-3"><i class="bi bi-instagram fs-4"></i></a>
+        <a href="https://www.facebook.com/p/Yisu-Travel-GmbH-100063462493141/?locale=de_DE" class="me-3"><i
+          class="bi bi-facebook fs-4"></i></a>
+      </div>
+    </div>
+  </div>
+</div>

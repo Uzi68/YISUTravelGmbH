@@ -1,0 +1,30 @@
+.container {
+  max-width: 1800px;
+  margin: 0 auto; /* Centers the container */
+  padding: 0 15px; /* Adds some padding on the sides */
+}
+
+.text-center {
+  text-align: unset!important;
+}
+
+.title {
+  color: var(--text-color);
+}
+
+.lead {
+  color: var(--text-color);
+}
+
+p {
+  color: var(--text-color);
+}
+
+
+.img-fluid {
+  max-width: 100%;
+  height: auto;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}

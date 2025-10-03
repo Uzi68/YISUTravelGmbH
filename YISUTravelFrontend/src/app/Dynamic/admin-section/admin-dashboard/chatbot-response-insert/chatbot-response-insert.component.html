@@ -1,0 +1,208 @@
+<div class="container">
+  <div class="header">
+    <div class="header-icon">
+
+    </div>
+    <h1>Chatbot Response Manager</h1>
+  </div>
+
+  <div class="form-container">
+    <!-- Input Feld -->
+    <mat-form-field class="full-width" appearance="outline">
+      <mat-label>Nutzer-Eingabe</mat-label>
+      <input matInput
+             [(ngModel)]="newResponse.input"
+             placeholder="z.B. 'Hallo' oder 'Wie geht es dir?'"
+             required>
+      <mat-icon matSuffix>chat</mat-icon>
+      <mat-hint>Was würde der Nutzer sagen, um diese Antwort auszulösen?</mat-hint>
+    </mat-form-field>
+
+    <!-- Response Feld -->
+    <mat-form-field class="full-width" appearance="outline">
+      <mat-label>Bot-Antwort</mat-label>
+      <textarea matInput
+                [(ngModel)]="newResponse.response"
+                placeholder="z.B. 'Hallo! Wie kann ich helfen?'"
+                rows="3"
+                required></textarea>
+      <mat-icon matSuffix>smart_toy</mat-icon>
+      <mat-hint>Wie soll der Bot antworten?</mat-hint>
+    </mat-form-field>
+
+
+
+    <!-- Keywords Section -->
+    <div class="keywords-container">
+      <div class="keywords-header">
+        <span class="keywords-title">Keywords/Synonyme</span>
+        <span class="keywords-subtitle">(Diese erweitern die Erkennung der Nutzer-Eingabe)</span>
+      </div>
+
+      <mat-form-field class="full-width keyword-input" appearance="outline">
+        <mat-label>Keyword hinzufügen</mat-label>
+        <input matInput
+               #keywordInput
+               [matChipInputFor]="chipList"
+               [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+               (matChipInputTokenEnd)="addKeyword($event)"
+               (click)="$event.stopPropagation()"
+               placeholder="Keyword eingeben und Enter drücken">
+        <mat-hint>Mehrere Keywords mit Komma trennen oder jeweils mit Enter bestätigen</mat-hint>
+      </mat-form-field>
+
+      <!-- Chip List -->
+      <mat-chip-grid #chipList class="chips-container">
+        <mat-chip-row *ngFor="let keyword of newResponse.keywords"
+                      (removed)="removeKeyword(keyword)"
+                      class="keyword-chip">
+          {{ keyword }}
+          <button matChipRemove
+                  class="remove-btn"
+                  [attr.aria-label]="'Keyword ' + keyword + ' entfernen'">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+
+        <!-- Hinweis wenn keine Keywords vorhanden sind -->
+        <div *ngIf="newResponse.keywords.length === 0" class="no-keywords-hint">
+          <span>Noch keine Keywords hinzugefügt</span>
+        </div>
+      </mat-chip-grid>
+    </div>
+
+
+
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button mat-stroked-button
+              class="clear-button normal-button"
+              (click)="clearForm()"
+              [disabled]="isLoading || (!newResponse.input && !newResponse.response && newResponse.keywords.length === 0)">
+        Formular leeren
+      </button>
+
+      <button mat-raised-button
+              class="submit-button"
+              color="primary"
+              (click)="submit()"
+              [disabled]="!newResponse.input || !newResponse.response || isLoading">
+        {{ isLoading ? 'Wird gespeichert...' : 'Antwort speichern' }}
+      </button>
+    </div>
+
+
+
+    <div class="response-container">
+
+
+        <!-- Verbesserter Header -->
+        <div class="header-container">
+          <div class="header-content">
+            <div class="header-text">
+              <p class="header-subtitle">Trainierte Daten verwalten</p>
+            </div>
+          </div>
+          <mat-divider class="header-divider"></mat-divider>
+        </div>
+
+      <div *ngFor="let getResponse of paginatedResponses; trackBy: trackById" class="response-item" [class.editing]="editingResponse?.id === getResponse.id">
+
+        <!-- Bearbeitungsmodus -->
+        <div *ngIf="editingResponse?.id === getResponse.id" class="edit-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nutzer-Eingabe</mat-label>
+            <input matInput [(ngModel)]="editingResponse!.input" placeholder="z.B. 'Hallo'" (click)="$event.stopPropagation()">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Bot-Antwort</mat-label>
+            <textarea matInput [(ngModel)]="editingResponse!.response" rows="3" placeholder="z.B. 'Hallo! Wie kann ich helfen?'"></textarea>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Keywords</mat-label>
+            <mat-chip-grid #chipGrid>
+              <mat-chip-row *ngFor="let keyword of editingResponse?.keywords; trackBy: trackByKeyword"
+                            (removed)="removeEditKeyword(keyword)">
+                {{ keyword }}
+                <button matChipRemove (click)="$event.stopPropagation()">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </mat-chip-row>
+            </mat-chip-grid>
+            <input
+              [matChipInputFor]="chipGrid"
+              [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+              (matChipInputTokenEnd)="addEditKeyword($event)"
+              placeholder="Keyword hinzufügen und Enter drücken">
+          </mat-form-field>
+
+          <div class="action-buttons">
+            <button mat-button class="normal-button" (click)="cancelEdit()">Abbrechen</button>
+            <button mat-raised-button color="primary" class="normal-button" (click)="saveEdit()">Speichern</button>
+          </div>
+        </div>
+
+        <!-- Anzeigemodus -->
+        <div *ngIf="editingResponse?.id !== getResponse.id" class="response-content" (click)="startEdit(getResponse)">
+          <p><strong>Eingabe:</strong> {{ getResponse.input }}</p>
+          <p><strong>Antwort:</strong> {{ getResponse.response }}</p>
+          <p><strong>Keywords:</strong>
+            <span *ngFor="let keyword of getResponse.keywords ?? []; trackBy: trackByKeyword" class="keyword-tag">{{ keyword }}</span>
+          </p>
+        </div>
+
+        <div class="response-actions">
+          <button mat-icon-button color="warn"
+                  (click)="deleteResponse(getResponse.id, $event)">
+            <img src="/livechat/close.svg" alt="Minimize" width="24" height="24" class="black-icon">
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Keine Antworten Hinweis -->
+      <div *ngIf="getResponses.length === 0" class="text-center py-4 text-muted">
+        <i class="bi bi-inbox display-4 d-block mb-2"></i>
+        Keine Antworten vorhanden
+      </div>
+    </div>
+
+    <mat-paginator
+      [length]="getResponses.length"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="[5, 10, 15, 20, 50]"
+      (page)="onPageChange($event)">
+    </mat-paginator>
+
+    <!-- Success Message -->
+    <div *ngIf="showSuccess" class="success-message" @fadeIn>
+      <div class="message-content">
+        <div class="message-text">
+          <div class="message-title">Erfolgreich gespeichert!</div>
+          <div class="message-subtitle">Die Antwort wurde in der Datenbank gespeichert.</div>
+        </div>
+        <button mat-icon-button class="close-btn" (click)="showSuccess = false" [attr.aria-label]="'Meldung schließen'">
+          <img src="/livechat/close.svg" alt="Minimize" width="24" height="24" class="black-icon">
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="errorMessage" class="error-message" @fadeIn>
+      <div class="message-content">
+        <mat-icon class="error-icon">error</mat-icon>
+        <div class="message-text">
+          <div class="message-title">Fehler beim Speichern</div>
+          <div class="message-subtitle">{{ errorMessage }}</div>
+        </div>
+        <button mat-icon-button class="close-btn" (click)="clearError()" [attr.aria-label]="'Fehlermeldung schließen'">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

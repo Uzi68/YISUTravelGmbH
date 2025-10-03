@@ -1,0 +1,32 @@
+<button class="chat-button" (click)="toggleChat()">
+  <img src="/livechat/livechat_assistant.png" alt="Livechat" class="chat-icon">
+</button>
+<div class="chat-container" [class.open]="isOpen">
+  <div class="chat-header" (click)="toggleChat()">
+    <span class="chat-title">Moin 👋</span>
+    <mat-icon class="chat-toggle-icon">{{ isOpen ? 'expand_more' : 'expand_less' }}</mat-icon>
+  </div>
+  <div class="chat-subheader">
+    Willkommen bei unserem Live-Chat! Wir beantworten dir gerne all deine Fragen 😊
+  </div>
+  <div class="chat-status">
+    <span class="status-indicator"></span> Wir sind online und antworten sofort
+  </div>
+  <div class="chat-body" *ngIf="isOpen">
+    <div class="chat-messages" #chatMessages>
+      <div *ngFor="let msg of messages" class="chat-message" [ngClass]="msg.sender">
+        {{ msg.text }}
+      </div>
+    </div>
+    <div class="chat-footer">
+      <mat-form-field class="chat-input" appearance="outline">
+        <input matInput [(ngModel)]="newMessage" placeholder="Gebe eine Nachricht ein..." (keyup.enter)="sendMessage()">
+      </mat-form-field>
+      <button mat-icon-button color="primary" (click)="sendMessage()" [disabled]="!newMessage.trim()">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e8eaed">
+            <path d="M120-160v-640l760 320-760 320Zm80-120 474-200-474-200v140l240 60-240 60v140Zm0 0v-400 400Z"/>
+          </svg>
+      </button>
+    </div>
+  </div>
+</div>

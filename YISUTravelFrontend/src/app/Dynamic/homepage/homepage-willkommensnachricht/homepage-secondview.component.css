@@ -1,0 +1,86 @@
+body {
+  margin: 0; /* Reset body margin */
+  padding: 0; /* Reset body padding */
+  overflow-x: hidden; /* Prevent horizontal scrollbar */
+}
+
+.intro-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
+  opacity: 1; /* Force it to be visible */
+  transform: translateY(0); /* Disable movement */
+  overflow: hidden; /* Prevent overflow */
+  box-sizing: border-box; /* Include padding and borders in the total width */
+}
+
+.visible {
+  opacity: 1; /* Visible when scrolled into view */
+  transform: translateY(0); /* Move to original position */
+}
+
+.intro-title {
+  font-size: 55px;
+  margin-bottom: 20px;
+  margin-top: 50px;
+  color: var(--text-color);
+  @media (max-width: 768px) {
+    font-size: 35px;
+  }
+}
+
+.highlight {
+  color: var(--header-color);
+  font-weight: bold;
+  font-size: 55px;
+  transition: color 0.3s ease-in-out;
+  @media (max-width: 768px) {
+    font-size: 35px;
+  }
+}
+
+
+.intro-text {
+  line-height: 1.6;
+  color: var(--text-color);
+}
+
+.custom-divider {
+  border-top: 2px solid #007bff; /* Blue line */
+  width: 80px; /* Adjust width of the divider */
+  margin: 0 auto; /* Center the divider and add spacing */
+  opacity: 0;
+  animation: fadeInDivider 1s forwards;
+}
+
+/* Optional animation for the divider */
+@keyframes fadeInDivider {
+  from {
+    opacity: 0;
+    width: 0;
+  }
+  to {
+    opacity: 1;
+    width: 80px;
+  }
+}
+
+
+@keyframes tracking-in-expand {
+  0% {
+    letter-spacing: -0.5em;
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+
+.text-animation {
+    animation: tracking-in-expand 1s ease-in-out forwards;
+}

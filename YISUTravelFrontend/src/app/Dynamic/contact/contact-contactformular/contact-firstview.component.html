@@ -1,0 +1,108 @@
+<div class="container">
+  <div class="contact-details">
+    <h2 class="kontaktinformationen">Kontaktinformationen</h2>
+    <div class="contact-info">
+      <a href="https://maps.app.goo.gl/LNGXjt9hFe8KuUwt9" target="_blank" class="address-link">
+          <span>
+            <i class="fas fa-map-marker-alt icon" style="margin-right: 8px"></i>
+            Schnurstraße 15, 63450 Hanau
+          </span>
+      </a>
+      <br>
+      <span>
+    <i class="fas fa-phone icon" style="margin-right: 8px"></i>
+    Tel.: <a href="tel:061814341810">06181 4341810</a>
+  </span><br>
+      <span>
+    <i class="fas fa-fax icon" style="margin-right: 8px"></i>
+    Fax: 06181 4341811
+  </span><br>
+      <span>
+    <i class="fas fa-mobile-alt icon" style="margin-right: 8px"></i>
+    Mobil: <a href="tel:01727049131">0172 7049131</a>
+  </span><br>
+      <span>
+    <i class="fas fa-envelope icon" style="margin-right: 8px"></i>
+    E-Mail: <a href="mailto:info@yisu-travel.de">info&#64;yisu-travel.de</a>
+  </span>
+    </div>
+
+    <h3 class="kontaktinformationen">Folge Uns</h3>
+    <div class="social-icons" id="socials">
+      <div class="social-icons">
+        <!-- Facebook -->
+        <a class="btn btn-social" style="background-color: #3b5998;" href="https://www.facebook.com/p/Yisu-Travel-GmbH-100063462493141/?locale=de_DE" target="_blank" role="button">
+          <i class="fab fa-facebook-f"></i>
+        </a>
+        <!-- Instagram -->
+        <a class="btn btn-social instagram-btn" style="background-color: #ac2bac;" href="https://www.instagram.com/yisu.travel/?hl=de" target="_blank" role="button">
+          <i class="fab fa-instagram"></i>
+        </a>
+        <!-- WhatsApp -->
+        <a class="btn btn-social" style="background-color: #25D366;" href="https://wa.me/491773948537" target="_blank" role="button">
+          <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
+        </a>
+      </div>
+    </div>
+
+    <div *ngIf="!mapLoaded" class="map-placeholder">
+      <p class="info-maps">Durch das Laden der Karte stimmen Sie der Datenschutzerklärung von Google zu.</p>
+      <button mat-fab extended (click)="loadMap()" style="background-color: #0077b6;color:white;font-family: Roboto,sans-serif;font-size: 14px">Google Maps laden</button>
+    </div>
+
+    <div *ngIf="mapLoaded">
+      <iframe
+        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2557.5955435056885!2d8.91652737627818!3d50.13128991029304!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47bd171e719c3497%3A0x15f67de366cbf689!2sYISU%20Travel%20GmbH!5e0!3m2!1sde!2sde!4v1728325674211!5m2!1sde!2sde"
+        width="600"
+        height="450"
+        style="border:0;"
+        allowfullscreen=""
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade">
+      </iframe>
+    </div>
+
+  </div>
+
+  <mat-card class="contact-card">
+    <h2 class="form-title">Kontaktformular</h2> <!-- New Title -->
+    <form [formGroup]="contactForm" (ngSubmit)="onSubmit()">
+      <div class="row">
+        <div class="col">
+          <mat-form-field appearance="outline" class="form-field foe">
+            <mat-label>Name</mat-label>
+            <input matInput formControlName="name" required>
+          </mat-form-field>
+        </div>
+        <div class="col">
+          <mat-form-field appearance="outline" class="form-field foe">
+            <mat-label>E-Mail</mat-label>
+            <input matInput formControlName="email" required type="email">
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <mat-form-field appearance="outline" class="form-field foe">
+            <mat-label>Betreff</mat-label>
+            <input matInput formControlName="subject" required>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <mat-form-field appearance="outline" class="form-field foe">
+        <mat-label>Nachricht</mat-label>
+        <textarea matInput formControlName="message" rows="5" required></textarea>
+      </mat-form-field>
+
+      <div class="example-button-row">
+        <button class="custom-button" mat-flat-button type="submit">Absenden</button>
+      </div>
+    </form>
+
+    <!-- Success and Error Messages -->
+    <p *ngIf="successMessage" class="success">{{ successMessage }}</p>
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+  </mat-card>
+</div>

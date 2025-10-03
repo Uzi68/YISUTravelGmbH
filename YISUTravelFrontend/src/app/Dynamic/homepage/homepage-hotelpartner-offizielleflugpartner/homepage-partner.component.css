@@ -1,0 +1,104 @@
+.carousel-item img {
+  width: 100%; /* Make the image fill the column */
+  height: 80px; /* Set a fixed height for all images */
+  object-fit: cover; /* Maintain aspect ratio while filling the space */
+  margin: auto; /* Center the image in the column */
+  margin-bottom: 50px;
+}
+
+.lc-block img {
+  width: 100%; /* Make images take full width */
+  height: 150px; /* Set fixed height */
+  object-fit: contain; /* Ensure the entire image is visible */
+  margin: auto; /* Center the images */
+}
+
+
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  border-radius: 50%; /* Optional: make the arrow backgrounds circular */
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+  filter: invert(1); /* Invert colors for white arrows */
+}
+
+.carousel-indicators [data-bs-target] {
+  background-color: #4a4a4a; /* Set the color for the indicators */
+}
+
+.carousel-indicators .active {
+  background-color: #0077b6;
+}
+
+.carousel-indicators {
+  bottom: -35px;
+}
+
+.offiziellepartner {
+  background-color: rgba(195, 195, 195, 0.13);
+  padding: 40px 0;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-top: 40px;
+}
+
+.title {
+  font-family: "Roboto", Sans-serif;
+  font-size: 3rem;
+  color: var(--text-color);
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.partner-card {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.partner-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-color);
+}
+
+.partner-logo {
+  width: 80px;
+  height: auto;
+  margin-bottom: 15px;
+}
+.partners-title {
+  font-family: "Roboto",Sans-serif;
+  font-size: 2.5rem;
+  font-weight: 500;
+  color: var(--text-color); /* Ein schöner Blauton für die Überschrift */
+  margin-bottom: 20px;
+  @media (max-width: 400px) {
+    font-size: 2rem;
+  }
+}
+
+
+.lead {
+  font-family: "Roboto",Sans-serif;
+  font-size: 1.3em;
+  color: var(--text-color);
+}
+
+p {
+  line-height: 2;
+  color: var(--text-color);
+}
+
+
+.descriptionhotelpartner {
+    color: var(--text-color);
+    font-weight: 400;
+    font-size: 1.5em;
+    font-family: "Roboto",Sans-serif;
+}

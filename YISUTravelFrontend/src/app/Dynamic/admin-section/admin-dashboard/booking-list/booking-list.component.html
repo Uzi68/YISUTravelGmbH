@@ -1,0 +1,146 @@
+<div class="container-fluid">
+  <!-- Filter Section -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Filter</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Status</label>
+          <select class="form-select" [(ngModel)]="filters.status">
+            <option value="">Alle Status</option>
+            <option value="confirmed">Bestätigt</option>
+            <option value="cancelled">Storniert</option>
+            <option value="pending">Ausstehend</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Von Datum</label>
+          <input type="date" class="form-control" [(ngModel)]="filters.date_from">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Bis Datum</label>
+          <input type="date" class="form-control" [(ngModel)]="filters.date_to">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Suche</label>
+          <input type="text" class="form-control" [(ngModel)]="filters.search" placeholder="Buchungsnummer, Destination...">
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary me-2" (click)="applyFilters()">
+            Filter anwenden
+          </button>
+          <button class="btn btn-outline-secondary" (click)="clearFilters()">
+            Zurücksetzen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Section -->
+  @if (stats) {
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card bg-primary text-white">
+          <div class="card-body text-center">
+            <h5 class="card-title">{{ stats.total }}</h5>
+            <p class="card-text">Gesamt Buchungen</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-success text-white">
+          <div class="card-body text-center">
+            <h5 class="card-title">{{ stats.confirmed }}</h5>
+            <p class="card-text">Bestätigt</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-warning text-white">
+          <div class="card-body text-center">
+            <h5 class="card-title">{{ stats.pending }}</h5>
+            <p class="card-text">Ausstehend</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card bg-danger text-white">
+          <div class="card-body text-center">
+            <h5 class="card-title">{{ stats.cancelled }}</h5>
+            <p class="card-text">Storniert</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Bookings Table -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Buchungen</h5>
+      <span class="text-muted">{{ bookings.length }} Einträge</span>
+    </div>
+
+    @if (loading) {
+      <div class="card-body text-center">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    } @else if (error) {
+      <div class="alert alert-danger m-3" role="alert">
+        {{ error }}
+      </div>
+    } @else {
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+            <tr>
+              <th>Buchungsnummer</th>
+              <th>Destination</th>
+              <th>Reisedatum</th>
+              <th>Personen</th>
+              <th>Preis</th>
+              <th>Status</th>
+              <th>Erstellt am</th>
+              <th>Aktionen</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (booking of bookings; track booking.id) {
+                <tr>
+                  <td>{{ booking.booking_number }}</td>
+                  <td>{{ booking.destination }}</td>
+                  <td>{{ booking.travel_date | date:'dd.MM.yyyy' }}</td>
+                  <td>{{ booking.persons }}</td>
+                  <td>{{ booking.price | currency:'EUR' }}</td>
+                  <td>
+                <span [class]="getStatusClass(booking.status)">
+                  {{ getStatusText(booking.status) }}
+                </span>
+                  </td>
+                  <td>{{ booking.created_at | date:'dd.MM.yyyy HH:mm' }}</td>
+                  <td>
+                    <a [routerLink]="['/admin/buchungsliste', booking.id]" class="btn btn-sm btn-outline-primary">
+                      Details
+                    </a>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="8" class="text-center py-4">
+                    Keine Buchungen gefunden
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  </div>
+</div>

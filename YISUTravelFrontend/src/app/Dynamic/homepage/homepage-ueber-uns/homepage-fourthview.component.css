@@ -1,0 +1,156 @@
+
+body {
+  background: #eaeaea; /* Light background for contrast */
+  font-family: 'Roboto', sans-serif; /* Modern font */
+}
+
+.about-us-container {
+  display: flex;
+  align-items: center;
+  max-width: 1800px;
+  margin: 50px auto;
+  padding: 20px;
+  gap: 30px;
+  border-radius: 15px; /* Rounded corners */
+  overflow: hidden; /* Contain children */
+  background-color: transparent; /* White background */
+  position: relative; /* For pseudo-elements */
+}
+
+.image-section {
+  flex: 1;
+  overflow: hidden; /* Ensure the image doesn't overflow */
+}
+
+.animated-image {
+  width: 100%;
+  height: auto; /* Maintain aspect ratio */
+  border-radius: 15px; /* Rounded corners */
+  transition: transform 0.5s ease;
+  object-fit: cover; /* Cover the entire section */
+  filter: brightness(0.9); /* Slightly dim the image */
+}
+
+.text-section {
+  flex: 1;
+  padding: 40px;
+  border-radius: 15px; /* Rounded corners */
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* Shadow */
+  position: relative; /* For the glowing effect */
+  transform: translateY(20px); /* Initial position for animation */
+  animation: fadeInUp 1s forwards; /* Animation */
+}
+
+.logo-container {
+  text-align: left; /* Center the logo */
+  margin-bottom: 25px; /* Spacing below the logo */
+}
+
+.logo {
+  width: 160px; /* Fixed width for the logo */
+  transition: transform 0.3s; /* Logo scale effect */
+  margin: -40px;
+  margin-left: -5px;
+}
+
+.logo:hover {
+  transform: scale(1.1); /* Scale up on hover */
+}
+.btn-primary {
+  background-color: #0077b6; /* Button primary color */
+  border-color: #0077b6; /* Button border color */
+}
+.mat-mdc-unelevated-button {
+  border-radius: 6px; /* Example: new border radius */
+}
+.title {
+  color: var(--header-color); /* Primary brand color */
+  margin-bottom: 15px; /* Spacing below the heading */
+  font-size: 2.5rem; /* Larger heading size */
+  font-weight: bold; /* Bold font */
+  text-transform: uppercase; /* Uppercase letters */
+  letter-spacing: 1.5px; /* Space out letters */
+}
+
+p {
+  color: var(--text-color); /* Darker text for the paragraph */
+  line-height: 1.6; /* Improved readability */
+  font-size: 1.1rem; /* Set font size */
+  margin-bottom: 20px; /* Spacing below the paragraph */
+}
+
+
+
+.call-to-action {
+  margin-top: 20px; /* Spacing above the button */
+  text-align: left; /* Center the button */
+}
+
+.cta-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background-color: #007bff; /* Bootstrap primary color */
+  color: white; /* White text */
+  text-decoration: none; /* Remove underline */
+  border-radius: 5px; /* Rounded corners */
+  transition: background-color 0.3s, transform 0.3s; /* Transition effect */
+  font-size: 1rem; /* Button font size */
+}
+
+
+
+/* Animation */
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scroll-triggered animation */
+.about-us-container {
+  transform: translateY(20px); /* Initial position */
+  animation: none; /* No animation by default */
+}
+
+.about-us-container.scrolled {
+  animation: fadeInUp 1s forwards; /* Trigger animation */
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .about-us-container {
+    flex-direction: column; /* Stack the elements on smaller screens */
+  }
+
+  .text-section {
+    padding: 20px; /* Less padding on smaller screens */
+  }
+
+  h2 {
+    font-size: 2rem; /* Smaller heading on mobile */
+  }
+
+  p {
+    font-size: 1rem; /* Smaller paragraph text */
+  }
+}
+
+/* Glowing effect for the text section */
+.text-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--ueber-uns-color); /* Light blue glow */
+  border-radius: 15px; /* Match the container */
+  z-index: -1; /* Behind the text section */
+  filter: blur(10px); /* Blurry glow effect */
+  transition: opacity 0.3s ease;
+}
+
+.text-section:hover::before {
+  opacity: 1; /* Show glow effect on hover */
+}

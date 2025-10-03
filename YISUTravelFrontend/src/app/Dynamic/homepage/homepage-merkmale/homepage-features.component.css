@@ -1,0 +1,135 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between; /* Gleichmäßige Verteilung der Boxen */
+}
+
+@media (max-width: 991px) {
+  .col-md-3 {
+    flex: 1 1 100%; /* Vollständige Breite auf kleineren Bildschirmen */
+  }
+  .row {
+    padding-top: 0px!important;
+  }
+  .row > * {
+    padding-bottom: 20px;
+  }
+
+
+}
+
+
+.lc-block {
+  display: flex; /* Use Flexbox inside eacwdh block */
+  flex-direction: column; /* Stack items vertically */
+  justify-content: space-between; /* Distribute space evenly */
+  height: 100%; /* Ensure they fill the available height */
+}
+
+/* Optional: Ensure uniformity for all columns */
+.flex-fill {
+  flex: 1; /* Make columns flexible */
+}
+
+
+.title {
+  font-weight: 600;
+  font-size: 2.5rem; /* Größe nach Bedarf anpassen */
+  color: var(--header-color); /* Farbänderung nach Wunsch */
+  margin: 0; /* Entfernt zusätzlichen Abstand */
+  transition: color 0.3s ease; /* Sanfte Farbänderung */
+}
+
+
+.description {
+  font-size: 16px; /* Schriftgröße nach Bedarf anpassen */
+  color: var(--text-color); /* Textfarbe */
+  margin-top: 10px; /* Abstand zum Titel */
+  font-weight: 500;
+  font-family: Roboto, "Helvetica Neue", sans-serif;;
+}
+
+@media (max-width: 768px) {
+  .container, .container-md, .container-sm {
+    max-width: 100%;
+  }
+}
+
+
+.lc-block {
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background: var(--lc-block-color);
+  padding: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.lc-block:hover {
+  transform: translateY(-15px) rotateZ(-1deg) scale(1.05);
+  box-shadow: 0 16px 24px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(145deg, var(--lc-block-hover1-color), var(--lc-block-hover2-color));
+}
+
+.lc-block:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 300%;
+  height: 100%;
+  background: var(--lc-block-hover3-color);
+  transform: skewX(-15deg);
+  transition: 0.4s ease-in-out;
+  z-index: -1;
+}
+
+.lc-block:hover:before {
+  left: 100%;
+  transform: skewX(-15deg);
+}
+
+.lc-block svg {
+  transition: fill 0.4s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  fill: var(--header-color);
+}
+
+.lc-block:hover svg {
+  fill: #17b1f1;
+  transform: rotate(15deg) scale(1.2);
+}
+
+
+.lc-block h4 {
+  transition: color 0.4s ease, text-shadow 0.4s ease;
+  color: var(--lc-block-header-color);
+}
+
+.lc-block:hover h4 {
+  color: #17b1f1;
+  text-shadow: 2px 2px 5px rgba(23, 177, 241, 0.6);
+}
+
+.lc-block p {
+  transition: color 0.4s ease, transform 0.4s ease;
+  color: var(--lc-block-text-color);
+
+  transform: translateY(0);
+}
+
+.lc-block:hover p {
+  color: var(--text-color);
+  transform: translateY(-5px);
+}
+
+.lc-block:hover {
+  transform: translateY(-10px) rotateZ(2deg) scale(1.05);
+  cursor: default;
+}
+
+/* Additional effect: Border "glow" on hover */
+.lc-block:hover {
+  border: 2px solid rgba(23, 177, 241, 0.5);
+}
+

@@ -1,0 +1,76 @@
+.background {
+  padding: 40px 20px;
+  box-shadow: var(--shadow-color); /* Schatten für den Hintergrund */
+}
+
+.text {
+  font-family: 'Noto Sans', sans-serif;
+  font-weight: 400;
+  color: var(--text-color);
+}
+
+.container {
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.secondpart {
+  margin-top: 100px;
+  @media (max-width: 768px) {
+    margin-top: 45px;
+    margin-bottom: 40px;
+  }
+  margin-bottom: 80px;
+}
+
+h1 {
+  font-size: 2.125rem; /* Schriftgröße */
+  font-family: 'Montserrat', sans-serif; /* Schriftart */
+  color: var(--text-color); /* Schriftfarbe */
+  font-weight: 700;
+  text-align: left; /* Links ausgerichtete Überschrift */
+}
+
+li {
+  color: var(--text-color); /* Überschrift Farben */
+}
+
+h2, h3 {
+  color: var(--text-color); /* Überschrift Farben */
+  text-align: left; /* Links ausgerichtete Überschrift */
+}
+
+.divider {
+  border: 0;
+  margin: 20px 0; /* Abstand oben und unten */
+  border-top: 4px solid #3aa5b8; /* Erhöht die Dicke des Dividers */
+}
+
+.img-fluid {
+  box-shadow: var(--shadow-color); /* Intensiverer Schatten um das Bild */
+  transition: transform 0.3s ease; /* Sanfte Transformation */
+}
+
+.img-fluid:hover {
+  transform: scale(1.05); /* Bildvergrößerung beim Hover */
+}
+
+
+ul {
+  list-style-type: none; /* Keine Aufzählungszeichen */
+  padding: 0;
+}
+
+ul li {
+  padding: 3px;
+  font-weight: 500;
+  border-radius: 5px; /* Abgerundete Ecken für die Listenelemente */
+}
+
+.spancolor {
+  color: #3aa5b8; /* Farbe des Textes der Listenelemente */
+  width: 10px; /* Breite des Bindestrichs */
+  display: inline-block; /* Damit der Abstand zwischen dem Bindestrich und dem Text gleich bleibt */
+  margin-right: 5px; /* Abstand zwischen Bindestrich und Text */
+}
+

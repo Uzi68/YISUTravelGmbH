@@ -1,0 +1,78 @@
+.gradient-custom {
+  background-blend-mode: screen, color-dodge, overlay, difference, normal;
+  height: 660px;
+  @media (max-width: 992px) {
+    height: 1000px;
+  }
+}
+.carousel-indicators {
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+}
+h2 {
+  font-size: 2.5rem; /* Schriftgröße anpassen */
+  font-weight: bold; /* Schriftart fett machen */
+  margin-bottom: 20px; /* Abstand nach unten */
+  font-family: Roboto,Helvetica Neue,sans-serif;
+  @media (max-width: 768px) {
+    font-size: 1.8rem;
+  }
+}
+
+.card {
+  background-color: var(--background-color);
+}
+
+.carousel-control-prev-icon {
+  color: white;
+}
+
+p {
+  color: var(--text-color);
+}
+
+h4 {
+  color: var(--text-color);
+}
+
+.carousel-item {
+  align-items: center; /* Vertikale Zentrierung */
+}
+
+
+.gradient-custom {
+  background: var(--customer-ratings-color);
+  color: white;
+}
+
+.card {
+  border: none; /* Keine Rahmen */
+  border-radius: 15px; /* Abgerundete Ecken */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Schatten für Tiefe */
+}
+
+
+.rating {
+  justify-content: left;
+}
+@media (max-width: 991px) {
+  .rating ul {
+  justify-content: center;
+  }
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  background-color: #000000e5; /* Weißer Hintergrund */
+  background-size: 50%;
+  border-radius: 50%; /* Optional: Kreisform */
+  width: 3rem;
+  height: 3rem;
+}
+
+
+
+.rounded-circle {
+  border: 3px solid white; /* Weißer Rand um das Bild */
+}

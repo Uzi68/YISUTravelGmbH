@@ -1,0 +1,230 @@
+<div class="chatbot-container">
+  <!-- Floating Button -->
+  <button
+    class="chatbot-button"
+    [class.open]="isOpen()"
+    (click)="toggleChat()"
+    aria-label="Chat öffnen">
+    <img src="/livechat/livechat_icon.png" alt="Chat Icon" class="chat-icon-img" />
+    @if (unreadMessages() > 0) {
+      <span class="unread-badge">{{ unreadMessages() }}</span>
+    }
+  </button>
+
+  <!-- Chat Window -->
+  @if (isOpen()) {
+    <div class="chatbot-window" @windowAnimation (@windowAnimation.done)="onAnimationDone()">
+      <div class="chatbot-header">
+        <div class="header-content">
+          <div class="avatar">
+            <img src="/livechat/livechat_icon.png" alt="Chatbot" width="40" height="40">
+          </div>
+          <div class="header-text">
+            <h3>YISU Travel-Assistent</h3>
+            <p>Online</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="toggleChat()" aria-label="Chat schließen">
+          <img src="/livechat/close.svg" alt="Close" width="24" height="24">
+        </button>
+      </div>
+
+      <div class="chatbot-messages" #messageContainer>
+        <!-- Welcome Message -->
+        @if (messages().length === 0) {
+          <div class="welcome-message">
+            <div class="welcome-bubble">
+              <p>Hallo! 👋 Wie kann ich Ihnen helfen?</p>
+              <div class="quick-questions">
+                @for (question of quickQuestions(); track question) {
+                  <button mat-stroked-button (click)="sendMessage(question)">
+                    {{ question }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Messages -->
+        @for (message of messages(); track $index) {
+          <div class="message"
+               [class.user-message]="message.from === 'user'"
+               [class.bot-message]="message.from === 'bot'">
+            <div class="message-bubble">
+              <span>{{ message.text }}</span>
+              <span class="message-time">{{ message.timestamp | date:'HH:mm' }}</span>
+            </div>
+          </div>
+        }
+
+        <!-- Typing Indicator -->
+        @if (isTyping()) {
+          <div class="typing-indicator">
+            <div class="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        }
+
+        <!-- Waiting for human support -->
+        @if (isWaitingForHuman()) {
+          <div class="waiting-notice">
+            <mat-icon>schedule</mat-icon>
+            <span>Warten auf Mitarbeiter...</span>
+          </div>
+        }
+      </div>
+
+      <!-- Human Support Form -->
+      @if (showHumanSupportForm()) {
+        <div class="human-support-form" @formAnimation>
+          <h4>Bitte Kontaktdaten eingeben</h4>
+          <div class="form-group">
+            <input [(ngModel)]="humanSupportData.name"
+                   placeholder="Name*" required>
+          </div>
+          <div class="form-group">
+            <input [(ngModel)]="humanSupportData.email"
+                   type="email" placeholder="Email">
+          </div>
+          <div class="form-group">
+            <input [(ngModel)]="humanSupportData.phone"
+                   placeholder="Telefon*" required>
+          </div>
+          <div class="form-actions">
+            <button (click)="cancelHumanSupport()">Abbrechen</button>
+            <button (click)="submitHumanSupport()"
+                    [disabled]="!humanSupportData.name || !humanSupportData.phone">
+              Absenden
+            </button>
+          </div>
+        </div>
+      }
+      @else {
+        <!-- Normal Input Area -->
+        <div class="chatbot-input" [class.disabled]="isWaitingForHuman()">
+          <form (ngSubmit)="sendMessage()" class="input-form">
+            <input matInput
+                   #inputField
+                   [ngModel]="inputMessage()"
+                   (ngModelChange)="inputMessage.set($event)"
+                   name="message"
+                   placeholder="Ihre Nachricht..."
+                   autocomplete="off"
+                   class="input-field"
+                   [disabled]="isWaitingForHuman()">
+            <button mat-icon-button
+                    type="submit"
+                    [disabled]="inputMessage().trim().length === 0 || isWaitingForHuman()"
+                    class="send-button">
+              <img src="/livechat/sending.svg" alt="Send" width="24" height="24">
+            </button>
+          </form>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+
+
+
+Funktionierend:
+<div class="chatbot-container">
+  <!-- Floating Button -->
+  <button
+          class="chatbot-button"
+          [class.open]="isOpen()"
+          (click)="toggleChat()"
+          aria-label="Chat öffnen">
+    <img src="/livechat/livechat_icon.png" alt="Chat Icon" class="chat-icon-img" />
+    @if (unreadMessages() > 0) {
+      <span class="unread-badge">{{ unreadMessages() }}</span>
+    }
+  </button>
+
+  <!-- Chat Window -->
+  @if (isOpen()) {
+    <div class="chatbot-window" @windowAnimation (@windowAnimation.done)="onAnimationDone()">
+      <div class="chatbot-header">
+        <div class="header-content">
+          <div class="avatar">
+            <img src="/livechat/livechat_icon.png" alt="Chatbot" width="40" height="40">
+          </div>
+          <div class="header-text">
+            <h3>YISU Travel-Assistent</h3>
+            <p>Online</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="toggleChat()" aria-label="Chat schließen">
+          <img src="/livechat/close.svg" alt="Close" width="24" height="24">
+        </button>
+      </div>
+
+      <div class="chatbot-messages" #messageContainer>
+        <!-- Welcome Message -->
+        @if (messages().length === 0) {
+          <div class="welcome-message">
+            <div class="welcome-bubble">
+              <p>Hallo! 👋 Wie kann ich Ihnen helfen?</p>
+              <div class="quick-questions">
+                @for (question of quickQuestions(); track question) {
+                  <button mat-stroked-button (click)="sendMessage(question)">
+                    {{ question }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Messages -->
+        @for (message of messages(); track $index) {
+          <div class="message"
+               [class.user-message]="message.from === 'user'"
+               [class.bot-message]="message.from === 'bot'">
+            <div class="message-bubble">
+              <span>{{ message.text }}</span>
+              <span class="message-time">{{ message.timestamp | date:'HH:mm' }}</span>
+            </div>
+          </div>
+        }
+
+        <!-- Typing Indicator -->
+        @if (isTyping()) {
+          <div class="typing-indicator">
+            <div class="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        }
+
+      </div>
+
+      <!-- Input Area -->
+      <div class="chatbot-input">
+        <form (ngSubmit)="sendMessage()" class="input-form">
+          <input matInput
+                 #inputField
+                 [ngModel]="inputMessage()"
+                 (ngModelChange)="inputMessage.set($event)"
+                 name="message"
+                 placeholder="Ihre Nachricht..."
+                 autocomplete="off"
+                 class="input-field">
+          <button mat-icon-button
+                  type="submit"
+                  [disabled]="inputMessage().trim().length === 0"
+                  class="send-button">
+            <img src="/livechat/sending.svg" alt="Send" width="24" height="24">
+          </button>
+        </form>
+      </div>
+    </div>
+  }
+</div>

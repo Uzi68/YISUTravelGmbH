@@ -1,0 +1,53 @@
+.scroll-to-top {
+  position: fixed;
+  bottom: 25px;
+  right: 115px;
+  z-index: 9999; /* Ensures the button appears above other elements */
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+
+@media (max-width: 768px) {
+  .scroll-to-top {
+    bottom: 5px;
+    right: 100px
+  }
+}
+
+/* Apply the animation when the button is visible */
+.show-scrollTop {
+  opacity: 1;  /* Fully visible */
+  transform: scale(1);  /* Full size */
+  pointer-events: all;  /* Enable interaction when visible */
+}
+
+/* Style for the button itself */
+.scroll-to-top button {
+  background-color: #0052d0;  /* Blue background */
+  color: white;
+  border: none;
+  border-radius: 50%;  /* Round button */
+  width: 60px;  /* Set width to ensure a perfect round button */
+  height: 60px;  /* Set height to match width */
+  display: flex;
+  justify-content: center;
+  align-items: center;  /* Center the icon inside the button */
+  font-size: 20px;  /* Icon size */
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);  /* Soft shadow */
+  transition: background-color 0.2s ease, transform 0.2s ease;  /* Smooth hover effects */
+}
+
+/* Button hover effect */
+.scroll-to-top button:hover {
+  background-color: #0066d3;  /* Darker blue */
+  transform: scale(1.1);  /* Slightly enlarge the button */
+}
+
+/* Style for the icon inside the button */
+.scroll-to-top i {
+  font-size: 25px;  /* Icon size */
+}

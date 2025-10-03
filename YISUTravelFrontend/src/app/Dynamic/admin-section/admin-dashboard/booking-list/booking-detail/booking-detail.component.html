@@ -1,0 +1,169 @@
+<div class="container-fluid" *ngIf="!loading; else loadingTemplate">
+  <!-- Back Button -->
+  <button class="btn btn-outline-secondary mb-3" (click)="goBack()">
+    ← Zurück zur Übersicht
+  </button>
+
+  @if (error) {
+    <div class="alert alert-danger" role="alert">
+      {{ error }}
+    </div>
+  }
+
+  @if (booking) {
+    <div class="row">
+      <!-- Main Booking Info -->
+      <div class="col-md-8">
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Buchungsdetails</h5>
+            <span [class]="getStatusClass(booking.status)" class="fs-6">
+              {{ getStatusText(booking.status) }}
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Buchungsnummer</label>
+                  <p class="form-control-plaintext">{{ booking.booking_number }}</p>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Destination</label>
+                  <p class="form-control-plaintext">{{ booking.destination }}</p>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Reisedatum</label>
+                  <p class="form-control-plaintext">{{ booking.travel_date | date:'dd.MM.yyyy' }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Personen</label>
+                  <p class="form-control-plaintext">{{ booking.persons }}</p>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Preis</label>
+                  <p class="form-control-plaintext">{{ booking.price | currency:'EUR' }}</p>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Status ändern</label>
+                  <div class="d-flex gap-2">
+                    <select class="form-select" [(ngModel)]="booking.status">
+                      <option *ngFor="let option of statusOptions" [value]="option.value">
+                        {{ option.label }}
+                      </option>
+                    </select>
+                    <button class="btn btn-primary" (click)="updateStatus()" [disabled]="updatingStatus">
+                      @if (updatingStatus) {
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                      } @else {
+                        Speichern
+                      }
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visitor Information -->
+        @if (booking.visitor) {
+          <div class="card mb-4">
+            <div class="card-header">
+              <h6 class="mb-0">Besucherinformationen</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-2">
+                    <label class="form-label fw-bold">Name</label>
+                    <p class="form-control-plaintext">{{ booking.visitor.name }}</p>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label fw-bold">E-Mail</label>
+                    <p class="form-control-plaintext">{{ booking.visitor.email }}</p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-2">
+                    <label class="form-label fw-bold">Telefon</label>
+                    <p class="form-control-plaintext">{{ booking.visitor.phone }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Chat Information -->
+        @if (booking.chat) {
+          <div class="card">
+            <div class="card-header">
+              <h6 class="mb-0">Chat Informationen</h6>
+            </div>
+            <div class="card-body">
+              <div class="mb-2">
+                <label class="form-label fw-bold">Chat ID</label>
+                <p class="form-control-plaintext">{{ booking.chat.id }}</p>
+              </div>
+              <div class="mb-2">
+                <label class="form-label fw-bold">Nachrichten</label>
+                <p class="form-control-plaintext">{{ booking.chat.messages?.length || 0 }} Nachrichten</p>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Metadata and System Info -->
+      <div class="col-md-4">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="mb-0">Systeminformationen</h6>
+          </div>
+          <div class="card-body">
+            <div class="mb-2">
+              <label class="form-label fw-bold">Session ID</label>
+              <p class="form-control-plaintext text-truncate">{{ booking.session_id }}</p>
+            </div>
+            <div class="mb-2">
+              <label class="form-label fw-bold">Erstellt am</label>
+              <p class="form-control-plaintext">{{ booking.created_at | date:'dd.MM.yyyy HH:mm' }}</p>
+            </div>
+            <div class="mb-2">
+              <label class="form-label fw-bold">Aktualisiert am</label>
+              <p class="form-control-plaintext">{{ booking.updated_at | date:'dd.MM.yyyy HH:mm' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metadata -->
+        @if (booking.metadata) {
+          <div class="card">
+            <div class="card-header">
+              <h6 class="mb-0">Metadaten</h6>
+            </div>
+            <div class="card-body">
+              <pre class="bg-light p-3 rounded">{{ booking.metadata | json }}</pre>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else if (!loading) {
+    <div class="alert alert-warning" role="alert">
+      Buchung nicht gefunden
+    </div>
+  }
+</div>
+
+<ng-template #loadingTemplate>
+  <div class="text-center mt-5">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2">Buchungsdetails werden geladen...</p>
+  </div>
+</ng-template>

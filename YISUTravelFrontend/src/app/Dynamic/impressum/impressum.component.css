@@ -1,0 +1,51 @@
+body {
+  background-color: #f8f9fa; /* Helles Grau für den Hintergrund der Seite */
+  font-family: 'Arial', sans-serif; /* Schriftart für die gesamte Seite */
+}
+
+h1 {
+  margin-bottom: 40px;
+  color: #333; /* Dunkles Grau für den Titel */
+  font-size: 2.5rem; /* Größere Schriftgröße für den Titel */
+  text-align: left; /* Titel zentrieren */
+  font-weight: 800;
+}
+
+.card-body {
+  padding: 30px; /* Padding für die Karte */
+  color: #171616;
+  font-weight: 500;
+}
+
+
+.cardmobile {
+  padding-left: 1.2rem;
+  padding-right: 1.5rem;
+}
+
+#yisutravel {
+  font-size: 2rem
+}
+
+h2 {
+  color: #292929; /* Dunklerer Grauton für Unterüberschriften */
+  font-size: 1.5rem; /* Schriftgröße für Unterüberschriften */
+  margin-top: 20px; /* Abstand nach oben */
+  border-bottom: 1px solid #dee2e6; /* Unterstreichung für Unterüberschriften */
+  padding-bottom: 10px; /* Abstand unter den Unterüberschriften */
+}
+
+p {
+  line-height: 1.6; /* Zeilenhöhe für besseren Lesefluss */
+  margin-bottom: 15px; /* Abstand zwischen den Absätzen */
+  color: #292929; /* Dunklerer Grauton für den Text */
+}
+
+a {
+  color: #0077b6; /* Bootstrap-Linkfarbe */
+  text-decoration: none; /* Keine Unterstreichung bei normalen Links */
+}
+
+a:hover {
+  text-decoration: underline; /* Unterstreicht Links beim Hover */
+}

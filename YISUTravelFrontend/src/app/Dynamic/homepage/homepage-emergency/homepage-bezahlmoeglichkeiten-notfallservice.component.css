@@ -1,0 +1,206 @@
+
+.whatsapp-link {
+  color: white; /* WhatsApp-Grün */
+  text-decoration: none; /* Entfernt die Unterstreichung */
+  font-weight: bold; /* Macht den Text fett */
+}
+
+.whatsapp-link:hover {
+  text-decoration: underline; /* Unterstreicht den Text beim Hover */
+}
+
+/* Container Adjustment */
+.container {
+  width: 100%!important;
+  max-width: 1320px;
+  margin: auto; /* Center the container */
+}
+
+
+.container {
+  margin-top: 100px;
+  margin-bottom: 100px;
+}
+
+
+.emergency-section {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  border-radius: 15px;
+  overflow: hidden; /* Rounded corners on both sections */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 40px;
+}
+
+/* Left Section (Emergency Info) */
+.left-section {
+  background: var(--customer-ratings-color);
+  padding: 30px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  color: white;
+}
+
+.icon-wrapper {
+  margin-right: 20px;
+}
+
+.phone-icon {
+  font-size: 60px;
+  color: white;
+  animation: pulse 2s infinite; /* Animation for the phone icon */
+}
+
+.emergency-content {
+  text-align: left;
+}
+
+.emergency-heading {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.emergency-text {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.emergency-contact a {
+  font-size: 22px;
+  font-weight: 600;
+  color: white;
+  text-decoration: underline;
+}
+
+/* Right Section (Icons) */
+.right-section {
+  background: var(--background-color); /* Soft gradient background */
+  flex: 1;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Light shadow for depth */
+}
+
+/* Heading */
+.connect-heading {
+  font-size: 26px;
+  color: var(--text-color);
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-align: center; /* Centered heading */
+}
+
+/* Contact Icons */
+.contact-icons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%; /* Full width for two boxes */
+  gap: 20px; /* Space between the boxes */
+}
+
+/* Icon Box Styles */
+.icon-box {
+  flex: 1; /* Each box takes equal space */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px; /* Padding inside the box */
+  border-radius: 10px; /* Rounded corners */
+  text-align: center; /* Centered text */
+  transition: transform 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Light shadow */
+}
+
+/* WhatsApp Box Styles */
+.whatsapp-icon-box {
+  background-color: #25D366; /* WhatsApp green */
+  color: white;
+  text-decoration: none;
+}
+
+.whatsapp-icon-box:hover {
+  transform: scale(1.05); /* Slight grow effect on hover */
+}
+
+/* Phone Box Styles */
+.phone-icon-box {
+  background-color: #e0e0e0; /* Soft grey */
+  color: #333;
+  text-decoration: none;
+}
+
+.phone-icon-box:hover {
+  transform: scale(1.05); /* Slight grow effect on hover */
+}
+
+.icon-box i {
+  font-size: 36px; /* Adjusted icon size */
+  margin-bottom: 4px; /* Reduced margin */
+}
+
+.icon-box span {
+  font-size: 14px; /* Text size for icons */
+  font-weight: 600;
+  color: inherit; /* Inherit color */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .emergency-section {
+    flex-direction: column; /* Stack sections vertically on small screens */
+  }
+
+  .left-section,
+  .right-section {
+    width: 100%; /* Full width for both sections */
+    padding: 20px; /* Adjust padding for smaller screens */
+  }
+
+  .icon-wrapper {
+    margin-right: 10px; /* Smaller margin for icons */
+  }
+
+  .emergency-heading {
+    font-size: 24px; /* Smaller heading size */
+  }
+
+  .emergency-text {
+    font-size: 18px; /* Smaller text size */
+  }
+
+  .emergency-contact a {
+    font-size: 20px; /* Smaller link size */
+  }
+
+  .connect-heading {
+    font-size: 22px; /* Adjusted heading size */
+  }
+
+  .contact-icons {
+    flex-direction: column; /* Stack the boxes on smaller screens */
+    gap: 10px; /* Smaller gap between boxes */
+    width: 100%; /* Full width for contact icons */
+  }
+
+  .icon-box {
+    width: 100%; /* Full width for each box */
+    padding: 30px; /* Adjusted padding */
+  }
+
+  .icon-box i {
+    font-size: 28px; /* Smaller icon size */
+  }
+
+  .icon-box span {
+    font-size: 20px; /* Smaller text size */
+  }
+}

@@ -1,0 +1,69 @@
+.carousel-item img {
+  width: 100%; /* Make the image fill the column */
+  height: 80px; /* Set a fixed height for all images */
+  object-fit: cover; /* Maintain aspect ratio while filling the space */
+  margin: auto; /* Center the image in the column */
+  margin-bottom: 50px;
+}
+
+.lc-block img {
+  width: 100%; /* Make images take full width */
+  height: 150px; /* Set fixed height */
+  object-fit: contain; /* Ensure the entire image is visible */
+  margin: auto; /* Center the images */
+  @media (max-width: 768px) {
+    height: 100px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    height: 1100px;
+  }
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  border-radius: 50%; /* Optional: make the arrow backgrounds circular */
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+  filter: invert(1); /* Invert colors for white arrows */
+}
+
+.carousel-indicators [data-bs-target] {
+  background-color: #4a4a4a; /* Set the color for the indicators */
+}
+
+.carousel-indicators .active {
+  background-color: #0077b6;
+}
+
+.carousel-indicators {
+  bottom: -35px;
+}
+
+.flug-title {
+  font-family: "Roboto",Sans-serif;
+  font-size: 2.5rem;
+  font-weight: 500;
+  color: var(--text-color); /* Ein schöner Blauton für die Überschrift */
+  margin-bottom: 20px;
+  @media (max-width: 400px) {
+    font-size: 2rem;
+  }
+}
+
+.descriptionflug {
+  color: var(--text-color);
+  font-weight: 400;
+  font-size: 1.5em;
+  font-family: "Roboto",Sans-serif;
+}
+
+.lead {
+  font-family: "Roboto",Sans-serif;
+  font-size: 1.3em;
+  color: var(--text-color);
+}
