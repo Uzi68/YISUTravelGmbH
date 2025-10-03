@@ -139,15 +139,23 @@ export class ChatUiComponent implements AfterViewInit {
           });
         }
 
-        // ✅ Verbesserte Tab-Title Logik mit Null-Checks
+        // ✅ Verbesserte Tab-Title Logik mit Null-Checks und Original-Titel
         if (!isOpen && messages && messages.length > 0) {
           const unreadCount = this.unreadMessages();
           if (unreadCount > 0 && document) {
-            document.title = `(${unreadCount}) Chat - Yisu Travel`;
+            // ✅ Zeige Unread-Counter im Tab-Titel wenn Chat geschlossen
+            document.title = `(${unreadCount}) YISU Travel GmbH`;
+          } else if (document) {
+            // ✅ Kein Unread-Counter, zurück zum Original-Titel
+            document.title = 'YISU Travel GmbH';
           }
         } else if (isOpen && document) {
+          // ✅ Chat ist offen: Zeige "Chat - Yisu Travel" und reset Counter
           document.title = 'Chat - Yisu Travel';
           this.unreadMessages.set(0);
+        } else if (!isOpen && document) {
+          // ✅ Chat geschlossen, keine Nachrichten: Original-Titel
+          document.title = 'YISU Travel GmbH';
         }
       });
     }
@@ -275,6 +283,11 @@ export class ChatUiComponent implements AfterViewInit {
   }
 
   ngOnInit() {
+    // ✅ Tab-Titel auf Original setzen beim Laden
+    if (this.isBrowser && document) {
+      document.title = 'YISU Travel GmbH';
+    }
+
     // Session ID initialisieren oder laden
     this.sessionId = localStorage.getItem('session_id');
     if (!this.sessionId) {
@@ -848,9 +861,19 @@ export class ChatUiComponent implements AfterViewInit {
     this.chatbotService.setChatOpenState(this.isOpen());
 
     if (this.isOpen()) {
+      // ✅ Chat öffnen
       this.unreadMessages.set(0);
-      document.title = 'Chat - YISU Travel';
+      document.title = 'Chat - Yisu Travel';
       this.loadChatHistory();
+    } else {
+      // ✅ Chat schließen - Titel zurücksetzen
+      if (this.unreadMessages() > 0) {
+        // Mit Unread-Counter
+        document.title = `(${this.unreadMessages()}) YISU Travel GmbH`;
+      } else {
+        // Ohne Unread-Counter
+        document.title = 'YISU Travel GmbH';
+      }
     }
   }
   testVisitorNotifications(): void {

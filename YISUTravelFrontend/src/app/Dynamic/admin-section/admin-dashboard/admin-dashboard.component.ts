@@ -129,7 +129,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   showPermissionDialog = signal(false);
   permissionDialogShown = false;
 
-
+  // ✅ NEU: Tab-Titel Management
+  private isTabVisible = true;
+  private isWindowFocused = true;
+  private totalUnreadCount = 0;
 
 // Neue Properties für Filter
   searchQuery = '';
@@ -161,6 +164,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
+    // ✅ Tab-Titel initialisieren
+    this.updateTabTitle();
+    this.setupTabVisibilityTracking();
+
     this.loadActiveChats().then(() => {
       this.filterChats();
     });
@@ -1696,6 +1703,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     this.addMessageToChat(sessionId, messageData);
     this.cdRef.detectChanges();
+
+    // ✅ NEU: Tab-Titel aktualisieren nach neuer Nachricht
+    this.updateTabTitle();
   }
 
   private cleanupPusherSubscriptions() {
@@ -1828,6 +1838,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       this.setupPusherListeners();
       this.cdRef.detectChanges();
+
+      // ✅ NEU: Tab-Titel nach Laden der Chats aktualisieren
+      this.updateTabTitle();
 
     } catch (error) {
       console.error('Error loading chats:', error);
@@ -2043,6 +2056,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         next: (visitor) => (this.visitor = visitor),
         error: (err) => console.error('Error fetching visitor details:', err)
       });
+
+      // ✅ NEU: Tab-Titel aktualisieren nach Chat-Auswahl
+      this.updateTabTitle();
     });
   }
 
@@ -2694,6 +2710,64 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
 
+  /**
+   * ✅ NEU: Tab-Visibility-Tracking einrichten
+   */
+  private setupTabVisibilityTracking(): void {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        this.isTabVisible = !document.hidden;
+        console.log('Admin Dashboard tab visibility changed:', this.isTabVisible ? 'visible' : 'hidden');
+
+        // Tab-Titel aktualisieren wenn Tab wieder sichtbar wird
+        if (this.isTabVisible) {
+          this.updateTabTitle();
+        }
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => {
+        this.isWindowFocused = true;
+        console.log('Admin Dashboard window focused');
+        this.updateTabTitle();
+      });
+
+      window.addEventListener('blur', () => {
+        this.isWindowFocused = false;
+        console.log('Admin Dashboard window blurred');
+      });
+    }
+  }
+
+  /**
+   * ✅ NEU: Gesamtzahl ungelesener Nachrichten berechnen
+   */
+  private calculateTotalUnreadCount(): number {
+    return this.activeChats.reduce((total, chat) => {
+      return total + (chat.unreadCount || 0);
+    }, 0);
+  }
+
+  /**
+   * ✅ NEU: Tab-Titel aktualisieren
+   */
+  private updateTabTitle(): void {
+    if (typeof document === 'undefined') return;
+
+    this.totalUnreadCount = this.calculateTotalUnreadCount();
+
+    // ✅ KORRIGIERT: Zeige Unread-Counter auch wenn Tab sichtbar ist
+    if (this.totalUnreadCount > 0) {
+      // Ungelesene Nachrichten vorhanden
+      document.title = `(${this.totalUnreadCount}) Livechat Dashboard`;
+    } else {
+      // Keine ungelesenen Nachrichten
+      document.title = 'Livechat Dashboard';
+    }
+
+    console.log('Tab title updated:', document.title, '(unread:', this.totalUnreadCount, ')');
+  }
 }
 
 interface Chat {
