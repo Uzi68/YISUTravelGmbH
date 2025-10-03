@@ -437,17 +437,31 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     this.sortDebounce = setTimeout(() => {
       this.activeChats.sort((a, b) => {
-        // 1. Ungelesene Nachrichten priorisieren
-        if (a.unreadCount !== b.unreadCount) {
-          return b.unreadCount - a.unreadCount; // Absteigend: mehr unread zuerst
+        // ✅ NEUE SORTIERUNG: WhatsApp-Style mit Prioritäten
+
+        // 1. HÖCHSTE PRIORITÄT: Chat-Anfragen (status: 'human' & nicht zugewiesen)
+        const aIsRequest = a.status === 'human' && !a.assigned_to;
+        const bIsRequest = b.status === 'human' && !b.assigned_to;
+
+        if (aIsRequest && !bIsRequest) return -1; // a ist Anfrage, kommt zuerst
+        if (!aIsRequest && bIsRequest) return 1;  // b ist Anfrage, kommt zuerst
+
+        // Beide sind Anfragen → nach Zeit sortieren (älteste Anfrage zuerst = FIFO)
+        if (aIsRequest && bIsRequest) {
+          return new Date(a.lastMessageTime).getTime() - new Date(b.lastMessageTime).getTime();
         }
 
-        // 2. Neue Chats (isNew) priorisieren
-        if (a.isNew !== b.isNew) {
-          return a.isNew ? -1 : 1; // isNew=true kommt zuerst
+        // 2. NIEDRIGSTE PRIORITÄT: Geschlossene Chats nach unten
+        if (a.status === 'closed' && b.status !== 'closed') return 1;  // a nach unten
+        if (a.status !== 'closed' && b.status === 'closed') return -1; // b nach unten
+
+        // Beide geschlossen → nach Zeit sortieren (neueste zuerst)
+        if (a.status === 'closed' && b.status === 'closed') {
+          return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
         }
 
-        // 3. Nach Zeit sortieren (neueste zuerst)
+        // 3. NORMALE PRIORITÄT: Zugewiesene/aktive Chats → nach letzter Nachricht sortieren (neueste zuerst)
+        // Das ist wie WhatsApp: Wer zuletzt geschrieben hat, kommt nach oben
         return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
       });
 
