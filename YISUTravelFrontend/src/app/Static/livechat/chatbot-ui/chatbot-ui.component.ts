@@ -212,6 +212,9 @@ export class ChatUiComponent implements AfterViewInit {
 
           // Pusher Listener neu einrichten für Echtzeit-Kommunikation
           this.setupPusherListener();
+
+          // ✅ NEU: Benachrichtigungen aktivieren wenn Kunde auf "Ja" klickt
+          this.requestNotificationPermission();
         }
 
         /*
@@ -1941,6 +1944,53 @@ export class ChatUiComponent implements AfterViewInit {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  /**
+   * ✅ NEU: Benachrichtigungs-Erlaubnis anfordern
+   * Wird aufgerufen wenn Kunde auf "Ja" bei Escalation klickt
+   */
+  private async requestNotificationPermission(): Promise<void> {
+    if (!this.visitorNotification.isSupported) {
+      console.log('Browser unterstützt keine Benachrichtigungen');
+      return;
+    }
+
+    console.log('🔔 Requesting notification permission for visitor...');
+
+    try {
+      const enabled = await this.visitorNotification.enableNotifications();
+
+      if (enabled) {
+        console.log('✅ Visitor notifications enabled');
+
+        // Bestätigungsnachricht im Chat anzeigen
+        setTimeout(() => {
+          this.messages.update(m => [...m, {
+            from: 'system',
+            text: '🔔 Benachrichtigungen aktiviert! Sie werden über neue Nachrichten informiert, auch wenn Sie diese Seite verlassen.',
+            timestamp: new Date(),
+            isSystemMessage: true
+          }]);
+          this.scrollToBottom();
+        }, 500);
+      } else {
+        console.log('❌ Visitor notifications denied or not granted');
+
+        // Info-Nachricht wenn abgelehnt
+        setTimeout(() => {
+          this.messages.update(m => [...m, {
+            from: 'system',
+            text: 'ℹ️ Benachrichtigungen wurden nicht aktiviert. Sie können den Chat weiterhin normal nutzen.',
+            timestamp: new Date(),
+            isSystemMessage: true
+          }]);
+          this.scrollToBottom();
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+    }
   }
 }
 
