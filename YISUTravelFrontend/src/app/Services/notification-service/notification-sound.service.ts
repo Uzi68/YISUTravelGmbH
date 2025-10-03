@@ -286,10 +286,10 @@ export class NotificationSoundService {
   async notifyNewMessage(senderName: string, message: string, sessionId?: string): Promise<void> {
     if (this.isCurrentlyMuted()) return;
 
-    // ✅ GEÄNDERT: Sound IMMER abspielen (auch wenn Tab aktiv ist)
-    this.playNotificationSoundForce();
+    // ✅ Sound nur wenn Tab inaktiv
+    this.playNotificationSoundIfTabInactive();
 
-    // ✅ GEÄNDERT: Browser-Notification IMMER anzeigen (auch wenn Tab aktiv ist)
+    // ✅ Browser-Notification nur wenn Tab inaktiv
     // ✅ WICHTIG: Eindeutiger Tag mit Timestamp, damit mehrere Notifications angezeigt werden
     const uniqueTag = `message-${sessionId || 'unknown'}-${Date.now()}`;
     await this.showNotification({
@@ -303,7 +303,7 @@ export class NotificationSoundService {
         sessionId: sessionId,
         route: '/admin/dashboard'
       }
-    }, true); // ✅ GEÄNDERT: forceShow = true (immer anzeigen)
+    }, false); // forceShow = false (nur wenn Tab inaktiv)
   }
 
   async notifyTransfer(fromAgent: string, chatInfo: string, sessionId: string): Promise<void> {
@@ -329,10 +329,10 @@ export class NotificationSoundService {
   async notifyNewChatRequest(customerName: string, sessionId: string): Promise<void> {
     if (this.isCurrentlyMuted()) return;
 
-    // ✅ GEÄNDERT: Sound IMMER abspielen (auch wenn Tab aktiv ist)
-    this.playNotificationSoundForce();
+    // ✅ Sound nur wenn Tab inaktiv
+    this.playNotificationSoundIfTabInactive();
 
-    // ✅ GEÄNDERT: Eindeutiger Tag mit Timestamp
+    // ✅ Eindeutiger Tag mit Timestamp
     const uniqueTag = `chat-request-${sessionId}-${Date.now()}`;
     await this.showNotification({
       title: '🔔 Neue Chat-Anfrage',
@@ -346,7 +346,7 @@ export class NotificationSoundService {
         customerName: customerName,
         route: '/admin/dashboard'
       }
-    }, true); // ✅ GEÄNDERT: forceShow = true (immer anzeigen)
+    }, false); // forceShow = false (nur wenn Tab inaktiv)
   }
 
   // ✅ KOMPLETT ÜBERARBEITETE notify-Methode
