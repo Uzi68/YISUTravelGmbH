@@ -437,7 +437,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     this.sortDebounce = setTimeout(() => {
       this.activeChats.sort((a, b) => {
-        // ✅ NEUE SORTIERUNG: WhatsApp-Style mit Prioritäten
+        // ✅ VERBESSERTE SORTIERUNG: WhatsApp-Style mit Prioritäten
 
         // 1. HÖCHSTE PRIORITÄT: Chat-Anfragen (status: 'human' & nicht zugewiesen)
         const aIsRequest = a.status === 'human' && !a.assigned_to;
@@ -451,17 +451,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           return new Date(a.lastMessageTime).getTime() - new Date(b.lastMessageTime).getTime();
         }
 
-        // 2. NIEDRIGSTE PRIORITÄT: Geschlossene Chats nach unten
-        if (a.status === 'closed' && b.status !== 'closed') return 1;  // a nach unten
-        if (a.status !== 'closed' && b.status === 'closed') return -1; // b nach unten
-
-        // Beide geschlossen → nach Zeit sortieren (neueste zuerst)
-        if (a.status === 'closed' && b.status === 'closed') {
-          return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
-        }
-
-        // 3. NORMALE PRIORITÄT: Zugewiesene/aktive Chats → nach letzter Nachricht sortieren (neueste zuerst)
-        // Das ist wie WhatsApp: Wer zuletzt geschrieben hat, kommt nach oben
+        // 2. ALLE ANDEREN CHATS: Nach letzter Nachrichtenzeit sortieren (neueste zuerst)
+        // ✅ WICHTIG: Geschlossene Chats werden auch nach Zeit sortiert, nicht separiert
+        // Das bedeutet: Ein gerade geschlossener Chat bleibt oben, rutscht nur mit der Zeit nach unten
         return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
       });
 
@@ -866,6 +858,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
         this.assignmentStatuses.delete(sessionId);
 
+        // ✅ NEU: Chat-Liste neu sortieren (Event-Message = neue Aktivität)
+        this.sortActiveChats();
+
         this.cdRef.detectChanges();
       }
       return;
@@ -916,6 +911,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
 
         this.assignmentStatuses.delete(sessionId);
+
+        // ✅ NEU: Chat-Liste neu sortieren (Event-Message = neue Aktivität)
+        this.sortActiveChats();
+
         this.cdRef.detectChanges();
       }
       return;
@@ -1465,6 +1464,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
 
       // WICHTIG: removeClosedChat() NICHT aufrufen!
+
+      // ✅ NEU: Chat-Liste neu sortieren (Event-Message = neue Aktivität)
+      this.sortActiveChats();
+
       this.cdRef.detectChanges();
 
       // ✅ NEU: Tab-Titel aktualisieren (unreadCount bleibt erhalten)
