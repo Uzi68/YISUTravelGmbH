@@ -762,7 +762,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             assigned_agent: chatData.to_agent_name,
             lastMessage: `Chat an ${chatData.to_agent_name} übertragen`,
             lastMessageTime: new Date(chatData.last_message_time),
-            unreadCount: 0,
+            // ✅ KORRIGIERT: unreadCount nicht zurücksetzen bei Transfer
+            // unreadCount: 0,
             status: 'in_progress',
             isNew: false
           };
@@ -815,6 +816,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       if (chatIndex !== -1) {
         const wasMyChat = this.activeChats[chatIndex].assigned_to === this.currentAgent.id;
+        const isSelectedChat = this.selectedChat?.id === sessionId;
 
         const updatedChat = {
           ...this.activeChats[chatIndex],
@@ -823,7 +825,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           assigned_agent: '',
           lastMessage: chatData.last_message || 'Chat beendet',
           lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: 0
+          // ✅ KORRIGIERT: unreadCount erhöhen wenn nicht ausgewählt
+          unreadCount: isSelectedChat ? this.activeChats[chatIndex].unreadCount : (this.activeChats[chatIndex].unreadCount || 0) + 1
         };
 
         this.activeChats[chatIndex] = updatedChat;
@@ -870,6 +873,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           closedMessage += ` (Grund: ${closeReason})`;
         }
 
+        const isSelectedChat = this.selectedChat?.id === sessionId;
+
         const updatedChat = {
           ...this.activeChats[chatIndex],
           status: 'closed',
@@ -877,7 +882,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           assigned_agent: '',
           lastMessage: closedMessage,  // ✅ Mit Grund
           lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: 0
+          // ✅ KORRIGIERT: unreadCount erhöhen wenn nicht ausgewählt
+          unreadCount: isSelectedChat ? this.activeChats[chatIndex].unreadCount : (this.activeChats[chatIndex].unreadCount || 0) + 1
         };
 
         this.activeChats[chatIndex] = updatedChat;
@@ -1421,7 +1427,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       chat.lastMessage = endMessage;
       chat.lastMessageTime = new Date();
-      chat.unreadCount = 0; // Unread count zurücksetzen
+
+      // ✅ KORRIGIERT: unreadCount erhöhen wenn Chat nicht ausgewählt ist
+      const isSelectedChat = this.selectedChat?.id === sessionId;
+      if (!isSelectedChat) {
+        chat.unreadCount = (chat.unreadCount || 0) + 1;
+        console.log(`Chat ended - unreadCount increased to ${chat.unreadCount} for session ${sessionId}`);
+      }
 
       const chatIndex = this.activeChats.findIndex(c => c.id === sessionId);
       if (chatIndex !== -1) {
@@ -1440,6 +1452,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       // WICHTIG: removeClosedChat() NICHT aufrufen!
       this.cdRef.detectChanges();
+
+      // ✅ NEU: Tab-Titel aktualisieren (unreadCount bleibt erhalten)
+      this.updateTabTitle();
     });
   }
 
