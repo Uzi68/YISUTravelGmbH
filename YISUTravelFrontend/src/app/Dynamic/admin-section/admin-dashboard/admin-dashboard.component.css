@@ -412,6 +412,7 @@
   flex-direction: column;
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   background: #fff;
 }
 
@@ -446,7 +447,6 @@
 
 .chat-item:hover {
   background: #f8fafc;
-  transform: translateX(2px);
 }
 
 /* Hover states for assigned-to-me chats */
@@ -1542,7 +1542,6 @@
 
 .permission-features li:hover {
   background: #e8f4fd;
-  transform: translateX(4px);
 }
 
 .permission-features .feature-icon {
