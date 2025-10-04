@@ -545,10 +545,10 @@ textarea {
   .chatbot-window {
     width: calc(100vw - 20px);
     max-width: 400px;
-    height: 550px;
+    height: 650px;
     max-height: calc(100dvh - 100px);
     border-radius: 20px;
-    bottom: 90px;
+    bottom: 110px;
     right: 10px;
     position: fixed;
   }
@@ -588,8 +588,8 @@ textarea {
 
   /* Chat Icon kleiner auf Mobile */
   .chat-icon-img {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
   }
 }
 
