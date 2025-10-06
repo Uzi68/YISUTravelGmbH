@@ -363,6 +363,7 @@ class ChatbotController extends Controller
         $chat = Chat::where('session_id', $sessionId)->first();
 
         // ✅ NEUE LOGIK: Wenn Chat "closed" ist, reaktivieren als Bot-Chat
+        $reactivationMessage = null;
         if ($chat && $chat->status === 'closed') {
             $chat->update([
                 'status' => 'bot',
@@ -377,12 +378,17 @@ class ChatbotController extends Controller
                 'context' => json_encode([])
             ]);
 
-            // System-Nachricht für Reaktivierung
+            // System-Nachricht für Reaktivierung (ERST ERSTELLEN, SPÄTER BROADCASTEN)
             $reactivationMessage = Message::create([
                 'chat_id' => $chat->id,
                 'from' => 'system',
-                'text' => 'Chat wurde reaktiviert - Chatbot ist wieder aktiv',
-                'message_type' => 'chat_reactivated'
+                'text' => 'Sie sprechen jetzt wieder mit unserem YISU Travel-Assistenten',
+                'message_type' => 'chat_reactivated',
+                'metadata' => [
+                    'previous_status' => 'closed',
+                    'new_status' => 'bot',
+                    'reactivated_at' => now()
+                ]
             ]);
 
             // Admin-Dashboard über Reaktivierung informieren
@@ -402,13 +408,7 @@ class ChatbotController extends Controller
                 ]
             ]));
 
-            // Broadcasting für Echtzeit-Update
-            broadcast(new MessagePusher($reactivationMessage, $sessionId, [
-                'assigned_to' => null,
-                'agent_name' => null,
-                'status' => 'bot',
-                'chat_reactivated' => true
-            ]))->toOthers();
+            // Broadcasting wird später zusammen mit User-Nachricht gemacht (siehe unten)
         }
 
         // Wenn Chat bereits eskaliert wurde (aber nicht closed), Nachricht direkt weiterleiten
@@ -499,6 +499,8 @@ class ChatbotController extends Controller
 
         // Automatischen Escalation Prompt als richtige Nachricht senden
         $escalationMessage = null;
+        $botMessage = null;  // ✅ Initialisierung hinzugefügt
+
         if ($shouldEscalate && !in_array($chat->status, ['human', 'in_progress'])) {
             // Keine normale Bot-Nachricht speichern, wenn Escalation erkannt wurde
             // Nur die Escalation-Prompt-Nachricht erstellen
@@ -563,21 +565,44 @@ class ChatbotController extends Controller
             ];
         }
 
-        // Broadcasting mit korrekter Type-Prüfung
+        // Broadcasting mit korrekter Type-Prüfung - IN RICHTIGER REIHENFOLGE
         try {
+            // 1. Reaktivierungsnachricht NUR an Admin (Customer bekommt sie aus Response)
+            if ($reactivationMessage && $reactivationMessage->id) {
+                broadcast(new MessagePusher($reactivationMessage, $sessionId, [
+                    'assigned_to' => null,
+                    'agent_name' => null,
+                    'status' => 'bot',
+                    'chat_reactivated' => true
+                ]))->toOthers(); // toOthers() = nur Admin, nicht Customer
+            }
+
+            // 2. Dann User-Nachricht (nur an Admin)
             if ($userMessage && $userMessage->id) {
                 broadcast(new MessagePusher($userMessage, $sessionId))->toOthers();
             }
 
+            // 3. Dann Bot-Antwort (nur an Customer)
             if ($botMessage && $botMessage->id) {
                 broadcast(new MessagePusher($botMessage, $sessionId))->toOthers();
             }
 
+            // 4. Zuletzt Escalation-Nachricht (nur an Admin - Customer bekommt sie aus Response)
             if ($escalationMessage && $escalationMessage->id) {
                 broadcast(new MessagePusher($escalationMessage, $sessionId))->toOthers();
             }
         } catch (\Exception $e) {
             \Log::error('Broadcasting error: ' . $e->getMessage());
+        }
+
+        // ✅ Reaktivierungsnachricht VOR alle anderen Nachrichten einfügen
+        if ($reactivationMessage) {
+            array_unshift($responseMessages, [
+                'from' => 'system',
+                'text' => $reactivationMessage->text,
+                'timestamp' => $reactivationMessage->created_at,
+                'message_type' => 'chat_reactivated'
+            ]);
         }
 
         return response()->json([
@@ -589,7 +614,8 @@ class ChatbotController extends Controller
             'status' => $chat->status,
             'new_messages' => $responseMessages,
             'messages' => $responseMessages,
-            'reply' => $reply
+            'reply' => $reply,
+            'chat_reactivated' => $reactivationMessage !== null
         ]);
     }
 
@@ -1061,7 +1087,9 @@ class ChatbotController extends Controller
                             'text' => $message->text,
                             'timestamp' => $message->created_at,
                             'from' => $message->from,
-                            'read' => $message->reads()->where('user_id', $user->id)->exists()
+                            'read' => $message->reads()->where('user_id', $user->id)->exists(),
+                            'message_type' => $message->message_type,
+                            'metadata' => $message->metadata
                         ];
 
                         // Add attachment if exists
@@ -1352,7 +1380,9 @@ class ChatbotController extends Controller
             $messageData = [
                 'from' => $message->from,
                 'text' => $message->text,
-                'timestamp' => $message->created_at->toDateTimeString()
+                'timestamp' => $message->created_at->toDateTimeString(),
+                'message_type' => $message->message_type,
+                'metadata' => $message->metadata
             ];
 
             // Add attachment if exists
@@ -1518,6 +1548,19 @@ class ChatbotController extends Controller
                 'metadata' => $systemMessage->metadata
             ]);
 
+            // Freundliche Abschiedsnachricht für den Visitor (nach Agent-Chat-Ende)
+            $farewellMessage = Message::create([
+                'chat_id' => $chat->id,
+                'from' => 'bot',
+                'text' => 'Vielen Dank für die Nutzung unseres Supports. Sie können jederzeit einen neuen Chat beginnen.',
+                'message_type' => 'chat_farewell',
+                'metadata' => [
+                    'ended_by' => 'agent',
+                    'agent_name' => $agent->name,
+                    'farewell_sent_at' => now()
+                ]
+            ]);
+
             // Assignment-Daten für Broadcasting
             $assignmentData = [
                 'assigned_to' => null,
@@ -1530,6 +1573,7 @@ class ChatbotController extends Controller
             ];
 
             broadcast(new MessagePusher($systemMessage, $sessionId, $assignmentData))->toOthers();
+            broadcast(new MessagePusher($farewellMessage, $sessionId, $assignmentData))->toOthers();
             broadcast(new ChatEnded($chat, 'agent', $agent->name))->toOthers();
 
             event(new AllChatsUpdate([
@@ -1592,7 +1636,25 @@ class ChatbotController extends Controller
             'chat_id' => $chat->id,
             'from' => 'system',
             'text' => 'Chat wurde vom Benutzer beendet',
-            'message_type' => 'chat_ended'
+            'message_type' => 'chat_ended',
+            'metadata' => [
+                'ended_by' => 'visitor',
+                'previous_agent_id' => $assignedAgent?->id,
+                'previous_agent_name' => $assignedAgent?->name,
+                'ended_at' => now()
+            ]
+        ]);
+
+        // Freundliche Abschiedsnachricht für den Visitor
+        $farewellMessage = Message::create([
+            'chat_id' => $chat->id,
+            'from' => 'bot',
+            'text' => 'Vielen Dank für die Nutzung unseres Supports. Sie können jederzeit einen neuen Chat beginnen.',
+            'message_type' => 'chat_farewell',
+            'metadata' => [
+                'ended_by' => 'visitor',
+                'farewell_sent_at' => now()
+            ]
         ]);
 
         // ✅ KORRIGIERT: Assignment-Daten für Broadcasting
@@ -1607,6 +1669,7 @@ class ChatbotController extends Controller
 
         // ✅ WICHTIG: Message Broadcasting für Chat-Teilnehmer
         broadcast(new MessagePusher($systemMessage, $sessionId, $assignmentData))->toOthers();
+        broadcast(new MessagePusher($farewellMessage, $sessionId, $assignmentData))->toOthers();
 
         // ✅ NEU: Separates ChatEnded Event für bessere Kontrolle
         broadcast(new ChatEnded($chat, 'visitor', $assignedAgent?->name))->toOthers();
@@ -1877,12 +1940,15 @@ class ChatbotController extends Controller
             // Rest der Methode bleibt gleich...
 
             // User-Response als Message speichern
-            Message::create([
+            $userResponseMessage = Message::create([
                 'chat_id' => $chat->id,
                 'from' => 'user',
                 'text' => $responseText,
                 'message_type' => 'escalation_response'
             ]);
+
+            // ✅ Broadcasting der User-Response damit Admin sie sieht
+            broadcast(new MessagePusher($userResponseMessage, $chat->session_id));
 
             $botReply = '';
 
@@ -1944,8 +2010,8 @@ class ChatbotController extends Controller
                 'message_type' => 'escalation_reply'
             ]);
 
-            // Broadcasting der Antwort
-            broadcast(new MessagePusher($replyMessage, $chat->session_id))->toOthers();
+            // ✅ Broadcasting der Antwort OHNE toOthers() - damit auch der Visitor die Message erhält
+            broadcast(new MessagePusher($replyMessage, $chat->session_id));
 
             return response()->json([
                 'success' => true,
@@ -2099,6 +2165,51 @@ class ChatbotController extends Controller
             'assigned_agent_name' => $chat->assignedTo?->name,
             'can_write' => true, // Anonyme Benutzer können immer schreiben
             'is_escalated' => in_array($chat->status, ['human', 'in_progress'])
+        ]);
+    }
+
+    /**
+     * Notification Permission Status speichern
+     */
+    public function saveNotificationStatus(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'session_id' => 'required|string',
+            'permission_granted' => 'required|boolean'
+        ]);
+
+        $sessionId = $validated['session_id'];
+        $permissionGranted = $validated['permission_granted'];
+
+        $chat = Chat::where('session_id', $sessionId)->first();
+
+        if (!$chat) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chat nicht gefunden'
+            ], 404);
+        }
+
+        // System-Nachricht nur wenn Permission NICHT gewährt wurde
+        if (!$permissionGranted) {
+            $notificationMessage = Message::create([
+                'chat_id' => $chat->id,
+                'from' => 'system',
+                'text' => 'ℹ️ Benachrichtigungen wurden nicht aktiviert. Sie können den Chat weiterhin normal nutzen.',
+                'message_type' => 'notification_status',
+                'metadata' => [
+                    'permission_granted' => false,
+                    'timestamp' => now()
+                ]
+            ]);
+
+            // Broadcasting
+            broadcast(new MessagePusher($notificationMessage, $sessionId))->toOthers();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification status saved'
         ]);
     }
 

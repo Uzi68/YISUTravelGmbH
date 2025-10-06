@@ -137,6 +137,9 @@
                [class.system-message]="message.from === 'system'">
             <div class="message-bubble"
                  [class.system-bubble]="message.from === 'system'">
+              @if (message.from === 'system') {
+                <mat-icon class="system-icon">info</mat-icon>
+              }
               <span>{{ message.text }}</span>
 
               <!-- File Attachment Display -->
@@ -193,17 +196,18 @@
                 </div>
               }
 
-              <div class="message-meta">
-                <!-- Message Type Badge -->
-                @if (message.from === 'system') {
-                  <span class="message-badge system">System</span>
-                } @else if (message.from === 'agent') {
-                  <span class="message-badge agent">{{ assignedAgentName() || 'Agent' }}</span>
-                } @else if (message.from === 'bot') {
-                  <span class="message-badge bot">Bot</span>
-                }
-                <span class="message-time">{{ message.timestamp | date:'HH:mm' }}</span>
-              </div>
+              <!-- Message Meta NUR für non-system Messages -->
+              @if (message.from !== 'system') {
+                <div class="message-meta">
+                  <!-- Message Type Badge -->
+                  @if (message.from === 'agent') {
+                    <span class="message-badge agent">{{ assignedAgentName() || 'Agent' }}</span>
+                  } @else if (message.from === 'bot') {
+                    <span class="message-badge bot">Bot</span>
+                  }
+                  <span class="message-time">{{ message.timestamp | date:'HH:mm' }}</span>
+                </div>
+              }
             </div>
           </div>
         }

@@ -235,18 +235,9 @@ export class ChatUiComponent implements AfterViewInit {
           }]);
         }*/
 
-        // Bei Akzeptierung: Warten-Nachricht nach kurzer Verzögerung
+        // Bei Akzeptierung: Chat-Status überwachen für Agent-Zuweisung
+        // ✅ "Bitte warten"-Nachricht wird jetzt vom Backend gesendet
         if (response === 'accept') {
-          setTimeout(() => {
-            this.messages.update(m => [...m, {
-              from: 'system',
-              text: 'Bitte warten Sie einen Moment, ein Mitarbeiter wird sich gleich um Sie kümmern...',
-              timestamp: new Date(),
-              isSystemMessage: true
-            }]);
-          }, 1500);
-
-          // Chat-Status überwachen für Agent-Zuweisung
           this.monitorChatStatus();
         }
 
@@ -796,9 +787,30 @@ export class ChatUiComponent implements AfterViewInit {
               from: msg.from,
               text: msg.text,
               timestamp: new Date(msg.timestamp || Date.now()),
+              message_type: msg.message_type,
+              metadata: msg.metadata,
               attachment: msg.has_attachment ? msg.attachment : undefined
             })));
             console.log('Messages with attachments:', this.messages().filter(m => m.attachment));
+
+            // ✅ WICHTIG: Escalation-Prompt erkennen und Buttons anzeigen
+            const escalationPrompt = response.messages.find((msg: any) =>
+              msg.message_type === 'escalation_prompt' && msg.metadata?.is_automatic
+            );
+
+            if (escalationPrompt) {
+              console.log('🚨 Escalation prompt found in history, showing buttons');
+              this.showEscalationOptions.set(true);
+              this.currentEscalationPrompt.set({
+                prompt_id: escalationPrompt.metadata?.escalation_prompt_id || null,
+                is_automatic: true,
+                is_manual: false,
+                options: escalationPrompt.metadata?.options || [
+                  { text: 'Ja, gerne', value: 'accept' },
+                  { text: 'Nein, danke', value: 'decline' }
+                ]
+              });
+            }
           }
         },
         error: (err) => console.error('Error loading chat history:', err)
@@ -928,17 +940,14 @@ export class ChatUiComponent implements AfterViewInit {
       return;
     }
 
-    // ✅ Bot-Chat: Lokale Nachrichten hinzufügen OHNE auf Broadcasting zu warten
+    // ✅ Bot-Chat: Lokale Nachrichten hinzufügen
     this.isTyping.set(true);
 
-    // Sofort User-Nachricht zur UI hinzufügen
     const userMessage = {
       from: 'user',
       text: msg,
       timestamp: new Date()
     };
-
-    this.messages.update(m => [...m, userMessage]);
 
     const sendMethod = this.isAuthenticated ?
         this.chatbotService.sendMessage(msg) :
@@ -950,6 +959,22 @@ export class ChatUiComponent implements AfterViewInit {
 
         if (response.is_in_booking_process !== undefined) {
           this.isInBookingProcess.set(response.is_in_booking_process);
+        }
+
+        // ✅ Wenn Chat reaktiviert wurde, ALLE Nachrichten aus Response verwenden (inkl. User-Nachricht)
+        if (response.chat_reactivated && response.new_messages) {
+          response.new_messages.forEach((msg: any) => {
+            const timestamp = new Date(msg.timestamp || Date.now());
+            this.messages.update(m => [...m, {
+              from: msg.from,
+              text: msg.text,
+              timestamp: timestamp,
+              message_type: msg.message_type
+            }]);
+          });
+        } else {
+          // Normal: User-Nachricht hinzufügen
+          this.messages.update(m => [...m, userMessage]);
         }
 
         if (response.status === 'human') {
@@ -975,9 +1000,9 @@ export class ChatUiComponent implements AfterViewInit {
           return;
         }
 
-        // ✅ WICHTIG: Bot-Nachrichten direkt hinzufügen (ohne auf Broadcasting zu warten)
-// In der response Verarbeitung:
-        if (response.new_messages && response.new_messages.length > 0) {
+        // ✅ WICHTIG: Bot-Nachrichten direkt hinzufügen (nur wenn NICHT reaktiviert)
+        // Bei Reaktivierung wurden alle Nachrichten bereits oben hinzugefügt
+        if (!response.chat_reactivated && response.new_messages && response.new_messages.length > 0) {
           response.new_messages.forEach((msg: any) => {
             const timestamp = new Date(msg.timestamp || Date.now());
 
@@ -1065,11 +1090,21 @@ export class ChatUiComponent implements AfterViewInit {
         chatStatus: this.chatStatus()
       });
 
-      // ✅ WICHTIG: Bot-Nachrichten komplett ignorieren über Pusher
-      // Bot-Nachrichten werden nur über HTTP-Response verarbeitet
+      // ✅ WICHTIG: Bot-Nachrichten über Pusher nur in bestimmten Fällen verarbeiten
+      // Normale Bot-Nachrichten kommen über HTTP-Response
+      // ABER: escalation_reply und chat_farewell müssen über Pusher verarbeitet werden
       if (data.message?.from === 'bot') {
-        console.log('⚠️ Bot message received via Pusher - IGNORING (should come via HTTP only)');
-        return; // ✅ WICHTIG: Früh beenden für Bot-Nachrichten - NICHT zur UI hinzufügen!
+        const messageType = data.message?.message_type;
+
+        // Diese Bot-Message-Types MÜSSEN über Pusher verarbeitet werden
+        const allowedTypes = ['escalation_reply', 'chat_farewell', 'escalation_prompt'];
+
+        if (!allowedTypes.includes(messageType)) {
+          console.log('⚠️ Bot message received via Pusher - IGNORING (should come via HTTP only)');
+          return; // Nur normale Bot-Nachrichten ignorieren
+        }
+
+        console.log('✅ Bot message with type', messageType, '- Processing via Pusher');
       }
 
       // Chat-Ende durch Agent (unverändert)
@@ -1114,24 +1149,17 @@ export class ChatUiComponent implements AfterViewInit {
             notificationMessage
           );
 
-          // Follow-up Nachricht
-          setTimeout(() => {
-            this.messages.update(currentMessages => [
-              ...currentMessages,
-              {
-                from: 'bot',
-                text: 'Vielen Dank für die Nutzung unseres Supports. Sie können jederzeit einen neuen Chat beginnen.',
-                timestamp: new Date(),
-                showRestartOptions: true
-              }
-            ]);
-          }, 2000);
-
+          // ✅ "Vielen Dank"-Nachricht wird jetzt vom Backend gesendet
           this.scrollToBottom();
           return; // Wichtig: Beende hier
         }
 
         // Andere System-Nachrichten normal verarbeiten
+        // ABER: chat_reactivated ignorieren (kommt aus HTTP Response)
+        if (data.message.message_type === 'chat_reactivated') {
+          return;
+        }
+
         if (!this.isMessageDuplicate(data.message.text, 'system', timestamp)) {
           this.messages.update(currentMessages => [
             ...currentMessages,
@@ -1358,13 +1386,26 @@ export class ChatUiComponent implements AfterViewInit {
 
       // ✅ User-Nachrichten (ohne Notifications) - für Vollständigkeit
       else if (data.message && data.message.text && data.message.from === 'user') {
+        // User sollte seine EIGENEN Nachrichten NICHT via Pusher empfangen - sie kommen aus der HTTP Response
+        return;
+      }
+
+      // ✅ Bot-Nachrichten (nur erlaubte Types: escalation_reply, chat_farewell)
+      // WICHTIG: escalation_prompt wird NICHT via Pusher verarbeitet, nur aus Response!
+      else if (data.message && data.message.text && data.message.from === 'bot') {
         const messageTimestamp = new Date(data.message.created_at);
 
+        // ✅ Escalation-Prompts IGNORIEREN - kommen aus Response
+        if (data.message.message_type === 'escalation_prompt') {
+          console.log('⏭️ Skipping escalation_prompt from Pusher (comes from Response)');
+          return;
+        }
+
         if (!this.isMessageDuplicate(data.message.text, data.message.from, messageTimestamp)) {
-          console.log('💬 User message:', {
+          console.log('🤖 Bot message:', {
             text: data.message.text,
-            has_attachment: data.message.has_attachment,
-            attachment: data.message.attachment
+            message_type: data.message.message_type,
+            metadata: data.message.metadata
           });
 
           this.messages.update(currentMessages => [
@@ -1375,11 +1416,11 @@ export class ChatUiComponent implements AfterViewInit {
               timestamp: messageTimestamp,
               message_type: data.message.message_type,
               metadata: data.message.metadata,
-              attachment: data.message.has_attachment ? data.message.attachment : undefined
+              showRestartOptions: data.message.message_type === 'chat_farewell' // Für "Vielen Dank" Nachricht
             }
           ]);
 
-          console.log('User message added (no notification):', data.message.text.substring(0, 30));
+          console.log('Bot message added via Pusher:', data.message.message_type);
         }
       }
 
@@ -1984,32 +2025,24 @@ export class ChatUiComponent implements AfterViewInit {
     try {
       const enabled = await this.visitorNotification.enableNotifications();
 
+      // ✅ Backend-Call für persistente Speicherung
+      if (this.sessionId) {
+        this.chatbotService.saveNotificationStatus(this.sessionId, enabled).subscribe({
+          next: (response) => {
+            console.log('Notification status saved to backend:', response);
+          },
+          error: (err) => {
+            console.error('Error saving notification status:', err);
+          }
+        });
+      }
+
       if (enabled) {
         console.log('✅ Visitor notifications enabled');
-
-        // Bestätigungsnachricht im Chat anzeigen
-        setTimeout(() => {
-          this.messages.update(m => [...m, {
-            from: 'system',
-            text: '🔔 Benachrichtigungen aktiviert! Sie werden über neue Nachrichten informiert, auch wenn Sie diese Seite verlassen.',
-            timestamp: new Date(),
-            isSystemMessage: true
-          }]);
-          this.scrollToBottom();
-        }, 500);
+        // Backend sendet jetzt die Bestätigungsnachricht
       } else {
         console.log('❌ Visitor notifications denied or not granted');
-
-        // Info-Nachricht wenn abgelehnt
-        setTimeout(() => {
-          this.messages.update(m => [...m, {
-            from: 'system',
-            text: 'ℹ️ Benachrichtigungen wurden nicht aktiviert. Sie können den Chat weiterhin normal nutzen.',
-            timestamp: new Date(),
-            isSystemMessage: true
-          }]);
-          this.scrollToBottom();
-        }, 500);
+        // Backend sendet jetzt die Info-Nachricht
       }
     } catch (error) {
       console.error('Error requesting notification permission:', error);

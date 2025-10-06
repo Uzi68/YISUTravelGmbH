@@ -504,6 +504,16 @@ export class ChatbotService {
     });
   }
 
+  /**
+   * Notification Permission Status im Backend speichern
+   */
+  saveNotificationStatus(sessionId: string, permissionGranted: boolean): Observable<any> {
+    return this.http.post(`${this.apiUrl}/chatbot/notification-status`, {
+      session_id: sessionId,
+      permission_granted: permissionGranted
+    });
+  }
+
 
 }
 

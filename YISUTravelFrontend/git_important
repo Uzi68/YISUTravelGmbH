@@ -29,6 +29,7 @@ git reset --hard origin/main
 #Commit zurücksetzen, Dateien behalten (zur Bearbeitung)
 #Du nimmst genau den Commit-Hash, den du als „sauberen Stand“ haben willst.
 git reset --hard <commit-hash>
+git clean -fd
 
 #Nach pull request
 git branch -d <feature-branch>

@@ -930,7 +930,8 @@
 }
 
 .message.system {
-  justify-content: center;
+  justify-content: flex-start;
+  margin: 12px 0;
 }
 
 .message-content {
@@ -964,9 +965,61 @@
 }
 
 .message.system .message-content {
-  background: #f3f4f6;
-  color: #6b7280;
-  font-style: italic;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+  color: #1e40af !important;
+  font-style: normal !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  border: 1px solid #93c5fd !important;
+  border-left: 4px solid #3b82f6 !important;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.08) !important;
+  max-width: 85% !important;
+  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  justify-content: center !important;
+  padding: 12px 20px !important;
+  border-radius: 8px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  margin: 16px auto !important;
+}
+
+.message.system .message-content::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.system-message-icon-inline {
+  font-size: 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  color: #3b82f6 !important;
+  flex-shrink: 0;
+  opacity: 1;
+  animation: pulse-icon 2s ease-in-out infinite;
+}
+
+@keyframes pulse-icon {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.message.system .message-text {
+  line-height: 1.4;
+  letter-spacing: 0.01em;
 }
 
 .message-text {

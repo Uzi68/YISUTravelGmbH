@@ -411,8 +411,8 @@ class ChatAssignmentController extends Controller
                 ]
             ]);
 
-            // ✅ WICHTIG: Event für Echtzeit-Broadcasting
-            broadcast(new EscalationPromptSent($botMessage, $chat->session_id))->toOthers();
+            // ✅ WICHTIG: Event für Echtzeit-Broadcasting - OHNE toOthers() damit auch der Admin die Message sieht
+            broadcast(new EscalationPromptSent($botMessage, $chat->session_id));
 
             // ✅ Admin Dashboard Update
             event(new AllChatsUpdate([

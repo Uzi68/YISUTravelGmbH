@@ -1028,6 +1028,48 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // 🔄 Chat Reaktivierung (von closed zu bot)
+    if (data.type === 'chat_reactivated' && data.chat) {
+      const chatData = data.chat;
+      const sessionId = chatData.session_id;
+
+      const chatIndex = this.activeChats.findIndex(c => c.id === sessionId);
+
+      if (chatIndex !== -1) {
+        const updatedChat = {
+          ...this.activeChats[chatIndex],
+          status: 'bot',
+          assigned_to: null,
+          assigned_agent: '',
+          lastMessage: 'Chat reaktiviert - Chatbot aktiv',
+          lastMessageTime: new Date(chatData.last_message_time || Date.now())
+        };
+
+        this.activeChats[chatIndex] = updatedChat;
+
+        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
+        if (filteredIndex !== -1) {
+          this.filteredActiveChats[filteredIndex] = { ...updatedChat };
+        }
+
+        // Wenn dieser Chat gerade ausgewählt ist, auch selectedChat aktualisieren
+        if (this.selectedChat?.id === sessionId) {
+          this.selectedChat = Object.assign({}, this.selectedChat, {
+            status: 'bot',
+            assigned_to: null,
+            assigned_agent: '',
+            lastMessage: 'Chat reaktiviert - Chatbot aktiv',
+            lastMessageTime: new Date(chatData.last_message_time || Date.now())
+          });
+        }
+
+        this.sortActiveChats();
+        this.cdRef.detectChanges();
+      }
+
+      return;
+    }
+
     // ✅ Standard: Unbekannter Event-Type
     console.warn('Unhandled chat update type:', data.type, data);
   }
@@ -1459,7 +1501,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
 
       if (this.selectedChat?.id === sessionId) {
-        this.selectedChat = { ...chat };
+        // WICHTIG: Nachrichten beibehalten! Nur Status-Felder aktualisieren
+        this.selectedChat = Object.assign({}, this.selectedChat, {
+          status: 'closed',
+          assigned_to: null,
+          assigned_agent: '',
+          lastMessage: endMessage,
+          lastMessageTime: new Date()
+        });
         this.showToast(endMessage, 'info');
       }
 
@@ -1566,6 +1615,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const messageData = data.message;
     const sessionId = messageData.session_id;
 
+    // ✅ DEBUG: Log escalation messages
+    if (messageData?.message_type === 'escalation_prompt') {
+      console.log('🚨 ESCALATION PROMPT RECEIVED:', {
+        text: messageData.text,
+        from: messageData.from,
+        sessionId: sessionId,
+        metadata: messageData.metadata
+      });
+    }
+
     if (!sessionId) return;
 
     // 🔔 NOTIFICATION: Neue Nachricht von Visitor/User (NICHT von Bot oder Agent!)
@@ -1638,6 +1697,55 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         messageData.text,
         sessionId
       );
+    }
+
+    // ✅ WICHTIG: Nachricht zu allen relevanten Chats hinzufügen (für alle Message-Types)
+    if (messageData && messageData.text) {
+      console.log('💬 Processing message:', {
+        from: messageData.from,
+        text: messageData.text.substring(0, 50),
+        message_type: messageData.message_type,
+        sessionId: sessionId
+      });
+
+      const newMessage: Message = {
+        id: messageData.id || Date.now().toString(),
+        content: messageData.text,
+        from: messageData.from,
+        timestamp: new Date(messageData.created_at || Date.now()),
+        read: messageData.from === 'user' ? false : true,
+        isAgent: messageData.from === 'agent',
+        isBot: messageData.from === 'bot',
+        message_type: messageData.message_type,
+        metadata: messageData.metadata,
+        attachment: messageData.has_attachment ? messageData.attachment : undefined
+      };
+
+      // ✅ Zu activeChats hinzufügen
+      const activeChatIndex = this.activeChats.findIndex(c => c.id === sessionId);
+      if (activeChatIndex !== -1 && !this.activeChats[activeChatIndex].messages.some(m => m.id === newMessage.id)) {
+        this.activeChats[activeChatIndex].messages.push(newMessage);
+        console.log('✅ Message added to activeChats');
+      }
+
+      // ✅ Zu filteredActiveChats hinzufügen
+      const filteredChatIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
+      if (filteredChatIndex !== -1 && !this.filteredActiveChats[filteredChatIndex].messages.some(m => m.id === newMessage.id)) {
+        this.filteredActiveChats[filteredChatIndex].messages.push(newMessage);
+        console.log('✅ Message added to filteredActiveChats');
+      }
+
+      // ✅ Zu selectedChat hinzufügen (nur wenn dieser Chat ausgewählt ist)
+      if (this.selectedChat && this.selectedChat.id === sessionId) {
+        const isDuplicate = this.selectedChat.messages.some(m => m.id === newMessage.id);
+        if (!isDuplicate) {
+          this.selectedChat.messages.push(newMessage);
+          console.log('✅ Message added to selectedChat');
+          this.scrollToBottom();
+        } else {
+          console.log('⚠️ Duplicate message in selectedChat, skipping');
+        }
+      }
     }
 
     // ✅ Bot-Nachrichten werden ignoriert (keine Notifications)
@@ -1800,6 +1908,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       const response: any = await firstValueFrom(this.chatbotService.getActiveChats());
       const chats = Array.isArray(response) ? response : response.data;
 
+
       this.activeChats = await Promise.all(chats.map(async (chat: any) => {
         const isSelected = this.selectedChat?.id === chat.session_id;
         const isNew = chat.status === 'human' && !chat.assigned_agent;
@@ -1838,15 +1947,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           unreadCount: isSelected ? 0 : (chat.unread_count || 0),
           isOnline: chat.is_online || false,
           messages: Array.isArray(chat.messages)
-            ? chat.messages.map((msg: any) => ({
-              id: msg.id || Date.now().toString(),
-              content: msg.text || '',
-              timestamp: new Date(msg.timestamp || Date.now()),
-              isAgent: msg.from === 'agent',
-              isBot: msg.from === 'bot',
-              read: isSelected ? true : (msg.read || false),
-              attachment: msg.has_attachment ? msg.attachment : undefined
-            }))
+            ? chat.messages.map((msg: any) => {
+                return {
+                  id: msg.id || Date.now().toString(),
+                  content: msg.text || '',
+                  timestamp: new Date(msg.timestamp || Date.now()),
+                  isAgent: msg.from === 'agent',
+                  isBot: msg.from === 'bot',
+                  read: isSelected ? true : (msg.read || false),
+                  from: msg.from,
+                  message_type: msg.message_type,
+                  metadata: msg.metadata,
+                  attachment: msg.has_attachment ? msg.attachment : undefined
+                };
+              })
             : [],
           status: chat.status || '',
           assigned_agent: chat.assigned_agent || '',
@@ -2829,6 +2943,8 @@ interface Message {
   isBot: boolean;
   read: boolean;
   from?: string;
+  message_type?: string;
+  metadata?: any;
   attachment?: {
     id: number;
     file_name: string;

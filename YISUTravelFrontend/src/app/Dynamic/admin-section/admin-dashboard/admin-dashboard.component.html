@@ -365,6 +365,8 @@
            [class.system]="message.from === 'system'"
            @messageAnimation>
         <div class="message-content">
+          <!-- System Message Icon (nur Icon, kein Text) -->
+          <mat-icon class="system-message-icon-inline" *ngIf="message.from === 'system'">info</mat-icon>
           <div class="message-text">{{message.content | messageFilter: isAdmin}}</div>
 
           <!-- File Attachment Display -->
@@ -395,10 +397,11 @@
             </div>
           </div>
 
-          <div class="message-meta">
-            <!-- Badge für Bot/Agent/System -->
-            <div class="message-badge" *ngIf="message.isBot || message.isAgent || message.from === 'system'">
-              {{message.isBot ? 'Bot' : (message.from === 'system' ? 'System' : 'Agent')}}
+          <!-- Message Meta NUR für non-system Messages -->
+          <div class="message-meta" *ngIf="message.from !== 'system'">
+            <!-- Badge für Bot/Agent -->
+            <div class="message-badge" *ngIf="message.isBot || message.isAgent">
+              {{message.isBot ? 'Bot' : 'Agent'}}
             </div>
 
             <div class="message-time">
