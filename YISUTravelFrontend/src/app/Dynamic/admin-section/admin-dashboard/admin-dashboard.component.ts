@@ -623,27 +623,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       },
     );
 
-    // 8. AllChatsUpdate Listener (bereits erweitert)
-    const allChatsUpdateSub = this.pusherService.listenToChannel(
-      'all.active.chats',
-      'all.chats.update',
-      (data: any) => {
-        this.ngZone.run(() => {
-          console.log('All chats update received:', data);
-          this.handleAllChatsUpdate(data); // Diese Methode ist bereits vollständig überarbeitet
-        });
-      },
-    );
+    // ✅ HINWEIS: allChatsUpdateSub wurde entfernt, da chats.updated bereits alle Events verarbeitet
+    // Der chatUpdateSub leitet jetzt alle Events an handleAllChatsUpdate weiter
 
     this.pusherSubscriptions.push(
       { channel: 'all.active.chats', subscription: globalSub },
-      { channel: 'all.active.chats', subscription: chatUpdateSub },
+      { channel: 'all.active.chats', subscription: chatUpdateSub }, // ✅ Verarbeitet jetzt ALLE AllChatsUpdate Events
       { channel: 'all.active.chats', subscription: escalationSub },
       { channel: 'all.active.chats', subscription: assignmentSub },
       { channel: 'all.active.chats', subscription: unassignmentSub },
       { channel: 'all.active.chats', subscription: statusChangeSub },
-      { channel: 'all.active.chats', subscription: chatEndedSub },
-      { channel: 'all.active.chats', subscription: allChatsUpdateSub }
+      { channel: 'all.active.chats', subscription: chatEndedSub }
     );
 
     console.log('Pusher listeners setup complete with notification integration');
@@ -682,7 +672,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   private handleAllChatsUpdate(data: any): void {
-    console.log('All chats update received:', data);
+    console.log('🔔 All chats update received:', data);
+    console.log('🔔 Event type:', data.type);
 
     // 🔔 NOTIFICATION: Chat Transfer
     if (data.type === 'chat_transferred' && data.chat) {
@@ -1060,7 +1051,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       const chatIndex = this.activeChats.findIndex(c => c.id === sessionId);
 
       if (chatIndex !== -1) {
-        // ✅ Verwende zentrale Update-Methode
+        // ✅ Chat existiert - verwende zentrale Update-Methode
         this.updateChatEverywhere(sessionId, {
           status: 'bot',
           assigned_to: null,
@@ -1070,8 +1061,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           isNew: false
         });
 
+        console.log('✅ Chat reaktiviert - Status aktualisiert zu "bot"');
+
+        // ✅ Assignment Status zurücksetzen
+        this.assignmentStatuses.delete(sessionId);
+
         this.sortActiveChats();
         this.cdRef.detectChanges();
+      } else {
+        // ✅ Chat existiert nicht mehr in Liste (wurde vielleicht entfernt) - neu laden
+        console.log('⚠️ Chat nicht in activeChats gefunden - lade Chats neu');
+        this.loadActiveChats();
       }
 
       return;
@@ -1605,7 +1605,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   // ✅ NEUE Methode für Chat-Updates
   private handleChatUpdate(data: any): void {
-    console.log('Chat Update empfangen:', data);
+    console.log('Chat Update empfangen (chats.updated):', data);
+
+    // ✅ NEU: Leite ALLE Event-Typen an handleAllChatsUpdate weiter
+    // Dies ist der korrekte Handler für AllChatsUpdate Events vom Backend
+    if (data.type) {
+      console.log('🔄 Forwarding to handleAllChatsUpdate, type:', data.type);
+      this.handleAllChatsUpdate(data);
+      return;
+    }
+
+    // ✅ Legacy: Alte Chat-Escalation Logik (falls kein type vorhanden)
 
     if (data.type === 'chat_escalated' && data.chat) {
       const chatData = data.chat;
