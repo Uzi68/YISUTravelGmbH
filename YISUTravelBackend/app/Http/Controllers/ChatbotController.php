@@ -1054,14 +1054,20 @@ class ChatbotController extends Controller
         $user = Auth::user();
 
         // Agents sollen ALLE Chats sehen wie Admins
-        $query = Chat::with(['messages.reads', 'messages.attachments', 'user', 'assignedTo', 'visitor']);
+        $query = Chat::with(['messages.reads', 'messages.attachments', 'user', 'assignedTo', 'visitor', 'escalationPrompts.sentByAgent']);
 
         $chats = $query->orderBy('updated_at', 'desc')
             ->get()
             ->map(function ($chat) use ($user) {
                 $lastMessage = $chat->messages->last();
 
-                return [
+                // ✅ Letzten Escalation-Prompt laden (falls vorhanden)
+                $lastEscalationPrompt = $chat->escalationPrompts
+                    ->where('status', 'sent')
+                    ->sortByDesc('sent_at')
+                    ->first();
+
+                $chatData = [
                     'session_id' => $chat->session_id,
                     'chat_id' => $chat->id,
                     'customer_first_name' => $chat->visitor ? $chat->visitor->first_name : 'Anonymous',
@@ -1108,6 +1114,18 @@ class ChatbotController extends Controller
                         return $messageData;
                     })
                 ];
+
+                // ✅ Escalation-Prompt Daten hinzufügen (falls vorhanden)
+                if ($lastEscalationPrompt) {
+                    $chatData['escalation_prompt'] = [
+                        'id' => $lastEscalationPrompt->id,
+                        'sent_at' => $lastEscalationPrompt->sent_at,
+                        'sent_by_agent_id' => $lastEscalationPrompt->sent_by_agent_id,
+                        'sent_by_agent_name' => $lastEscalationPrompt->sentByAgent ? $lastEscalationPrompt->sentByAgent->name : 'Unknown'
+                    ];
+                }
+
+                return $chatData;
             });
 
         return response()->json([

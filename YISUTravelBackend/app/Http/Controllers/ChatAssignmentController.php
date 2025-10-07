@@ -447,7 +447,13 @@ class ChatAssignmentController extends Controller
                     'customer_last_name' => $chat->visitor?->last_name ?? '',
                     'last_message' => 'Escalation-Anfrage gesendet',
                     'last_message_time' => now(),
-                    'sent_by' => $agent->name
+                    'sent_by' => $agent->name,
+                    'escalation_prompt' => [
+                        'id' => $escalationPrompt->id,
+                        'sent_at' => $escalationPrompt->sent_at,
+                        'sent_by_agent_id' => $agent->id,
+                        'sent_by_agent_name' => $agent->name
+                    ]
                 ]
             ]));
 

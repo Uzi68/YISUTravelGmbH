@@ -363,10 +363,18 @@
            [class.customer]="!message.isAgent && !message.isBot"
            [class.bot]="message.isBot"
            [class.system]="message.from === 'system'"
+           [class.escalation]="message.message_type === 'escalation_prompt'"
            @messageAnimation>
         <div class="message-content">
           <!-- System Message Icon (nur Icon, kein Text) -->
           <mat-icon class="system-message-icon-inline" *ngIf="message.from === 'system'">info</mat-icon>
+
+          <!-- Escalation Badge -->
+          <div class="escalation-badge" *ngIf="message.message_type === 'escalation_prompt'">
+            <mat-icon>support_agent</mat-icon>
+            <span>Eskalationsanfrage gesendet</span>
+          </div>
+
           <div class="message-text">{{message.content | messageFilter: isAdmin}}</div>
 
           <!-- File Attachment Display -->
@@ -452,6 +460,13 @@
             <mat-icon>help_outline</mat-icon>
             Nachfragen
           </button>
+
+          <!-- Cooldown Counter -->
+          <div *ngIf="!canSendEscalationPrompt(selectedChat) && selectedChat.status === 'bot' && getEscalationCooldownText(selectedChat)"
+               class="escalation-cooldown">
+            <mat-icon>schedule</mat-icon>
+            <span>Bis zur nächsten Anfrage: {{ getEscalationCooldownText(selectedChat) }}</span>
+          </div>
         </div>
       </div>
 
