@@ -1033,12 +1033,14 @@ export class ChatUiComponent implements AfterViewInit {
                 }]);
               }
             } else {
-              // Normale Bot-Nachricht
+              // Normale Bot/Agent-Nachricht
               if (!this.isMessageDuplicate(msg.text, msg.from, timestamp)) {
                 this.messages.update(m => [...m, {
                   from: msg.from,
                   text: msg.text,
-                  timestamp: timestamp
+                  timestamp: timestamp,
+                  message_type: msg.message_type,
+                  metadata: msg.metadata // ✅ WICHTIG: Metadata speichern (enthält agent_name)
                 }]);
               }
             }
@@ -2008,6 +2010,30 @@ export class ChatUiComponent implements AfterViewInit {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  /**
+   * ✅ NEU: Holt den Agent-Namen aus der Nachricht-Metadata
+   * Löst das Problem dass nach Transfer alle Nachrichten den neuen Agent-Namen zeigen
+   */
+  getAgentNameForMessage(message: any): string {
+    // 1. Prüfe ob metadata vorhanden ist und agent_name enthält
+    if (message.metadata) {
+      try {
+        const metadata = typeof message.metadata === 'string'
+          ? JSON.parse(message.metadata)
+          : message.metadata;
+
+        if (metadata.agent_name) {
+          return metadata.agent_name;
+        }
+      } catch (e) {
+        console.error('Error parsing message metadata:', e);
+      }
+    }
+
+    // 2. Fallback: Verwende den aktuellen assignedAgentName
+    return this.assignedAgentName() || 'Agent';
   }
 
   /**

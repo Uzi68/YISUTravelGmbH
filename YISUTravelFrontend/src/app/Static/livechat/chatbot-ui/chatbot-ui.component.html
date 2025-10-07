@@ -201,7 +201,7 @@
                 <div class="message-meta">
                   <!-- Message Type Badge -->
                   @if (message.from === 'agent') {
-                    <span class="message-badge agent">{{ assignedAgentName() || 'Agent' }}</span>
+                    <span class="message-badge agent">{{ getAgentNameForMessage(message) }}</span>
                   } @else if (message.from === 'bot') {
                     <span class="message-badge bot">Bot</span>
                   }

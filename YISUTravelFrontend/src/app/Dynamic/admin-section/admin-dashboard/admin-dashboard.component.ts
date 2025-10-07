@@ -489,7 +489,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         content: msg.text,
         timestamp: new Date(msg.timestamp),
         isAgent: msg.from === 'agent',
+        isBot: msg.from === 'bot',
         read: true,
+        from: msg.from,
+        message_type: msg.message_type,
+        metadata: msg.metadata, // ✅ WICHTIG: Metadata speichern (enthält agent_name)
         attachment: msg.has_attachment ? msg.attachment : undefined
       })),
       status: chat.status,
@@ -2898,6 +2902,30 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  /**
+   * ✅ NEU: Holt den Agent-Namen aus der Nachricht-Metadata
+   * Löst das Problem dass nach Transfer alle Nachrichten den neuen Agent-Namen zeigen
+   */
+  getAgentNameForMessage(message: Message): string {
+    // 1. Prüfe ob metadata vorhanden ist und agent_name enthält
+    if (message.metadata) {
+      try {
+        const metadata = typeof message.metadata === 'string'
+          ? JSON.parse(message.metadata)
+          : message.metadata;
+
+        if (metadata.agent_name) {
+          return metadata.agent_name;
+        }
+      } catch (e) {
+        console.error('Error parsing message metadata:', e);
+      }
+    }
+
+    // 2. Fallback: Verwende den aktuellen assigned_agent vom Chat
+    return this.selectedChat?.assigned_agent || 'Agent';
   }
 
   private isMessageDuplicate(chatId: string, messageId: string): boolean {

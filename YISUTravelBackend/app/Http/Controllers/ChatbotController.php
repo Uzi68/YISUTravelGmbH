@@ -1158,11 +1158,21 @@ class ChatbotController extends Controller
 
             $messageId = \Illuminate\Support\Str::uuid();
 
+            // ✅ WICHTIG: Bei Agent-Nachrichten den aktuellen Agent-Namen speichern
+            $metadata = null;
+            if ($validated['isAgent'] && Auth::check()) {
+                $metadata = json_encode([
+                    'agent_id' => Auth::id(),
+                    'agent_name' => Auth::user()->name
+                ]);
+            }
+
             $message = Message::create([
                 'id' => $messageId,
                 'chat_id' => $chat->id,
                 'from' => $validated['isAgent'] ? 'agent' : 'user',
                 'text' => $validated['content'],
+                'metadata' => $metadata,
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
@@ -2079,11 +2089,22 @@ class ChatbotController extends Controller
         }
 
         return DB::transaction(function () use ($chat, $validated, $sessionId) {
+            // ✅ WICHTIG: Bei Agent-Nachrichten den aktuellen Agent-Namen speichern
+            $isAgent = $validated['isAgent'] ?? false;
+            $metadata = null;
+            if ($isAgent && Auth::check()) {
+                $metadata = json_encode([
+                    'agent_id' => Auth::id(),
+                    'agent_name' => Auth::user()->name
+                ]);
+            }
+
             // User-Nachricht erstellen
             $message = Message::create([
                 'chat_id' => $chat->id,
-                'from' => $validated['isAgent'] ?? false ? 'agent' : 'user',
+                'from' => $isAgent ? 'agent' : 'user',
                 'text' => $validated['content'],
+                'metadata' => $metadata
             ]);
 
             // Chat als aktiv markieren (ohne Assignment zu ändern)

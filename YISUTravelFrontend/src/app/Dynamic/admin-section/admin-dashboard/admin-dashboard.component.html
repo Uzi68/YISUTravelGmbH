@@ -401,7 +401,7 @@
           <div class="message-meta" *ngIf="message.from !== 'system'">
             <!-- Badge für Bot/Agent -->
             <div class="message-badge" *ngIf="message.isBot || message.isAgent">
-              {{message.isBot ? 'Bot' : 'Agent'}}
+              {{message.isBot ? 'Bot' : getAgentNameForMessage(message)}}
             </div>
 
             <div class="message-time">
