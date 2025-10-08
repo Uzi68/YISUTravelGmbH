@@ -1417,16 +1417,9 @@ export class ChatUiComponent implements AfterViewInit {
         return;
       }
 
-      // ✅ Bot-Nachrichten (nur erlaubte Types: escalation_reply, chat_farewell)
-      // WICHTIG: escalation_prompt wird NICHT via Pusher verarbeitet, nur aus Response!
+      // ✅ Bot-Nachrichten (escalation_reply, chat_farewell, escalation_prompt)
       else if (data.message && data.message.text && data.message.from === 'bot') {
         const messageTimestamp = new Date(data.message.created_at);
-
-        // ✅ Escalation-Prompts IGNORIEREN - kommen aus Response
-        if (data.message.message_type === 'escalation_prompt') {
-          console.log('⏭️ Skipping escalation_prompt from Pusher (comes from Response)');
-          return;
-        }
 
         if (!this.isMessageDuplicate(data.message.text, data.message.from, messageTimestamp)) {
           console.log('🤖 Bot message:', {
@@ -1434,6 +1427,23 @@ export class ChatUiComponent implements AfterViewInit {
             message_type: data.message.message_type,
             metadata: data.message.metadata
           });
+
+          // ✅ Spezielle Behandlung für Escalation-Prompts
+          if (data.message.message_type === 'escalation_prompt') {
+            console.log('🚨 Processing escalation_prompt from Pusher');
+
+            // Escalation Options anzeigen
+            this.showEscalationOptions.set(true);
+            this.currentEscalationPrompt.set({
+              prompt_id: data.message.metadata?.escalation_prompt_id || null,
+              is_automatic: data.message.metadata?.is_automatic || false,
+              is_manual: data.message.metadata?.is_manual || false,
+              options: data.message.metadata?.options || [
+                { text: 'Ja, gerne', value: 'accept' },
+                { text: 'Nein, danke', value: 'decline' }
+              ]
+            });
+          }
 
           this.messages.update(currentMessages => [
             ...currentMessages,

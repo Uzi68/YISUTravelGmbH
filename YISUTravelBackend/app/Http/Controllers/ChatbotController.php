@@ -224,12 +224,26 @@ class ChatbotController extends Controller
                 return true;
             }
 
-            // Tippfehler-Toleranz für einzelne Wörter
+            // ✅ VERBESSERT: Tippfehler-Toleranz mit prozentualer Ähnlichkeit
+            // Längere Wörter bekommen mehr Toleranz für Tippfehler
             $words = explode(' ', $message);
             foreach ($words as $word) {
+                // Nur Wörter mit mindestens 5 Zeichen prüfen (verhindert false positives bei kurzen Wörtern)
+                if (strlen($word) < 5) continue;
+
                 $distance = levenshtein($keyword, $word);
-                if ($distance <= 2 && strlen($word) > 3) { // Tippfehler-Toleranz
-                    \Log::info('Escalation detected via typo tolerance: ' . $word . ' -> ' . $keyword);
+                $maxLength = max(strlen($keyword), strlen($word));
+                $similarity = 1 - ($distance / $maxLength);
+
+                // ✅ WICHTIG: Verschiedene Toleranz-Levels je nach Wortlänge
+                // Kurze Wörter (5-7 Zeichen): 80% Ähnlichkeit ODER max. 2 Fehler
+                // Lange Wörter (8+ Zeichen): 75% Ähnlichkeit ODER max. 3 Fehler
+                $isShortWord = strlen($word) <= 7;
+                $matchThreshold = $isShortWord ? 0.80 : 0.75;
+                $maxDistance = $isShortWord ? 2 : 3;
+
+                if ($similarity >= $matchThreshold || ($distance <= $maxDistance && strlen($word) >= 8)) {
+                    \Log::info('Escalation detected via typo tolerance: ' . $word . ' -> ' . $keyword . ' (similarity: ' . round($similarity * 100) . '%, distance: ' . $distance . ')');
                     return true;
                 }
             }
