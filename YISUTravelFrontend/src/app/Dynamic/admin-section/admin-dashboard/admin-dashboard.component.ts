@@ -1914,6 +1914,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
               messages: updatedChat.messages.map(m => ({ ...m, read: true }))
             };
             this.scrollToBottom();
+
+            // ✅ NEU: Backend-Call um Nachrichten als gelesen zu markieren wenn Chat aktiv betrachtet wird
+            // Dies verhindert, dass beim Reload ungelesene Nachrichten angezeigt werden
+            const chatId = this.activeChats[activeChatIndex].chatId;
+            if (chatId && sessionId) {
+              this.markMessagesAsRead(chatId, sessionId);
+            }
           }
         }
 
