@@ -1382,9 +1382,38 @@ export class ChatUiComponent implements AfterViewInit {
         }
       }
 
-      // ✅ User-Nachrichten (ohne Notifications) - für Vollständigkeit
-      else if (data.message && data.message.text && data.message.from === 'user') {
-        // User sollte seine EIGENEN Nachrichten NICHT via Pusher empfangen - sie kommen aus der HTTP Response
+      // ✅ User-Nachrichten - NUR für File-Uploads verarbeiten (kommen via Pusher mit Attachment)
+      else if (data.message && data.message.from === 'user') {
+        const messageTimestamp = new Date(data.message.created_at);
+
+        // ✅ WICHTIG: Nur File-Upload Nachrichten verarbeiten (mit Attachment)
+        // Normale Text-Nachrichten kommen aus HTTP Response
+        if (data.message.has_attachment) {
+          console.log('📎 User file upload message:', {
+            text: data.message.text,
+            has_attachment: data.message.has_attachment,
+            attachment: data.message.attachment
+          });
+
+          if (!this.isMessageDuplicate(data.message.text, data.message.from, messageTimestamp)) {
+            this.messages.update(currentMessages => [
+              ...currentMessages,
+              {
+                from: data.message.from,
+                text: data.message.text,
+                timestamp: messageTimestamp,
+                message_type: data.message.message_type,
+                metadata: data.message.metadata,
+                attachment: data.message.attachment // ✅ Attachment-Objekt für Vorschau
+              }
+            ]);
+
+            this.scrollToBottom();
+          }
+        } else {
+          // Normale User-Nachrichten ohne Attachment ignorieren (kommen aus HTTP Response)
+          console.log('⏭️ Skipping user text message from Pusher (comes from HTTP)');
+        }
         return;
       }
 
@@ -1939,20 +1968,18 @@ export class ChatUiComponent implements AfterViewInit {
       return;
     }
 
-    // Show upload message
-    this.messages.update(m => [...m, {
-      from: 'user',
-      text: `Datei wird hochgeladen: ${file.name}`,
-      timestamp: new Date()
-    }]);
+    // ✅ VERBESSERT: Zeige Typing-Indikator während Upload statt temporäre Nachricht
+    this.isTyping.set(true);
 
     this.chatbotService.uploadAttachment(file, chatId, sessionId, 'user').subscribe({
       next: (response) => {
         console.log('File uploaded successfully:', response);
-        // File message will be received via Pusher
+        this.isTyping.set(false);
+        // ✅ File message will be received via Pusher with full attachment preview
       },
       error: (err) => {
         console.error('File upload error:', err);
+        this.isTyping.set(false);
         this.messages.update(m => [...m, {
           from: 'system',
           text: 'Fehler beim Hochladen der Datei',
