@@ -51,6 +51,11 @@ class Chat extends Model
         return $this->hasMany(Escalation::class);
     }
 
+    public function escalationPrompts()
+    {
+        return $this->hasMany(EscalationPrompt::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'human');

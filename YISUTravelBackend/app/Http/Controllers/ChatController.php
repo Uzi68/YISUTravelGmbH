@@ -62,7 +62,13 @@ class ChatController extends Controller
             $systemMessage = Message::create([
                 'chat_id' => $chat->id,
                 'from' => 'system',
-                'text' => "Chat wurde von {$agent->name} übernommen."
+                'text' => "Chat wurde von {$agent->name} übernommen.",
+                'message_type' => 'assignment',
+                'metadata' => [
+                    'assigned_agent_id' => $agent->id,
+                    'assigned_agent_name' => $agent->name,
+                    'assigned_at' => now()
+                ]
             ]);
 
             // Pusher-Event senden
@@ -141,7 +147,16 @@ class ChatController extends Controller
             $transferMessage = Message::create([
                 'chat_id' => $chat->id,
                 'from' => 'system',
-                'text' => "Chat wurde von {$oldAgentName} an {$newAgent->name} übertragen. Grund: {$reason}"
+                'text' => "Chat wurde von {$oldAgentName} an {$newAgent->name} übertragen. Grund: {$reason}",
+                'message_type' => 'transfer',
+                'metadata' => [
+                    'from_agent_id' => $currentUserId,
+                    'from_agent_name' => $oldAgentName,
+                    'to_agent_id' => $newAgent->id,
+                    'to_agent_name' => $newAgent->name,
+                    'reason' => $reason,
+                    'transferred_at' => now()
+                ]
             ]);
 
             // Pusher-Event senden
@@ -209,7 +224,15 @@ class ChatController extends Controller
             $systemMessage = Message::create([
                 'chat_id' => $chat->id,
                 'from' => 'system',
-                'text' => "Zuweisung von {$previousAgentName} wurde aufgehoben. Grund: {$reason}"
+                'text' => "Zuweisung von {$previousAgentName} wurde aufgehoben. Grund: {$reason}",
+                'message_type' => 'unassignment',
+                'metadata' => [
+                    'previous_agent_name' => $previousAgentName,
+                    'unassigned_by' => $currentUser->id,
+                    'unassigned_by_name' => $currentUser->name,
+                    'reason' => $reason,
+                    'unassigned_at' => now()
+                ]
             ]);
 
             // Pusher-Event senden

@@ -88,6 +88,28 @@ class ChatAssignmentController extends Controller
             broadcast(new MessagePusher($systemMessage, $chat->session_id, $assignmentData));
             event(new ChatAssigned($chat, $agent));
 
+            // ✅ NEU: AllChatsUpdate Event für Echtzeit-Synchronisation ALLER Agents
+            event(new AllChatsUpdate([
+                'type' => 'chat_assigned',
+                'chat' => [
+                    'session_id' => $chat->session_id,
+                    'chat_id' => $chat->id,
+                    'status' => 'in_progress',
+                    'customer_first_name' => $chat->visitor?->first_name ?? 'Anonymous',
+                    'customer_last_name' => $chat->visitor?->last_name ?? '',
+                    'customer_phone' => $chat->visitor?->phone,
+                    'customer_avatar' => $chat->visitor?->avatar ?? null,
+                    'last_message' => "{$agent->name} hat den Chat übernommen",
+                    'last_message_time' => now(),
+                    'unread_count' => 0,
+                    'assigned_to' => $agent->id,
+                    'assigned_agent' => $agent->name,
+                    'agent_name' => $agent->name,
+                    'assigned_at' => $chat->assigned_at,
+                    'isNew' => false
+                ]
+            ]));
+
             return response()->json([
                 'success' => true,
                 'message' => 'Chat erfolgreich zugewiesen',
@@ -411,8 +433,8 @@ class ChatAssignmentController extends Controller
                 ]
             ]);
 
-            // ✅ WICHTIG: Event für Echtzeit-Broadcasting
-            broadcast(new EscalationPromptSent($botMessage, $chat->session_id))->toOthers();
+            // ✅ WICHTIG: Event für Echtzeit-Broadcasting - OHNE toOthers() damit auch der Admin die Message sieht
+            broadcast(new EscalationPromptSent($botMessage, $chat->session_id));
 
             // ✅ Admin Dashboard Update
             event(new AllChatsUpdate([
@@ -425,7 +447,13 @@ class ChatAssignmentController extends Controller
                     'customer_last_name' => $chat->visitor?->last_name ?? '',
                     'last_message' => 'Escalation-Anfrage gesendet',
                     'last_message_time' => now(),
-                    'sent_by' => $agent->name
+                    'sent_by' => $agent->name,
+                    'escalation_prompt' => [
+                        'id' => $escalationPrompt->id,
+                        'sent_at' => $escalationPrompt->sent_at,
+                        'sent_by_agent_id' => $agent->id,
+                        'sent_by_agent_name' => $agent->name
+                    ]
                 ]
             ]));
 

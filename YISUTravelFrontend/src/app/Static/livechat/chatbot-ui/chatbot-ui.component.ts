@@ -139,15 +139,23 @@ export class ChatUiComponent implements AfterViewInit {
           });
         }
 
-        // ✅ Verbesserte Tab-Title Logik mit Null-Checks
+        // ✅ Verbesserte Tab-Title Logik mit Null-Checks und Original-Titel
         if (!isOpen && messages && messages.length > 0) {
           const unreadCount = this.unreadMessages();
           if (unreadCount > 0 && document) {
-            document.title = `(${unreadCount}) Chat - Yisu Travel`;
+            // ✅ Zeige Unread-Counter im Tab-Titel wenn Chat geschlossen
+            document.title = `(${unreadCount}) YISU Travel GmbH`;
+          } else if (document) {
+            // ✅ Kein Unread-Counter, zurück zum Original-Titel
+            document.title = 'YISU Travel GmbH';
           }
         } else if (isOpen && document) {
+          // ✅ Chat ist offen: Zeige "Chat - Yisu Travel" und reset Counter
           document.title = 'Chat - Yisu Travel';
           this.unreadMessages.set(0);
+        } else if (!isOpen && document) {
+          // ✅ Chat geschlossen, keine Nachrichten: Original-Titel
+          document.title = 'YISU Travel GmbH';
         }
       });
     }
@@ -212,6 +220,9 @@ export class ChatUiComponent implements AfterViewInit {
 
           // Pusher Listener neu einrichten für Echtzeit-Kommunikation
           this.setupPusherListener();
+
+          // ✅ NEU: Benachrichtigungen aktivieren wenn Kunde auf "Ja" klickt
+          this.requestNotificationPermission();
         }
 
         /*
@@ -224,18 +235,9 @@ export class ChatUiComponent implements AfterViewInit {
           }]);
         }*/
 
-        // Bei Akzeptierung: Warten-Nachricht nach kurzer Verzögerung
+        // Bei Akzeptierung: Chat-Status überwachen für Agent-Zuweisung
+        // ✅ "Bitte warten"-Nachricht wird jetzt vom Backend gesendet
         if (response === 'accept') {
-          setTimeout(() => {
-            this.messages.update(m => [...m, {
-              from: 'system',
-              text: 'Bitte warten Sie einen Moment, ein Mitarbeiter wird sich gleich um Sie kümmern...',
-              timestamp: new Date(),
-              isSystemMessage: true
-            }]);
-          }, 1500);
-
-          // Chat-Status überwachen für Agent-Zuweisung
           this.monitorChatStatus();
         }
 
@@ -272,6 +274,11 @@ export class ChatUiComponent implements AfterViewInit {
   }
 
   ngOnInit() {
+    // ✅ Tab-Titel auf Original setzen beim Laden
+    if (this.isBrowser && document) {
+      document.title = 'YISU Travel GmbH';
+    }
+
     // Session ID initialisieren oder laden
     this.sessionId = localStorage.getItem('session_id');
     if (!this.sessionId) {
@@ -619,12 +626,8 @@ export class ChatUiComponent implements AfterViewInit {
         console.log('🔄 Chat transferred event:', data);
         this.ngZone.run(() => {
           this.assignedAgentName.set(data.to_agent_name || '');
-          this.messages.update(m => [...m, {
-            from: 'system',
-            text: `Chat wurde an ${data.to_agent_name} übertragen`,
-            timestamp: new Date(),
-            isSystemMessage: true
-          }]);
+          // ✅ ENTFERNT: Lokale Transfer-Nachricht nicht mehr hinzufügen
+          // Das Backend sendet bereits eine vollständige Transfer-Nachricht via Pusher
 
           // ✅ NOTIFICATION: Nur wenn explizit aktiviert
           if (data.to_agent_name && this.visitorNotification.areNotificationsEnabled) {
@@ -780,9 +783,30 @@ export class ChatUiComponent implements AfterViewInit {
               from: msg.from,
               text: msg.text,
               timestamp: new Date(msg.timestamp || Date.now()),
+              message_type: msg.message_type,
+              metadata: msg.metadata,
               attachment: msg.has_attachment ? msg.attachment : undefined
             })));
             console.log('Messages with attachments:', this.messages().filter(m => m.attachment));
+
+            // ✅ WICHTIG: Escalation-Prompt erkennen und Buttons anzeigen
+            const escalationPrompt = response.messages.find((msg: any) =>
+              msg.message_type === 'escalation_prompt' && msg.metadata?.is_automatic
+            );
+
+            if (escalationPrompt) {
+              console.log('🚨 Escalation prompt found in history, showing buttons');
+              this.showEscalationOptions.set(true);
+              this.currentEscalationPrompt.set({
+                prompt_id: escalationPrompt.metadata?.escalation_prompt_id || null,
+                is_automatic: true,
+                is_manual: false,
+                options: escalationPrompt.metadata?.options || [
+                  { text: 'Ja, gerne', value: 'accept' },
+                  { text: 'Nein, danke', value: 'decline' }
+                ]
+              });
+            }
           }
         },
         error: (err) => console.error('Error loading chat history:', err)
@@ -845,9 +869,19 @@ export class ChatUiComponent implements AfterViewInit {
     this.chatbotService.setChatOpenState(this.isOpen());
 
     if (this.isOpen()) {
+      // ✅ Chat öffnen
       this.unreadMessages.set(0);
-      document.title = 'Chat - YISU Travel';
+      document.title = 'Chat - Yisu Travel';
       this.loadChatHistory();
+    } else {
+      // ✅ Chat schließen - Titel zurücksetzen
+      if (this.unreadMessages() > 0) {
+        // Mit Unread-Counter
+        document.title = `(${this.unreadMessages()}) YISU Travel GmbH`;
+      } else {
+        // Ohne Unread-Counter
+        document.title = 'YISU Travel GmbH';
+      }
     }
   }
   testVisitorNotifications(): void {
@@ -902,17 +936,14 @@ export class ChatUiComponent implements AfterViewInit {
       return;
     }
 
-    // ✅ Bot-Chat: Lokale Nachrichten hinzufügen OHNE auf Broadcasting zu warten
+    // ✅ Bot-Chat: Lokale Nachrichten hinzufügen
     this.isTyping.set(true);
 
-    // Sofort User-Nachricht zur UI hinzufügen
     const userMessage = {
       from: 'user',
       text: msg,
       timestamp: new Date()
     };
-
-    this.messages.update(m => [...m, userMessage]);
 
     const sendMethod = this.isAuthenticated ?
         this.chatbotService.sendMessage(msg) :
@@ -924,6 +955,22 @@ export class ChatUiComponent implements AfterViewInit {
 
         if (response.is_in_booking_process !== undefined) {
           this.isInBookingProcess.set(response.is_in_booking_process);
+        }
+
+        // ✅ Wenn Chat reaktiviert wurde, ALLE Nachrichten aus Response verwenden (inkl. User-Nachricht)
+        if (response.chat_reactivated && response.new_messages) {
+          response.new_messages.forEach((msg: any) => {
+            const timestamp = new Date(msg.timestamp || Date.now());
+            this.messages.update(m => [...m, {
+              from: msg.from,
+              text: msg.text,
+              timestamp: timestamp,
+              message_type: msg.message_type
+            }]);
+          });
+        } else {
+          // Normal: User-Nachricht hinzufügen
+          this.messages.update(m => [...m, userMessage]);
         }
 
         if (response.status === 'human') {
@@ -949,9 +996,9 @@ export class ChatUiComponent implements AfterViewInit {
           return;
         }
 
-        // ✅ WICHTIG: Bot-Nachrichten direkt hinzufügen (ohne auf Broadcasting zu warten)
-// In der response Verarbeitung:
-        if (response.new_messages && response.new_messages.length > 0) {
+        // ✅ WICHTIG: Bot-Nachrichten direkt hinzufügen (nur wenn NICHT reaktiviert)
+        // Bei Reaktivierung wurden alle Nachrichten bereits oben hinzugefügt
+        if (!response.chat_reactivated && response.new_messages && response.new_messages.length > 0) {
           response.new_messages.forEach((msg: any) => {
             const timestamp = new Date(msg.timestamp || Date.now());
 
@@ -982,12 +1029,14 @@ export class ChatUiComponent implements AfterViewInit {
                 }]);
               }
             } else {
-              // Normale Bot-Nachricht
+              // Normale Bot/Agent-Nachricht
               if (!this.isMessageDuplicate(msg.text, msg.from, timestamp)) {
                 this.messages.update(m => [...m, {
                   from: msg.from,
                   text: msg.text,
-                  timestamp: timestamp
+                  timestamp: timestamp,
+                  message_type: msg.message_type,
+                  metadata: msg.metadata // ✅ WICHTIG: Metadata speichern (enthält agent_name)
                 }]);
               }
             }
@@ -1039,11 +1088,21 @@ export class ChatUiComponent implements AfterViewInit {
         chatStatus: this.chatStatus()
       });
 
-      // ✅ WICHTIG: Bot-Nachrichten komplett ignorieren über Pusher
-      // Bot-Nachrichten werden nur über HTTP-Response verarbeitet
+      // ✅ WICHTIG: Bot-Nachrichten über Pusher nur in bestimmten Fällen verarbeiten
+      // Normale Bot-Nachrichten kommen über HTTP-Response
+      // ABER: escalation_reply und chat_farewell müssen über Pusher verarbeitet werden
       if (data.message?.from === 'bot') {
-        console.log('⚠️ Bot message received via Pusher - IGNORING (should come via HTTP only)');
-        return; // ✅ WICHTIG: Früh beenden für Bot-Nachrichten - NICHT zur UI hinzufügen!
+        const messageType = data.message?.message_type;
+
+        // Diese Bot-Message-Types MÜSSEN über Pusher verarbeitet werden
+        const allowedTypes = ['escalation_reply', 'chat_farewell', 'escalation_prompt'];
+
+        if (!allowedTypes.includes(messageType)) {
+          console.log('⚠️ Bot message received via Pusher - IGNORING (should come via HTTP only)');
+          return; // Nur normale Bot-Nachrichten ignorieren
+        }
+
+        console.log('✅ Bot message with type', messageType, '- Processing via Pusher');
       }
 
       // Chat-Ende durch Agent (unverändert)
@@ -1088,24 +1147,17 @@ export class ChatUiComponent implements AfterViewInit {
             notificationMessage
           );
 
-          // Follow-up Nachricht
-          setTimeout(() => {
-            this.messages.update(currentMessages => [
-              ...currentMessages,
-              {
-                from: 'bot',
-                text: 'Vielen Dank für die Nutzung unseres Supports. Sie können jederzeit einen neuen Chat beginnen.',
-                timestamp: new Date(),
-                showRestartOptions: true
-              }
-            ]);
-          }, 2000);
-
+          // ✅ "Vielen Dank"-Nachricht wird jetzt vom Backend gesendet
           this.scrollToBottom();
           return; // Wichtig: Beende hier
         }
 
         // Andere System-Nachrichten normal verarbeiten
+        // ABER: chat_reactivated ignorieren (kommt aus HTTP Response)
+        if (data.message.message_type === 'chat_reactivated') {
+          return;
+        }
+
         if (!this.isMessageDuplicate(data.message.text, 'system', timestamp)) {
           this.messages.update(currentMessages => [
             ...currentMessages,
@@ -1330,16 +1382,68 @@ export class ChatUiComponent implements AfterViewInit {
         }
       }
 
-      // ✅ User-Nachrichten (ohne Notifications) - für Vollständigkeit
-      else if (data.message && data.message.text && data.message.from === 'user') {
+      // ✅ User-Nachrichten - NUR für File-Uploads verarbeiten (kommen via Pusher mit Attachment)
+      else if (data.message && data.message.from === 'user') {
         const messageTimestamp = new Date(data.message.created_at);
 
-        if (!this.isMessageDuplicate(data.message.text, data.message.from, messageTimestamp)) {
-          console.log('💬 User message:', {
+        // ✅ WICHTIG: Nur File-Upload Nachrichten verarbeiten (mit Attachment)
+        // Normale Text-Nachrichten kommen aus HTTP Response
+        if (data.message.has_attachment) {
+          console.log('📎 User file upload message:', {
             text: data.message.text,
             has_attachment: data.message.has_attachment,
             attachment: data.message.attachment
           });
+
+          if (!this.isMessageDuplicate(data.message.text, data.message.from, messageTimestamp)) {
+            this.messages.update(currentMessages => [
+              ...currentMessages,
+              {
+                from: data.message.from,
+                text: data.message.text,
+                timestamp: messageTimestamp,
+                message_type: data.message.message_type,
+                metadata: data.message.metadata,
+                attachment: data.message.attachment // ✅ Attachment-Objekt für Vorschau
+              }
+            ]);
+
+            this.scrollToBottom();
+          }
+        } else {
+          // Normale User-Nachrichten ohne Attachment ignorieren (kommen aus HTTP Response)
+          console.log('⏭️ Skipping user text message from Pusher (comes from HTTP)');
+        }
+        return;
+      }
+
+      // ✅ Bot-Nachrichten (escalation_reply, chat_farewell, escalation_prompt)
+      else if (data.message && data.message.text && data.message.from === 'bot') {
+        const messageTimestamp = new Date(data.message.created_at);
+
+        if (!this.isMessageDuplicate(data.message.text, data.message.from, messageTimestamp)) {
+          console.log('🤖 Bot message:', {
+            text: data.message.text,
+            message_type: data.message.message_type,
+            metadata: data.message.metadata
+          });
+
+          // ✅ Spezielle Behandlung für Escalation-Prompts
+          if (data.message.message_type === 'escalation_prompt') {
+            console.log('🚨 Processing escalation_prompt from Pusher');
+
+            // Escalation Options anzeigen
+            this.showEscalationOptions.set(true);
+            this.currentEscalationPrompt.set({
+              prompt_id: data.message.metadata?.escalation_prompt_id || null,
+              is_automatic: data.message.metadata?.is_automatic || false,
+              is_manual: data.message.metadata?.is_manual || false,
+              options: data.message.metadata?.options || [
+                { text: 'Ja, gerne', value: 'accept' },
+                { text: 'Nein, danke', value: 'decline' }
+              ]
+            });
+          }
 
           this.messages.update(currentMessages => [
             ...currentMessages,
@@ -1349,11 +1453,11 @@ export class ChatUiComponent implements AfterViewInit {
               timestamp: messageTimestamp,
               message_type: data.message.message_type,
               metadata: data.message.metadata,
-              attachment: data.message.has_attachment ? data.message.attachment : undefined
+              showRestartOptions: data.message.message_type === 'chat_farewell' // Für "Vielen Dank" Nachricht
             }
           ]);
 
-          console.log('User message added (no notification):', data.message.text.substring(0, 30));
+          console.log('Bot message added via Pusher:', data.message.message_type);
         }
       }
 
@@ -1874,20 +1978,18 @@ export class ChatUiComponent implements AfterViewInit {
       return;
     }
 
-    // Show upload message
-    this.messages.update(m => [...m, {
-      from: 'user',
-      text: `Datei wird hochgeladen: ${file.name}`,
-      timestamp: new Date()
-    }]);
+    // ✅ VERBESSERT: Zeige Typing-Indikator während Upload statt temporäre Nachricht
+    this.isTyping.set(true);
 
     this.chatbotService.uploadAttachment(file, chatId, sessionId, 'user').subscribe({
       next: (response) => {
         console.log('File uploaded successfully:', response);
-        // File message will be received via Pusher
+        this.isTyping.set(false);
+        // ✅ File message will be received via Pusher with full attachment preview
       },
       error: (err) => {
         console.error('File upload error:', err);
+        this.isTyping.set(false);
         this.messages.update(m => [...m, {
           from: 'system',
           text: 'Fehler beim Hochladen der Datei',
@@ -1941,6 +2043,69 @@ export class ChatUiComponent implements AfterViewInit {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  /**
+   * ✅ NEU: Holt den Agent-Namen aus der Nachricht-Metadata
+   * Löst das Problem dass nach Transfer alle Nachrichten den neuen Agent-Namen zeigen
+   */
+  getAgentNameForMessage(message: any): string {
+    // 1. Prüfe ob metadata vorhanden ist und agent_name enthält
+    if (message.metadata) {
+      try {
+        const metadata = typeof message.metadata === 'string'
+          ? JSON.parse(message.metadata)
+          : message.metadata;
+
+        if (metadata.agent_name) {
+          return metadata.agent_name;
+        }
+      } catch (e) {
+        console.error('Error parsing message metadata:', e);
+      }
+    }
+
+    // 2. Fallback: Verwende den aktuellen assignedAgentName
+    return this.assignedAgentName() || 'Agent';
+  }
+
+  /**
+   * ✅ NEU: Benachrichtigungs-Erlaubnis anfordern
+   * Wird aufgerufen wenn Kunde auf "Ja" bei Escalation klickt
+   */
+  private async requestNotificationPermission(): Promise<void> {
+    if (!this.visitorNotification.isSupported) {
+      console.log('Browser unterstützt keine Benachrichtigungen');
+      return;
+    }
+
+    console.log('🔔 Requesting notification permission for visitor...');
+
+    try {
+      const enabled = await this.visitorNotification.enableNotifications();
+
+      // ✅ Backend-Call für persistente Speicherung
+      if (this.sessionId) {
+        this.chatbotService.saveNotificationStatus(this.sessionId, enabled).subscribe({
+          next: (response) => {
+            console.log('Notification status saved to backend:', response);
+          },
+          error: (err) => {
+            console.error('Error saving notification status:', err);
+          }
+        });
+      }
+
+      if (enabled) {
+        console.log('✅ Visitor notifications enabled');
+        // Backend sendet jetzt die Bestätigungsnachricht
+      } else {
+        console.log('❌ Visitor notifications denied or not granted');
+        // Backend sendet jetzt die Info-Nachricht
+      }
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+    }
   }
 }
 

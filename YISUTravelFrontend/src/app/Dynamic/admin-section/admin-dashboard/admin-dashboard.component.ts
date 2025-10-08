@@ -129,7 +129,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   showPermissionDialog = signal(false);
   permissionDialogShown = false;
 
+  // ✅ NEU: Tab-Titel Management
+  private isTabVisible = true;
+  private isWindowFocused = true;
+  private totalUnreadCount = 0;
 
+  // ✅ Cooldown Timer für Live-Update
+  private cooldownUpdateInterval: any;
 
 // Neue Properties für Filter
   searchQuery = '';
@@ -161,6 +167,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
+    // ✅ Tab-Titel initialisieren
+    this.updateTabTitle();
+    this.setupTabVisibilityTracking();
+
+    // ✅ Cooldown Counter starten (1x pro Sekunde aktualisieren)
+    this.cooldownUpdateInterval = setInterval(() => {
+      this.cdRef.detectChanges();
+    }, 1000);
+
     this.loadActiveChats().then(() => {
       this.filterChats();
     });
@@ -423,31 +438,35 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
   private sortActiveChats(): void {
-    // Debounce für Performance
-    if (this.sortDebounce) {
-      clearTimeout(this.sortDebounce);
-    }
+    // ✅ OPTIMIERT: Keine Debounce, sofortige immutable Sortierung
+    // Sortiere IMMUTABLE (erstelle neues Array statt in-place zu sortieren)
+    const sortedChats = [...this.activeChats].sort((a, b) => {
+      // ✅ VERBESSERTE SORTIERUNG: WhatsApp-Style mit Prioritäten
 
-    this.sortDebounce = setTimeout(() => {
-      this.activeChats.sort((a, b) => {
-        // 1. Ungelesene Nachrichten priorisieren
-        if (a.unreadCount !== b.unreadCount) {
-          return b.unreadCount - a.unreadCount; // Absteigend: mehr unread zuerst
-        }
+      // 1. HÖCHSTE PRIORITÄT: Chat-Anfragen (status: 'human' & nicht zugewiesen)
+      const aIsRequest = a.status === 'human' && !a.assigned_to;
+      const bIsRequest = b.status === 'human' && !b.assigned_to;
 
-        // 2. Neue Chats (isNew) priorisieren
-        if (a.isNew !== b.isNew) {
-          return a.isNew ? -1 : 1; // isNew=true kommt zuerst
-        }
+      if (aIsRequest && !bIsRequest) return -1; // a ist Anfrage, kommt zuerst
+      if (!aIsRequest && bIsRequest) return 1;  // b ist Anfrage, kommt zuerst
 
-        // 3. Nach Zeit sortieren (neueste zuerst)
-        return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
-      });
+      // Beide sind Anfragen → nach Zeit sortieren (älteste Anfrage zuerst = FIFO)
+      if (aIsRequest && bIsRequest) {
+        return new Date(a.lastMessageTime).getTime() - new Date(b.lastMessageTime).getTime();
+      }
 
-      // filteredActiveChats aktualisieren
-      this.filteredActiveChats = [...this.activeChats];
-      this.cdRef.detectChanges();
-    }, 50); // 50ms Debounce
+      // 2. ALLE ANDEREN CHATS: Nach letzter Nachrichtenzeit sortieren (neueste zuerst)
+      // ✅ WICHTIG: Geschlossene Chats werden auch nach Zeit sortiert, nicht separiert
+      // Das bedeutet: Ein gerade geschlossener Chat bleibt oben, rutscht nur mit der Zeit nach unten
+      return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
+    });
+
+    // ✅ Setze sortierte Arrays
+    this.activeChats = sortedChats;
+    this.filteredActiveChats = [...sortedChats];
+
+    // ✅ DetectChanges nur einmal am Ende
+    this.cdRef.detectChanges();
   }
 
 // Methode zum Auswählen eines Admin-Chats
@@ -476,7 +495,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         content: msg.text,
         timestamp: new Date(msg.timestamp),
         isAgent: msg.from === 'agent',
+        isBot: msg.from === 'bot',
         read: true,
+        from: msg.from,
+        message_type: msg.message_type,
+        metadata: msg.metadata, // ✅ WICHTIG: Metadata speichern (enthält agent_name)
         attachment: msg.has_attachment ? msg.attachment : undefined
       })),
       status: chat.status,
@@ -606,27 +629,31 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       },
     );
 
-    // 8. AllChatsUpdate Listener (bereits erweitert)
-    const allChatsUpdateSub = this.pusherService.listenToChannel(
+    // 8. Escalation Prompt Sent Listener (für orange Nachricht in Echtzeit)
+    const escalationPromptSentSub = this.pusherService.listenToChannel(
       'all.active.chats',
-      'all.chats.update',
+      'escalation.prompt.sent',
       (data: any) => {
         this.ngZone.run(() => {
-          console.log('All chats update received:', data);
-          this.handleAllChatsUpdate(data); // Diese Methode ist bereits vollständig überarbeitet
+          console.log('🔔 Escalation Prompt Sent Event empfangen:', data);
+          // Verarbeite wie eine normale Nachricht
+          this.handleIncomingMessageGlobal(data);
         });
       },
     );
 
+    // ✅ HINWEIS: allChatsUpdateSub wurde entfernt, da chats.updated bereits alle Events verarbeitet
+    // Der chatUpdateSub leitet jetzt alle Events an handleAllChatsUpdate weiter
+
     this.pusherSubscriptions.push(
       { channel: 'all.active.chats', subscription: globalSub },
-      { channel: 'all.active.chats', subscription: chatUpdateSub },
+      { channel: 'all.active.chats', subscription: chatUpdateSub }, // ✅ Verarbeitet jetzt ALLE AllChatsUpdate Events
       { channel: 'all.active.chats', subscription: escalationSub },
       { channel: 'all.active.chats', subscription: assignmentSub },
       { channel: 'all.active.chats', subscription: unassignmentSub },
       { channel: 'all.active.chats', subscription: statusChangeSub },
-      { channel: 'all.active.chats', subscription: chatEndedSub },
-      { channel: 'all.active.chats', subscription: allChatsUpdateSub }
+      { channel: 'all.active.chats', subscription: escalationPromptSentSub },
+      { channel: 'all.active.chats', subscription: chatEndedSub }
     );
 
     console.log('Pusher listeners setup complete with notification integration');
@@ -665,7 +692,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   private handleAllChatsUpdate(data: any): void {
-    console.log('All chats update received:', data);
+    console.log('🔔 All chats update received:', data);
+    console.log('🔔 Event type:', data.type);
 
     // 🔔 NOTIFICATION: Chat Transfer
     if (data.type === 'chat_transferred' && data.chat) {
@@ -690,6 +718,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         // 🔔 WICHTIGE BENACHRICHTIGUNG: Chat wurde an mich übertragen
         const fromAgentName = chatData.from_agent_name || 'Ein Kollege';
         const customerName = `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Ein Kunde';
+        const isCurrentlySelected = this.selectedChat?.id === sessionId;
 
         this.notificationSound.notifyTransfer(
           fromAgentName,
@@ -709,7 +738,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             customerAvatar: chatData.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
             lastMessage: `Chat von ${chatData.from_agent_name} übertragen`,
             lastMessageTime: new Date(chatData.last_message_time),
-            unreadCount: 1,
+            unreadCount: isCurrentlySelected ? 0 : 1, // ✅ WICHTIG: 0 wenn bereits ausgewählt
             isOnline: true,
             messages: [],
             status: 'in_progress',
@@ -721,22 +750,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           this.activeChats = [newChat, ...this.activeChats];
           this.filteredActiveChats = [newChat, ...this.filteredActiveChats];
         } else {
-          const updatedChat = {
-            ...this.activeChats[chatIndex],
+          // ✅ WICHTIG: Behalte den höheren unreadCount (Transfer fügt keine neue Nachricht hinzu)
+          const currentUnread = this.activeChats[chatIndex].unreadCount || 0;
+          const newUnread = isCurrentlySelected ? 0 : Math.max(currentUnread, 1);
+
+          // ✅ Verwende zentrale Update-Methode statt direkter Mutation
+          this.updateChatEverywhere(sessionId, {
             assigned_to: newAgentId,
             assigned_agent: chatData.to_agent_name,
             lastMessage: `Chat von ${chatData.from_agent_name} erhalten`,
             lastMessageTime: new Date(chatData.last_message_time),
-            unreadCount: 1,
+            unreadCount: newUnread, // ✅ Behalte existierende ungelesene Nachrichten
             status: 'in_progress',
             isNew: true
-          };
-
-          this.activeChats[chatIndex] = updatedChat;
-          const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
-          if (filteredIndex !== -1) {
-            this.filteredActiveChats[filteredIndex] = { ...updatedChat };
-          }
+          });
         }
 
         this.assignmentStatuses.set(sessionId, {
@@ -749,26 +776,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       } else if (wasMyChat) {
         // 🔔 INFO: Mein Chat wurde übertragen
         if (chatIndex !== -1) {
-          const updatedChat = {
-            ...this.activeChats[chatIndex],
+          // ✅ Verwende zentrale Update-Methode
+          this.updateChatEverywhere(sessionId, {
             assigned_to: newAgentId,
             assigned_agent: chatData.to_agent_name,
             lastMessage: `Chat an ${chatData.to_agent_name} übertragen`,
             lastMessageTime: new Date(chatData.last_message_time),
-            unreadCount: 0,
             status: 'in_progress',
             isNew: false
-          };
-
-          this.activeChats[chatIndex] = updatedChat;
-          const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
-          if (filteredIndex !== -1) {
-            this.filteredActiveChats[filteredIndex] = { ...updatedChat };
-          }
-
-          if (this.selectedChat?.id === sessionId) {
-            this.selectedChat = { ...this.selectedChat, ...updatedChat };
-          }
+          });
         }
 
         this.assignmentStatuses.delete(sessionId);
@@ -777,20 +793,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       } else {
         // Transfer zwischen anderen Agents - nur zur Information
         if (chatIndex !== -1) {
-          const updatedChat = {
-            ...this.activeChats[chatIndex],
+          // ✅ Verwende zentrale Update-Methode
+          this.updateChatEverywhere(sessionId, {
             assigned_to: newAgentId,
             assigned_agent: chatData.to_agent_name,
             lastMessage: `Chat übertragen an ${chatData.to_agent_name}`,
             lastMessageTime: new Date(chatData.last_message_time),
             status: 'in_progress'
-          };
-
-          this.activeChats[chatIndex] = updatedChat;
-          const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
-          if (filteredIndex !== -1) {
-            this.filteredActiveChats[filteredIndex] = { ...updatedChat };
-          }
+          });
         }
       }
 
@@ -808,40 +818,30 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       if (chatIndex !== -1) {
         const wasMyChat = this.activeChats[chatIndex].assigned_to === this.currentAgent.id;
+        const isSelectedChat = this.selectedChat?.id === sessionId;
 
-        const updatedChat = {
-          ...this.activeChats[chatIndex],
+        // ✅ Verwende zentrale Update-Methode - OHNE unreadCount Erhöhung
+        // unreadCount wird von der System-Nachricht erhöht (via handleIncomingMessageGlobal)
+        this.updateChatEverywhere(sessionId, {
           status: 'closed',
           assigned_to: null,
           assigned_agent: '',
           lastMessage: chatData.last_message || 'Chat beendet',
-          lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: 0
-        };
+          lastMessageTime: new Date(chatData.last_message_time)
+        });
 
-        this.activeChats[chatIndex] = updatedChat;
-
-        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
-        if (filteredIndex !== -1) {
-          this.filteredActiveChats[filteredIndex] = { ...updatedChat };
-        }
-
-        if (this.selectedChat?.id === sessionId) {
-          this.selectedChat = { ...updatedChat };
-
-          // 🔔 NOTIFICATION: Nur wenn es mein Chat war
-          if (wasMyChat) {
-            this.notificationSound.notify('message', {
-              senderName: 'System',
-              message: 'Der Benutzer hat Ihren Chat beendet',
-              sessionId: sessionId
-            });
-            this.showToast('ℹ️ Der Benutzer hat den Chat beendet', 'info');
-          }
+        // 🔔 NOTIFICATION: Nur wenn es mein Chat war
+        if (wasMyChat && isSelectedChat) {
+          this.notificationSound.notify('message', {
+            senderName: 'System',
+            message: 'Der Benutzer hat Ihren Chat beendet',
+            sessionId: sessionId
+          });
+          this.showToast('ℹ️ Der Benutzer hat den Chat beendet', 'info');
         }
 
         this.assignmentStatuses.delete(sessionId);
-
+        this.sortActiveChats();
         this.cdRef.detectChanges();
       }
       return;
@@ -863,32 +863,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           closedMessage += ` (Grund: ${closeReason})`;
         }
 
-        const updatedChat = {
-          ...this.activeChats[chatIndex],
+        const isSelectedChat = this.selectedChat?.id === sessionId;
+
+        // ✅ Verwende zentrale Update-Methode
+        this.updateChatEverywhere(sessionId, {
           status: 'closed',
           assigned_to: null,
           assigned_agent: '',
-          lastMessage: closedMessage,  // ✅ Mit Grund
+          lastMessage: closedMessage,
           lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: 0
-        };
+          unreadCount: isSelectedChat ? this.activeChats[chatIndex].unreadCount : (this.activeChats[chatIndex].unreadCount || 0) + 1
+        });
 
-        this.activeChats[chatIndex] = updatedChat;
-
-        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
-        if (filteredIndex !== -1) {
-          this.filteredActiveChats[filteredIndex] = { ...updatedChat };
-        }
-
-        if (this.selectedChat?.id === sessionId) {
-          this.selectedChat = { ...updatedChat };
-
-          if (!endedByMe) {
-            this.showToast(`ℹ️ Chat wurde von ${chatData.ended_by_name} beendet`, 'info');
-          }
+        if (isSelectedChat && !endedByMe) {
+          this.showToast(`ℹ️ Chat wurde von ${chatData.ended_by_name} beendet`, 'info');
         }
 
         this.assignmentStatuses.delete(sessionId);
+        this.sortActiveChats();
         this.cdRef.detectChanges();
       }
       return;
@@ -904,27 +896,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       if (chatIndex !== -1) {
         const wasMyChat = this.activeChats[chatIndex].assigned_to === this.currentAgent.id;
 
-        const updatedChat = {
-          ...this.activeChats[chatIndex],
+        // ✅ WICHTIG: Behalte den höheren unreadCount
+        const currentUnread = this.activeChats[chatIndex].unreadCount || 0;
+        const backendUnread = chatData.unread_count || 0;
+
+        // ✅ Verwende zentrale Update-Methode
+        this.updateChatEverywhere(sessionId, {
           status: 'human',
           assigned_to: null,
           assigned_agent: '',
           lastMessage: chatData.last_message || 'Zuweisung aufgehoben',
           lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: chatData.unread_count || 0,
+          unreadCount: Math.max(currentUnread, backendUnread),
           isNew: true
-        };
-
-        this.activeChats[chatIndex] = updatedChat;
-
-        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
-        if (filteredIndex !== -1) {
-          this.filteredActiveChats[filteredIndex] = { ...updatedChat };
-        }
-
-        if (this.selectedChat?.id === sessionId) {
-          this.selectedChat = { ...updatedChat };
-        }
+        });
 
         this.assignmentStatuses.delete(sessionId);
 
@@ -974,12 +959,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.activeChats = [newChat, ...this.activeChats];
         this.filteredActiveChats = [newChat, ...this.filteredActiveChats];
       } else {
+        // ✅ WICHTIG: Behalte den höheren unreadCount (lokal vs. Backend)
+        // Frontend zählt in Echtzeit, Backend könnte verzögert sein
+        const currentUnread = this.activeChats[existingIndex].unreadCount || 0;
+        const backendUnread = chatData.unread_count || 0;
+
         const updatedChat = {
           ...this.activeChats[existingIndex],
           status: chatData.status,
           lastMessage: chatData.last_message,
           lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: chatData.unread_count || 1,
+          unreadCount: Math.max(currentUnread, backendUnread), // ✅ Nehme den höheren Wert
           assigned_to: chatData.assigned_to,
           assigned_agent: chatData.assigned_agent,
           isNew: true
@@ -1002,6 +992,165 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // ✅ NEU: Chat Assignment (wenn ein Agent einen Chat übernimmt)
+    if (data.type === 'chat_assigned' && data.chat) {
+      const chatData = data.chat;
+      const sessionId = chatData.session_id;
+      const assignedToId = chatData.assigned_to;
+      const assignedAgentName = chatData.assigned_agent || chatData.agent_name;
+      const wasAssignedToMe = assignedToId === this.currentAgent.id;
+
+      console.log('🔔 Chat Assignment received:', {
+        sessionId,
+        assignedTo: assignedToId,
+        assignedAgent: assignedAgentName,
+        wasAssignedToMe,
+        currentUserId: this.currentAgent.id
+      });
+
+      const chatIndex = this.activeChats.findIndex(c => c.id === sessionId);
+
+      if (chatIndex !== -1) {
+        // ✅ Chat existiert bereits - verwende zentrale Update-Methode
+        this.updateChatEverywhere(sessionId, {
+          status: 'in_progress',
+          assigned_to: assignedToId,
+          assigned_agent: assignedAgentName,
+          lastMessage: wasAssignedToMe
+            ? 'Chat übernommen'
+            : `Chat übernommen von ${assignedAgentName}`,
+          lastMessageTime: new Date(chatData.last_message_time || Date.now()),
+          isNew: wasAssignedToMe,
+          unreadCount: wasAssignedToMe ? 0 : (this.activeChats[chatIndex].unreadCount || 0)
+        });
+      } else if (wasAssignedToMe) {
+        // ✅ Chat existiert nicht in meiner Liste aber wurde mir zugewiesen - hinzufügen
+        const newChat: Chat = {
+          id: chatData.session_id,
+          chatId: chatData.chat_id,
+          customerName: `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Anonymer Benutzer',
+          customerFirstName: chatData.customer_first_name || '',
+          customerLastName: chatData.customer_last_name || '',
+          customerAvatar: chatData.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
+          lastMessage: 'Chat übernommen',
+          lastMessageTime: new Date(chatData.last_message_time || Date.now()),
+          unreadCount: 0,
+          isOnline: true,
+          messages: [],
+          status: 'in_progress',
+          assigned_to: assignedToId,
+          assigned_agent: assignedAgentName,
+          isNew: true
+        };
+
+        this.activeChats = [newChat, ...this.activeChats];
+        this.filteredActiveChats = [newChat, ...this.filteredActiveChats];
+      }
+
+      // ✅ Assignment Status aktualisieren
+      this.assignmentStatuses.set(sessionId, {
+        is_assigned: true,
+        assigned_to: assignedToId,
+        can_user_write: wasAssignedToMe,
+        assigned_agent_name: assignedAgentName
+      });
+
+      // ✅ UI-Benachrichtigung (nur für andere Agents, nicht für den der übernommen hat)
+      if (!wasAssignedToMe) {
+        this.showToast(`ℹ️ Chat wurde von ${assignedAgentName} übernommen`, 'info', 3000);
+      }
+
+      this.sortActiveChats();
+      this.cdRef.detectChanges();
+      return;
+    }
+
+    // 📢 Escalation Prompt wurde gesendet
+    if (data.type === 'escalation_prompt_sent' && data.chat) {
+      const chatData = data.chat;
+      const sessionId = chatData.session_id;
+
+      console.log('📢 Escalation Prompt gesendet:', {
+        sessionId,
+        escalationPrompt: chatData.escalation_prompt
+      });
+
+      // ✅ Escalation-Prompt in Map speichern
+      if (chatData.escalation_prompt) {
+        this.escalationPrompts.set(sessionId, {
+          prompt_id: chatData.escalation_prompt.id,
+          sent_at: new Date(chatData.escalation_prompt.sent_at),
+          sent_by: chatData.escalation_prompt.sent_by_agent_name
+        });
+
+        console.log('✅ Escalation-Prompt gespeichert:', {
+          sessionId,
+          sentAt: chatData.escalation_prompt.sent_at,
+          mapSize: this.escalationPrompts.size
+        });
+      }
+
+      // ✅ Chat aktualisieren
+      this.updateChatEverywhere(sessionId, {
+        lastMessage: chatData.last_message || 'Escalation-Anfrage gesendet',
+        lastMessageTime: new Date(chatData.last_message_time || Date.now())
+      });
+
+      this.cdRef.detectChanges();
+      return;
+    }
+
+    // 🔄 Chat Reaktivierung (von closed zu bot)
+    if (data.type === 'chat_reactivated' && data.chat) {
+      const chatData = data.chat;
+      const sessionId = chatData.session_id;
+
+      console.log('🔄 Chat Reactivation received:', {
+        sessionId,
+        newStatus: 'bot',
+        previousStatus: this.activeChats.find(c => c.id === sessionId)?.status
+      });
+
+      const chatIndex = this.activeChats.findIndex(c => c.id === sessionId);
+
+      if (chatIndex !== -1) {
+        // ✅ Chat existiert - verwende zentrale Update-Methode
+        this.updateChatEverywhere(sessionId, {
+          status: 'bot',
+          assigned_to: null,
+          assigned_agent: '',
+          lastMessage: 'Chat reaktiviert - Chatbot aktiv',
+          lastMessageTime: new Date(chatData.last_message_time || Date.now()),
+          isNew: false
+        });
+
+        console.log('✅ Chat reaktiviert - Status aktualisiert zu "bot"');
+
+        // ✅ Assignment Status zurücksetzen
+        this.assignmentStatuses.delete(sessionId);
+
+        // ✅ NEU: Escalation-Prompt zurücksetzen bei Reaktivierung
+        // So kann der Agent wieder nachfragen, wenn der Kunde zurückkommt
+        const hadPrompt = this.escalationPrompts.has(sessionId);
+        this.escalationPrompts.delete(sessionId);
+        console.log('✅ Escalation-Prompt zurückgesetzt - Button wieder verfügbar', {
+          sessionId,
+          hadPromptBefore: hadPrompt,
+          currentMapSize: this.escalationPrompts.size,
+          allKeys: Array.from(this.escalationPrompts.keys())
+        });
+
+        this.sortActiveChats();
+        this.cdRef.detectChanges();
+      } else {
+        // ✅ Chat existiert nicht mehr in Liste (wurde vielleicht entfernt) - neu laden
+        console.log('⚠️ Chat nicht in activeChats gefunden - lade Chats neu');
+        this.loadActiveChats();
+      }
+
+      return;
+    }
+
     // ✅ Standard: Unbekannter Event-Type
     console.warn('Unhandled chat update type:', data.type, data);
   }
@@ -1020,6 +1169,60 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       newAgentId,
       canWrite: newAgentId === this.currentAgent.id
     });
+  }
+
+  /**
+   * ✅ NEU: Zentrale Methode zum Aktualisieren eines Chats überall
+   * Stellt sicher dass activeChats, filteredActiveChats UND selectedChat synchron bleiben
+   */
+  private updateChatEverywhere(sessionId: string, updates: Partial<Chat>): void {
+    console.log('🔄 updateChatEverywhere called:', { sessionId, updates });
+
+    // 1. activeChats aktualisieren
+    const activeChatIndex = this.activeChats.findIndex(c => c.id === sessionId);
+    if (activeChatIndex !== -1) {
+      this.activeChats[activeChatIndex] = {
+        ...this.activeChats[activeChatIndex],
+        ...updates
+      };
+      console.log('✅ Updated activeChats[' + activeChatIndex + ']', this.activeChats[activeChatIndex]);
+    }
+
+    // 2. filteredActiveChats aktualisieren
+    const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
+    if (filteredIndex !== -1) {
+      this.filteredActiveChats[filteredIndex] = {
+        ...this.filteredActiveChats[filteredIndex],
+        ...updates
+      };
+      console.log('✅ Updated filteredActiveChats[' + filteredIndex + ']');
+    }
+
+    // 3. ✅ KRITISCH: selectedChat aktualisieren falls dieser Chat ausgewählt ist
+    // WICHTIG: Verwende die aktualisierten Daten aus activeChats als Basis!
+    if (this.selectedChat?.id === sessionId && activeChatIndex !== -1) {
+      // ✅ KORREKTUR: Hole die frisch aktualisierten Daten aus activeChats
+      const updatedChatFromActive = this.activeChats[activeChatIndex];
+
+      // ✅ Erstelle ein NEUES Objekt mit allen aktualisierten Werten
+      this.selectedChat = {
+        ...updatedChatFromActive,
+        // ✅ WICHTIG: Behalte die Messages vom selectedChat bei (diese sind vollständig)
+        messages: this.selectedChat.messages
+      };
+
+      console.log('✅✅✅ CRITICAL UPDATE - selectedChat synchronized with activeChats:', {
+        sessionId,
+        status: this.selectedChat.status,
+        assigned_to: this.selectedChat.assigned_to,
+        assigned_agent: this.selectedChat.assigned_agent,
+        oldStatus: updatedChatFromActive.status
+      });
+
+      // ✅ Change Detection EXPLIZIT triggern
+      this.cdRef.markForCheck();
+      this.cdRef.detectChanges();
+    }
   }
 
   private removeClosedChat(sessionId: string): void {
@@ -1400,11 +1603,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (!chat) return;
 
     this.ngZone.run(() => {
-      // Chat-Status auf 'closed' setzen OHNE zu entfernen
-      chat.status = 'closed';
-      chat.assigned_to = null;
-      chat.assigned_agent = '';
-
+      // ✅ OPTIMIERT: Verwende updateChatEverywhere statt direkter Mutation
       const closeReason = data.close_reason || data.chat?.close_reason;
       let endMessage = `Chat wurde beendet (${data.ended_by === 'visitor' ? 'vom Benutzer' : 'von Mitarbeiter'})`;
 
@@ -1412,14 +1611,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         endMessage = `Chat beendet von Mitarbeiter (Grund: ${closeReason})`;
       }
 
-      chat.lastMessage = endMessage;
-      chat.lastMessageTime = new Date();
-      chat.unreadCount = 0; // Unread count zurücksetzen
+      // ✅ WICHTIG: KEINE unreadCount Erhöhung hier!
+      // Der Counter wird durch die System-Nachricht erhöht (handleIncomingMessageGlobal)
+      this.updateChatEverywhere(sessionId, {
+        status: 'closed',
+        assigned_to: null,
+        assigned_agent: '',
+        lastMessage: endMessage,
+        lastMessageTime: new Date()
+      });
 
-      const chatIndex = this.activeChats.findIndex(c => c.id === sessionId);
-      if (chatIndex !== -1) {
-        this.activeChats[chatIndex] = { ...chat };
-      }
+      console.log(`✅ Chat ended event processed - status set to closed for session ${sessionId}`);
 
       const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
       if (filteredIndex !== -1) {
@@ -1427,12 +1629,26 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
 
       if (this.selectedChat?.id === sessionId) {
-        this.selectedChat = { ...chat };
+        // WICHTIG: Nachrichten beibehalten! Nur Status-Felder aktualisieren
+        this.selectedChat = Object.assign({}, this.selectedChat, {
+          status: 'closed',
+          assigned_to: null,
+          assigned_agent: '',
+          lastMessage: endMessage,
+          lastMessageTime: new Date()
+        });
         this.showToast(endMessage, 'info');
       }
 
       // WICHTIG: removeClosedChat() NICHT aufrufen!
+
+      // ✅ NEU: Chat-Liste neu sortieren (Event-Message = neue Aktivität)
+      this.sortActiveChats();
+
       this.cdRef.detectChanges();
+
+      // ✅ NEU: Tab-Titel aktualisieren (unreadCount bleibt erhalten)
+      this.updateTabTitle();
     });
   }
 
@@ -1456,7 +1672,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   // ✅ NEUE Methode für Chat-Updates
   private handleChatUpdate(data: any): void {
-    console.log('Chat Update empfangen:', data);
+    console.log('Chat Update empfangen (chats.updated):', data);
+
+    // ✅ NEU: Leite ALLE Event-Typen an handleAllChatsUpdate weiter
+    // Dies ist der korrekte Handler für AllChatsUpdate Events vom Backend
+    if (data.type) {
+      console.log('🔄 Forwarding to handleAllChatsUpdate, type:', data.type);
+      this.handleAllChatsUpdate(data);
+      return;
+    }
+
+    // ✅ Legacy: Alte Chat-Escalation Logik (falls kein type vorhanden)
 
     if (data.type === 'chat_escalated' && data.chat) {
       const chatData = data.chat;
@@ -1485,12 +1711,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.activeChats = [newChat, ...this.activeChats];
         this.filteredActiveChats = [newChat, ...this.filteredActiveChats];
       } else {
+        // ✅ WICHTIG: Behalte den höheren unreadCount (lokal vs. Backend)
+        const currentUnread = this.activeChats[existingIndex].unreadCount || 0;
+        const backendUnread = chatData.unread_count || 0;
+
         const updatedChat = {
           ...this.activeChats[existingIndex],
           status: chatData.status,
           lastMessage: chatData.last_message,
           lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: chatData.unread_count || 1,
+          unreadCount: Math.max(currentUnread, backendUnread), // ✅ Nehme den höheren Wert
           assigned_to: chatData.assigned_to,
           assigned_agent: chatData.assigned_agent,
           isNew: true
@@ -1526,6 +1756,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     const messageData = data.message;
     const sessionId = messageData.session_id;
+
+    // ✅ DEBUG: Log escalation messages
+    if (messageData?.message_type === 'escalation_prompt') {
+      console.log('🚨 ESCALATION PROMPT RECEIVED:', {
+        text: messageData.text,
+        from: messageData.from,
+        sessionId: sessionId,
+        metadata: messageData.metadata
+      });
+    }
 
     if (!sessionId) return;
 
@@ -1601,6 +1841,106 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       );
     }
 
+    // ✅ WICHTIG: Nachricht zu allen relevanten Chats hinzufügen (für alle Message-Types)
+    if (messageData && messageData.text) {
+      console.log('💬 Processing message:', {
+        from: messageData.from,
+        text: messageData.text.substring(0, 50),
+        message_type: messageData.message_type,
+        sessionId: sessionId
+      });
+
+      const newMessage: Message = {
+        id: messageData.id || Date.now().toString(),
+        content: messageData.text,
+        from: messageData.from,
+        timestamp: new Date(messageData.created_at || Date.now()),
+        read: messageData.from === 'user' ? false : true,
+        isAgent: messageData.from === 'agent',
+        isBot: messageData.from === 'bot',
+        message_type: messageData.message_type,
+        metadata: messageData.metadata,
+        attachment: messageData.has_attachment ? messageData.attachment : undefined
+      };
+
+      // ✅ OPTIMIERT: Immutable Update für smooth UI ohne Flicker
+      const activeChatIndex = this.activeChats.findIndex(c => c.id === sessionId);
+      if (activeChatIndex !== -1 && !this.activeChats[activeChatIndex].messages.some(m => m.id === newMessage.id)) {
+        const isCurrentChat = this.selectedChat?.id === sessionId;
+
+        // ✅ UnreadCount berechnen
+        let newUnreadCount = this.activeChats[activeChatIndex].unreadCount || 0;
+        // ✅ WICHTIG: Counter erhöhen für user, bot UND agent (wenn Chat nicht ausgewählt ist)
+        // ⚠️ ABER NICHT für System-Nachrichten - diese sind Meta-Informationen!
+        if ((messageData.from === 'user' || messageData.from === 'bot' || messageData.from === 'agent') && !isCurrentChat) {
+          newUnreadCount += 1;
+        } else if (isCurrentChat) {
+          newUnreadCount = 0;
+        }
+        // System-Nachrichten (from === 'system') ändern den Counter NICHT
+
+        // ✅ IMMUTABLE UPDATE: Neues Chat-Objekt erstellen statt zu mutieren
+        const updatedChat = {
+          ...this.activeChats[activeChatIndex],
+          messages: [...this.activeChats[activeChatIndex].messages, newMessage],
+          lastMessage: newMessage.content,
+          lastMessageTime: newMessage.timestamp,
+          unreadCount: newUnreadCount
+        };
+
+        // ✅ Array immutable updaten
+        this.activeChats = [
+          ...this.activeChats.slice(0, activeChatIndex),
+          updatedChat,
+          ...this.activeChats.slice(activeChatIndex + 1)
+        ];
+
+        // ✅ filteredActiveChats synchron halten
+        const filteredChatIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
+        if (filteredChatIndex !== -1) {
+          this.filteredActiveChats = [
+            ...this.filteredActiveChats.slice(0, filteredChatIndex),
+            updatedChat,
+            ...this.filteredActiveChats.slice(filteredChatIndex + 1)
+          ];
+        }
+
+        // ✅ selectedChat updaten falls ausgewählt
+        if (this.selectedChat && this.selectedChat.id === sessionId) {
+          const isDuplicate = this.selectedChat.messages.some(m => m.id === newMessage.id);
+          if (!isDuplicate) {
+            this.selectedChat = {
+              ...updatedChat,
+              messages: updatedChat.messages.map(m => ({ ...m, read: true }))
+            };
+            this.scrollToBottom();
+
+            // ✅ NEU: Backend-Call um Nachrichten als gelesen zu markieren wenn Chat aktiv betrachtet wird
+            // Dies verhindert, dass beim Reload ungelesene Nachrichten angezeigt werden
+            const chatId = this.activeChats[activeChatIndex].chatId;
+            if (chatId && sessionId) {
+              this.markMessagesAsRead(chatId, sessionId);
+            }
+          }
+        }
+
+        // ✅ WICHTIG: Nur sortieren wenn Chat NICHT bereits ganz oben ist
+        const needsSort = activeChatIndex !== 0;
+        if (needsSort) {
+          console.log('🔄 Sorting - message not in top chat');
+          this.sortActiveChats();
+        } else {
+          console.log('✅ Smooth update - no sort needed');
+        }
+
+        // ✅ Tab-Titel aktualisieren
+        this.updateTabTitle();
+
+        console.log('✅ Message processing complete (immutable)');
+        return;
+      }
+    }
+
     // ✅ Bot-Nachrichten werden ignoriert (keine Notifications)
     if (messageData && messageData.from === 'bot') {
       console.log('🤖 Bot message received - NO notification sent');
@@ -1610,28 +1950,22 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (data.unassigned) {
       const chat = this.activeChats.find(c => c.id === sessionId);
       if (chat) {
-        chat.assigned_to = null;
-        chat.assigned_agent = '';
-        chat.status = 'human';
-        chat.lastMessage = 'Zuweisung aufgehoben - wartet auf Übernahme';
-        chat.lastMessageTime = new Date();
-        chat.unreadCount = (chat.unreadCount || 0) + 1;
-        chat.isNew = true;
+        // ✅ Verwende zentrale Update-Methode
+        this.updateChatEverywhere(sessionId, {
+          assigned_to: null,
+          assigned_agent: '',
+          status: 'human',
+          lastMessage: 'Zuweisung aufgehoben - wartet auf Übernahme',
+          lastMessageTime: new Date(),
+          unreadCount: (chat.unreadCount || 0) + 1,
+          isNew: true
+        });
 
-        this.assignmentStatuses.set(chat.id, {
+        this.assignmentStatuses.set(sessionId, {
           is_assigned: false,
           assigned_to: null,
           can_user_write: true
         });
-
-        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
-        if (filteredIndex !== -1) {
-          this.filteredActiveChats[filteredIndex] = { ...chat };
-        }
-
-        if (this.selectedChat?.id === sessionId) {
-          this.selectedChat = { ...this.selectedChat, ...chat };
-        }
 
         this.notificationSound.notify('message', {
           senderName: 'System',
@@ -1641,46 +1975,50 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
         this.sortActiveChats();
         this.cdRef.detectChanges();
+
+        console.log('✅ Chat unassigned - updated everywhere');
         return;
       }
     }
 
     if (data.chat_ended && data.ended_by === 'visitor') {
       const chat = this.activeChats.find(c => c.id === sessionId);
-      if (chat) {
-        chat.status = 'closed';
-        chat.assigned_to = null;
-        chat.assigned_agent = '';
+      const wasMyChat = chat?.assigned_to === this.currentAgent.id;
 
-        if (chat.assigned_to === this.currentAgent.id) {
-          this.notificationSound.notify('message', {
-            senderName: 'System',
-            message: 'Der Benutzer hat Ihren Chat beendet',
-            sessionId: sessionId
-          });
-        }
+      // ✅ Verwende zentrale Update-Methode
+      this.updateChatEverywhere(sessionId, {
+        status: 'closed',
+        assigned_to: null,
+        assigned_agent: ''
+      });
+
+      if (wasMyChat) {
+        this.notificationSound.notify('message', {
+          senderName: 'System',
+          message: 'Der Benutzer hat Ihren Chat beendet',
+          sessionId: sessionId
+        });
       }
+
+      console.log('✅ Chat ended by visitor - updated everywhere');
       return;
     }
 
     if (data.assigned_to) {
-      const chat = this.activeChats.find(c => c.id === sessionId);
-      if (chat) {
-        chat.assigned_to = data.assigned_to;
-        chat.assigned_agent = data.agent_name;
-        chat.status = data.status;
+      // ✅ WICHTIG: Verwende die zentrale Update-Methode statt direkter Mutation
+      this.updateChatEverywhere(sessionId, {
+        assigned_to: data.assigned_to,
+        assigned_agent: data.agent_name,
+        status: data.status
+      });
 
-        this.assignmentStatuses.set(chat.id, {
-          is_assigned: true,
-          assigned_to: data.assigned_to,
-          can_user_write: data.assigned_to === this.currentAgent.id
-        });
+      this.assignmentStatuses.set(sessionId, {
+        is_assigned: true,
+        assigned_to: data.assigned_to,
+        can_user_write: data.assigned_to === this.currentAgent.id
+      });
 
-        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
-        if (filteredIndex !== -1) {
-          this.filteredActiveChats[filteredIndex] = { ...chat };
-        }
-      }
+      console.log('✅ Assignment updated via handleIncomingMessageGlobal');
     }
 
     if (this.isMessageDuplicate(sessionId, messageData.id)) {
@@ -1696,6 +2034,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     this.addMessageToChat(sessionId, messageData);
     this.cdRef.detectChanges();
+
+    // ✅ NEU: Tab-Titel aktualisieren nach neuer Nachricht
+    this.updateTabTitle();
   }
 
   private cleanupPusherSubscriptions() {
@@ -1726,6 +2067,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     if (this.chatRequestSubscription) {
       this.chatRequestSubscription.unsubscribe();
+    }
+
+    // ✅ Cooldown Timer bereinigen
+    if (this.cooldownUpdateInterval) {
+      clearInterval(this.cooldownUpdateInterval);
     }
   }
 
@@ -1758,6 +2104,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       const response: any = await firstValueFrom(this.chatbotService.getActiveChats());
       const chats = Array.isArray(response) ? response : response.data;
 
+
       this.activeChats = await Promise.all(chats.map(async (chat: any) => {
         const isSelected = this.selectedChat?.id === chat.session_id;
         const isNew = chat.status === 'human' && !chat.assigned_agent;
@@ -1784,6 +2131,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           }
         }
 
+        // ✅ Escalation-Prompt wiederherstellen falls vorhanden
+        if (chat.escalation_prompt) {
+          this.escalationPrompts.set(chat.session_id, {
+            prompt_id: chat.escalation_prompt.id,
+            sent_at: new Date(chat.escalation_prompt.sent_at),
+            sent_by: chat.escalation_prompt.sent_by_agent_name
+          });
+        }
+
         return {
           id: chat.session_id || '',
           chatId: chat.chat_id || '',
@@ -1796,15 +2152,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           unreadCount: isSelected ? 0 : (chat.unread_count || 0),
           isOnline: chat.is_online || false,
           messages: Array.isArray(chat.messages)
-            ? chat.messages.map((msg: any) => ({
-              id: msg.id || Date.now().toString(),
-              content: msg.text || '',
-              timestamp: new Date(msg.timestamp || Date.now()),
-              isAgent: msg.from === 'agent',
-              isBot: msg.from === 'bot',
-              read: isSelected ? true : (msg.read || false),
-              attachment: msg.has_attachment ? msg.attachment : undefined
-            }))
+            ? chat.messages.map((msg: any) => {
+                return {
+                  id: msg.id || Date.now().toString(),
+                  content: msg.text || '',
+                  timestamp: new Date(msg.timestamp || Date.now()),
+                  isAgent: msg.from === 'agent',
+                  isBot: msg.from === 'bot',
+                  read: isSelected ? true : (msg.read || false),
+                  from: msg.from,
+                  message_type: msg.message_type,
+                  metadata: msg.metadata,
+                  attachment: msg.has_attachment ? msg.attachment : undefined
+                };
+              })
             : [],
           status: chat.status || '',
           assigned_agent: chat.assigned_agent || '',
@@ -1828,6 +2189,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       this.setupPusherListeners();
       this.cdRef.detectChanges();
+
+      // ✅ NEU: Tab-Titel nach Laden der Chats aktualisieren
+      this.updateTabTitle();
 
     } catch (error) {
       console.error('Error loading chats:', error);
@@ -1897,6 +2261,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       updatedChat,
       ...this.activeChats.slice(chatIndex + 1)
     ];
+
+    // ✅ FIX: filteredActiveChats AUCH aktualisieren
+    const filteredIndex = this.filteredActiveChats.findIndex(chat => chat.id === sessionId);
+    if (filteredIndex !== -1) {
+      this.filteredActiveChats = [
+        ...this.filteredActiveChats.slice(0, filteredIndex),
+        updatedChat,
+        ...this.filteredActiveChats.slice(filteredIndex + 1)
+      ];
+    }
 
     if (isCurrentChat) {
       this.selectedChat = {
@@ -2043,6 +2417,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         next: (visitor) => (this.visitor = visitor),
         error: (err) => console.error('Error fetching visitor details:', err)
       });
+
+      // ✅ NEU: Tab-Titel aktualisieren nach Chat-Auswahl
+      this.updateTabTitle();
     });
   }
 
@@ -2055,18 +2432,30 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const isAssigned = chat.assigned_to !== null && chat.assigned_to !== undefined;
     const isAssignedToMe = isAssigned && chat.assigned_to === this.currentAgent.id;
 
-    if (chat.status === 'human') {
-      // Bei Status 'human': Nur schreiben wenn zugewiesen UND es ist mein Chat
-      return isAssignedToMe;
-    }
+    // ✅ DEBUG: Log canWrite Evaluation
+    const canWriteResult = (() => {
+      if (chat.status === 'human') {
+        return isAssignedToMe;
+      }
+      if (chat.status === 'in_progress') {
+        return isAssignedToMe;
+      }
+      return false;
+    })();
 
-    if (chat.status === 'in_progress') {
-      // Bei Status 'in_progress': Nur der zugewiesene Agent darf schreiben
-      return isAssignedToMe;
-    }
+    console.log('🔍 canWrite() evaluation:', {
+      chatId: chat.id,
+      status: chat.status,
+      assigned_to: chat.assigned_to,
+      assigned_agent: chat.assigned_agent,
+      currentAgentId: this.currentAgent.id,
+      currentAgentName: this.currentAgent.name,
+      isAssigned,
+      isAssignedToMe,
+      canWrite: canWriteResult
+    });
 
-    // Bei anderen Status nicht schreiben
-    return false;
+    return canWriteResult;
   }
   /**
    * Assignment Status für Chat laden
@@ -2164,7 +2553,48 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    * Kann Escalation Prompt senden?
    */
   canSendEscalationPrompt(chat: Chat): boolean {
-    return chat.status === 'bot' && !this.escalationPrompts.has(chat.id);
+    if (chat.status !== 'bot') {
+      return false;
+    }
+
+    // ✅ NEU: Cooldown-Mechanismus statt permanenter Deaktivierung
+    const lastPrompt = this.escalationPrompts.get(chat.id);
+    if (!lastPrompt) {
+      return true; // Noch nie gesendet
+    }
+
+    // ✅ Cooldown: 5 Minuten (300000 ms)
+    const cooldownMs = 5 * 60 * 1000; // 5 Minuten
+    const timeSinceLastPrompt = Date.now() - lastPrompt.sent_at.getTime();
+    return timeSinceLastPrompt >= cooldownMs;
+  }
+
+  /**
+   * Berechnet den Cooldown-Text für die Escalation
+   */
+  getEscalationCooldownText(chat: Chat): string | null {
+    const lastPrompt = this.escalationPrompts.get(chat.id);
+    if (!lastPrompt) {
+      return null;
+    }
+
+    const cooldownMs = 5 * 60 * 1000; // 5 Minuten
+    const timeSinceLastPrompt = Date.now() - lastPrompt.sent_at.getTime();
+    const remainingMs = cooldownMs - timeSinceLastPrompt;
+
+    if (remainingMs <= 0) {
+      return null; // Cooldown abgelaufen
+    }
+
+    // Umwandeln in Minuten und Sekunden
+    const minutes = Math.floor(remainingMs / 60000);
+    const seconds = Math.floor((remainingMs % 60000) / 1000);
+
+    if (minutes > 0) {
+      return `${minutes}:${seconds.toString().padStart(2, '0')} min`;
+    } else {
+      return `${seconds}s`;
+    }
   }
 
   /**
@@ -2590,6 +3020,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return chat.id;
   }
 
+  trackByAdminChatId(index: number, chat: any): string {
+    return chat.session_id || chat.chat_id || index.toString();
+  }
+
   // File handling methods
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -2671,6 +3105,30 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   }
 
+  /**
+   * ✅ NEU: Holt den Agent-Namen aus der Nachricht-Metadata
+   * Löst das Problem dass nach Transfer alle Nachrichten den neuen Agent-Namen zeigen
+   */
+  getAgentNameForMessage(message: Message): string {
+    // 1. Prüfe ob metadata vorhanden ist und agent_name enthält
+    if (message.metadata) {
+      try {
+        const metadata = typeof message.metadata === 'string'
+          ? JSON.parse(message.metadata)
+          : message.metadata;
+
+        if (metadata.agent_name) {
+          return metadata.agent_name;
+        }
+      } catch (e) {
+        console.error('Error parsing message metadata:', e);
+      }
+    }
+
+    // 2. Fallback: Verwende den aktuellen assigned_agent vom Chat
+    return this.selectedChat?.assigned_agent || 'Agent';
+  }
+
   private isMessageDuplicate(chatId: string, messageId: string): boolean {
     const chat = this.activeChats.find(c => c.id === chatId);
     if (!chat) return false;
@@ -2694,6 +3152,64 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
 
+  /**
+   * ✅ NEU: Tab-Visibility-Tracking einrichten
+   */
+  private setupTabVisibilityTracking(): void {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        this.isTabVisible = !document.hidden;
+        console.log('Admin Dashboard tab visibility changed:', this.isTabVisible ? 'visible' : 'hidden');
+
+        // Tab-Titel aktualisieren wenn Tab wieder sichtbar wird
+        if (this.isTabVisible) {
+          this.updateTabTitle();
+        }
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => {
+        this.isWindowFocused = true;
+        console.log('Admin Dashboard window focused');
+        this.updateTabTitle();
+      });
+
+      window.addEventListener('blur', () => {
+        this.isWindowFocused = false;
+        console.log('Admin Dashboard window blurred');
+      });
+    }
+  }
+
+  /**
+   * ✅ NEU: Gesamtzahl ungelesener Nachrichten berechnen
+   */
+  private calculateTotalUnreadCount(): number {
+    return this.activeChats.reduce((total, chat) => {
+      return total + (chat.unreadCount || 0);
+    }, 0);
+  }
+
+  /**
+   * ✅ NEU: Tab-Titel aktualisieren
+   */
+  private updateTabTitle(): void {
+    if (typeof document === 'undefined') return;
+
+    this.totalUnreadCount = this.calculateTotalUnreadCount();
+
+    // ✅ KORRIGIERT: Zeige Unread-Counter auch wenn Tab sichtbar ist
+    if (this.totalUnreadCount > 0) {
+      // Ungelesene Nachrichten vorhanden
+      document.title = `(${this.totalUnreadCount}) Livechat Dashboard`;
+    } else {
+      // Keine ungelesenen Nachrichten
+      document.title = 'Livechat Dashboard';
+    }
+
+    console.log('Tab title updated:', document.title, '(unread:', this.totalUnreadCount, ')');
+  }
 }
 
 interface Chat {
@@ -2723,6 +3239,8 @@ interface Message {
   isBot: boolean;
   read: boolean;
   from?: string;
+  message_type?: string;
+  metadata?: any;
   attachment?: {
     id: number;
     file_name: string;

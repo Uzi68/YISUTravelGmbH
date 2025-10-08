@@ -69,7 +69,7 @@
     <div class="chat-list-container">
       <!-- Aktive Chats (standard Ansicht) -->
       <div class="chat-list-section" *ngIf="!showAllChats || !isAdmin">
-        <div *ngFor="let chat of filteredActiveChats"
+        <div *ngFor="let chat of filteredActiveChats; trackBy: trackByChatId"
              class="chat-item"
              [class.active]="selectedChat?.id === chat.id"
              [class.unread]="chat.unreadCount > 0"
@@ -148,7 +148,7 @@
           <span>Keine Chats gefunden</span>
         </div>
 
-        <div *ngFor="let chat of filteredAdminChats"
+        <div *ngFor="let chat of filteredAdminChats; trackBy: trackByAdminChatId"
              class="chat-item admin-chat"
              [class.active]="selectedChat?.id === chat.session_id"
              [class.assigned-to-me]="chat.assigned_to === currentAgent.id"
@@ -363,8 +363,18 @@
            [class.customer]="!message.isAgent && !message.isBot"
            [class.bot]="message.isBot"
            [class.system]="message.from === 'system'"
+           [class.escalation]="message.message_type === 'escalation_prompt'"
            @messageAnimation>
         <div class="message-content">
+          <!-- System Message Icon (nur Icon, kein Text) -->
+          <mat-icon class="system-message-icon-inline" *ngIf="message.from === 'system'">info</mat-icon>
+
+          <!-- Escalation Badge -->
+          <div class="escalation-badge" *ngIf="message.message_type === 'escalation_prompt'">
+            <mat-icon>support_agent</mat-icon>
+            <span>Eskalationsanfrage gesendet</span>
+          </div>
+
           <div class="message-text">{{message.content | messageFilter: isAdmin}}</div>
 
           <!-- File Attachment Display -->
@@ -395,10 +405,11 @@
             </div>
           </div>
 
-          <div class="message-meta">
-            <!-- Badge für Bot/Agent/System -->
-            <div class="message-badge" *ngIf="message.isBot || message.isAgent || message.from === 'system'">
-              {{message.isBot ? 'Bot' : (message.from === 'system' ? 'System' : 'Agent')}}
+          <!-- Message Meta NUR für non-system Messages -->
+          <div class="message-meta" *ngIf="message.from !== 'system'">
+            <!-- Badge für Bot/Agent -->
+            <div class="message-badge" *ngIf="message.isBot || message.isAgent">
+              {{message.isBot ? 'Bot' : getAgentNameForMessage(message)}}
             </div>
 
             <div class="message-time">
@@ -449,6 +460,13 @@
             <mat-icon>help_outline</mat-icon>
             Nachfragen
           </button>
+
+          <!-- Cooldown Counter -->
+          <div *ngIf="!canSendEscalationPrompt(selectedChat) && selectedChat.status === 'bot' && getEscalationCooldownText(selectedChat)"
+               class="escalation-cooldown">
+            <mat-icon>schedule</mat-icon>
+            <span>Bis zur nächsten Anfrage: {{ getEscalationCooldownText(selectedChat) }}</span>
+          </div>
         </div>
       </div>
 

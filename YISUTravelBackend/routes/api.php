@@ -64,6 +64,7 @@ Route::post('/chatbot/test-input', function (Request $request) {
 
 Route::post('/chatbot/input/anonymous', [ChatbotController::class, 'handleInputAnonymous']);
 Route::post('/chatbot/end_chatbotSession', [ChatbotController::class, 'end_chatbotSession']);
+Route::post('/chatbot/notification-status', [ChatbotController::class, 'saveNotificationStatus']);
 
 //Route::get('/chat-history', [ChatbotController::class, 'getChatHistory'])->middleware(['auth:sanctum', 'role:Admin']);
 
