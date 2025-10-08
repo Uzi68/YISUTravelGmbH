@@ -750,13 +750,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           this.activeChats = [newChat, ...this.activeChats];
           this.filteredActiveChats = [newChat, ...this.filteredActiveChats];
         } else {
+          // ✅ WICHTIG: Behalte den höheren unreadCount (Transfer fügt keine neue Nachricht hinzu)
+          const currentUnread = this.activeChats[chatIndex].unreadCount || 0;
+          const newUnread = isCurrentlySelected ? 0 : Math.max(currentUnread, 1);
+
           // ✅ Verwende zentrale Update-Methode statt direkter Mutation
           this.updateChatEverywhere(sessionId, {
             assigned_to: newAgentId,
             assigned_agent: chatData.to_agent_name,
             lastMessage: `Chat von ${chatData.from_agent_name} erhalten`,
             lastMessageTime: new Date(chatData.last_message_time),
-            unreadCount: isCurrentlySelected ? 0 : 1, // ✅ WICHTIG: 0 wenn bereits ausgewählt
+            unreadCount: newUnread, // ✅ Behalte existierende ungelesene Nachrichten
             status: 'in_progress',
             isNew: true
           });
@@ -816,14 +820,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         const wasMyChat = this.activeChats[chatIndex].assigned_to === this.currentAgent.id;
         const isSelectedChat = this.selectedChat?.id === sessionId;
 
-        // ✅ Verwende zentrale Update-Methode
+        // ✅ Verwende zentrale Update-Methode - OHNE unreadCount Erhöhung
+        // unreadCount wird von der System-Nachricht erhöht (via handleIncomingMessageGlobal)
         this.updateChatEverywhere(sessionId, {
           status: 'closed',
           assigned_to: null,
           assigned_agent: '',
           lastMessage: chatData.last_message || 'Chat beendet',
-          lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: isSelectedChat ? this.activeChats[chatIndex].unreadCount : (this.activeChats[chatIndex].unreadCount || 0) + 1
+          lastMessageTime: new Date(chatData.last_message_time)
         });
 
         // 🔔 NOTIFICATION: Nur wenn es mein Chat war
@@ -892,6 +896,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       if (chatIndex !== -1) {
         const wasMyChat = this.activeChats[chatIndex].assigned_to === this.currentAgent.id;
 
+        // ✅ WICHTIG: Behalte den höheren unreadCount
+        const currentUnread = this.activeChats[chatIndex].unreadCount || 0;
+        const backendUnread = chatData.unread_count || 0;
+
         // ✅ Verwende zentrale Update-Methode
         this.updateChatEverywhere(sessionId, {
           status: 'human',
@@ -899,7 +907,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           assigned_agent: '',
           lastMessage: chatData.last_message || 'Zuweisung aufgehoben',
           lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: chatData.unread_count || 0,
+          unreadCount: Math.max(currentUnread, backendUnread),
           isNew: true
         });
 
@@ -951,12 +959,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.activeChats = [newChat, ...this.activeChats];
         this.filteredActiveChats = [newChat, ...this.filteredActiveChats];
       } else {
+        // ✅ WICHTIG: Behalte den höheren unreadCount (lokal vs. Backend)
+        // Frontend zählt in Echtzeit, Backend könnte verzögert sein
+        const currentUnread = this.activeChats[existingIndex].unreadCount || 0;
+        const backendUnread = chatData.unread_count || 0;
+
         const updatedChat = {
           ...this.activeChats[existingIndex],
           status: chatData.status,
           lastMessage: chatData.last_message,
           lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: chatData.unread_count || 1,
+          unreadCount: Math.max(currentUnread, backendUnread), // ✅ Nehme den höheren Wert
           assigned_to: chatData.assigned_to,
           assigned_agent: chatData.assigned_agent,
           isNew: true
@@ -1590,11 +1603,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (!chat) return;
 
     this.ngZone.run(() => {
-      // Chat-Status auf 'closed' setzen OHNE zu entfernen
-      chat.status = 'closed';
-      chat.assigned_to = null;
-      chat.assigned_agent = '';
-
+      // ✅ OPTIMIERT: Verwende updateChatEverywhere statt direkter Mutation
       const closeReason = data.close_reason || data.chat?.close_reason;
       let endMessage = `Chat wurde beendet (${data.ended_by === 'visitor' ? 'vom Benutzer' : 'von Mitarbeiter'})`;
 
@@ -1602,20 +1611,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         endMessage = `Chat beendet von Mitarbeiter (Grund: ${closeReason})`;
       }
 
-      chat.lastMessage = endMessage;
-      chat.lastMessageTime = new Date();
+      // ✅ WICHTIG: KEINE unreadCount Erhöhung hier!
+      // Der Counter wird durch die System-Nachricht erhöht (handleIncomingMessageGlobal)
+      this.updateChatEverywhere(sessionId, {
+        status: 'closed',
+        assigned_to: null,
+        assigned_agent: '',
+        lastMessage: endMessage,
+        lastMessageTime: new Date()
+      });
 
-      // ✅ KORRIGIERT: unreadCount erhöhen wenn Chat nicht ausgewählt ist
-      const isSelectedChat = this.selectedChat?.id === sessionId;
-      if (!isSelectedChat) {
-        chat.unreadCount = (chat.unreadCount || 0) + 1;
-        console.log(`Chat ended - unreadCount increased to ${chat.unreadCount} for session ${sessionId}`);
-      }
-
-      const chatIndex = this.activeChats.findIndex(c => c.id === sessionId);
-      if (chatIndex !== -1) {
-        this.activeChats[chatIndex] = { ...chat };
-      }
+      console.log(`✅ Chat ended event processed - status set to closed for session ${sessionId}`);
 
       const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
       if (filteredIndex !== -1) {
@@ -1705,12 +1711,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.activeChats = [newChat, ...this.activeChats];
         this.filteredActiveChats = [newChat, ...this.filteredActiveChats];
       } else {
+        // ✅ WICHTIG: Behalte den höheren unreadCount (lokal vs. Backend)
+        const currentUnread = this.activeChats[existingIndex].unreadCount || 0;
+        const backendUnread = chatData.unread_count || 0;
+
         const updatedChat = {
           ...this.activeChats[existingIndex],
           status: chatData.status,
           lastMessage: chatData.last_message,
           lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: chatData.unread_count || 1,
+          unreadCount: Math.max(currentUnread, backendUnread), // ✅ Nehme den höheren Wert
           assigned_to: chatData.assigned_to,
           assigned_agent: chatData.assigned_agent,
           isNew: true
@@ -1861,11 +1871,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         // ✅ UnreadCount berechnen
         let newUnreadCount = this.activeChats[activeChatIndex].unreadCount || 0;
         // ✅ WICHTIG: Counter erhöhen für user, bot UND agent (wenn Chat nicht ausgewählt ist)
+        // ⚠️ ABER NICHT für System-Nachrichten - diese sind Meta-Informationen!
         if ((messageData.from === 'user' || messageData.from === 'bot' || messageData.from === 'agent') && !isCurrentChat) {
           newUnreadCount += 1;
         } else if (isCurrentChat) {
           newUnreadCount = 0;
         }
+        // System-Nachrichten (from === 'system') ändern den Counter NICHT
 
         // ✅ IMMUTABLE UPDATE: Neues Chat-Objekt erstellen statt zu mutieren
         const updatedChat = {
