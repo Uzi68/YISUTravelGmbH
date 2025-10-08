@@ -626,12 +626,8 @@ export class ChatUiComponent implements AfterViewInit {
         console.log('🔄 Chat transferred event:', data);
         this.ngZone.run(() => {
           this.assignedAgentName.set(data.to_agent_name || '');
-          this.messages.update(m => [...m, {
-            from: 'system',
-            text: `Chat wurde an ${data.to_agent_name} übertragen`,
-            timestamp: new Date(),
-            isSystemMessage: true
-          }]);
+          // ✅ ENTFERNT: Lokale Transfer-Nachricht nicht mehr hinzufügen
+          // Das Backend sendet bereits eine vollständige Transfer-Nachricht via Pusher
 
           // ✅ NOTIFICATION: Nur wenn explizit aktiviert
           if (data.to_agent_name && this.visitorNotification.areNotificationsEnabled) {

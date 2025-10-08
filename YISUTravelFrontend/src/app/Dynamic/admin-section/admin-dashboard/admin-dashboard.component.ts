@@ -438,37 +438,35 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
   private sortActiveChats(): void {
-    // Debounce für Performance
-    if (this.sortDebounce) {
-      clearTimeout(this.sortDebounce);
-    }
+    // ✅ OPTIMIERT: Keine Debounce, sofortige immutable Sortierung
+    // Sortiere IMMUTABLE (erstelle neues Array statt in-place zu sortieren)
+    const sortedChats = [...this.activeChats].sort((a, b) => {
+      // ✅ VERBESSERTE SORTIERUNG: WhatsApp-Style mit Prioritäten
 
-    this.sortDebounce = setTimeout(() => {
-      this.activeChats.sort((a, b) => {
-        // ✅ VERBESSERTE SORTIERUNG: WhatsApp-Style mit Prioritäten
+      // 1. HÖCHSTE PRIORITÄT: Chat-Anfragen (status: 'human' & nicht zugewiesen)
+      const aIsRequest = a.status === 'human' && !a.assigned_to;
+      const bIsRequest = b.status === 'human' && !b.assigned_to;
 
-        // 1. HÖCHSTE PRIORITÄT: Chat-Anfragen (status: 'human' & nicht zugewiesen)
-        const aIsRequest = a.status === 'human' && !a.assigned_to;
-        const bIsRequest = b.status === 'human' && !b.assigned_to;
+      if (aIsRequest && !bIsRequest) return -1; // a ist Anfrage, kommt zuerst
+      if (!aIsRequest && bIsRequest) return 1;  // b ist Anfrage, kommt zuerst
 
-        if (aIsRequest && !bIsRequest) return -1; // a ist Anfrage, kommt zuerst
-        if (!aIsRequest && bIsRequest) return 1;  // b ist Anfrage, kommt zuerst
+      // Beide sind Anfragen → nach Zeit sortieren (älteste Anfrage zuerst = FIFO)
+      if (aIsRequest && bIsRequest) {
+        return new Date(a.lastMessageTime).getTime() - new Date(b.lastMessageTime).getTime();
+      }
 
-        // Beide sind Anfragen → nach Zeit sortieren (älteste Anfrage zuerst = FIFO)
-        if (aIsRequest && bIsRequest) {
-          return new Date(a.lastMessageTime).getTime() - new Date(b.lastMessageTime).getTime();
-        }
+      // 2. ALLE ANDEREN CHATS: Nach letzter Nachrichtenzeit sortieren (neueste zuerst)
+      // ✅ WICHTIG: Geschlossene Chats werden auch nach Zeit sortiert, nicht separiert
+      // Das bedeutet: Ein gerade geschlossener Chat bleibt oben, rutscht nur mit der Zeit nach unten
+      return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
+    });
 
-        // 2. ALLE ANDEREN CHATS: Nach letzter Nachrichtenzeit sortieren (neueste zuerst)
-        // ✅ WICHTIG: Geschlossene Chats werden auch nach Zeit sortiert, nicht separiert
-        // Das bedeutet: Ein gerade geschlossener Chat bleibt oben, rutscht nur mit der Zeit nach unten
-        return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
-      });
+    // ✅ Setze sortierte Arrays
+    this.activeChats = sortedChats;
+    this.filteredActiveChats = [...sortedChats];
 
-      // filteredActiveChats aktualisieren
-      this.filteredActiveChats = [...this.activeChats];
-      this.cdRef.detectChanges();
-    }, 50); // 50ms Debounce
+    // ✅ DetectChanges nur einmal am Ende
+    this.cdRef.detectChanges();
   }
 
 // Methode zum Auswählen eines Admin-Chats
@@ -1855,30 +1853,72 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         attachment: messageData.has_attachment ? messageData.attachment : undefined
       };
 
-      // ✅ Zu activeChats hinzufügen
+      // ✅ OPTIMIERT: Immutable Update für smooth UI ohne Flicker
       const activeChatIndex = this.activeChats.findIndex(c => c.id === sessionId);
       if (activeChatIndex !== -1 && !this.activeChats[activeChatIndex].messages.some(m => m.id === newMessage.id)) {
-        this.activeChats[activeChatIndex].messages.push(newMessage);
-        console.log('✅ Message added to activeChats');
-      }
+        const isCurrentChat = this.selectedChat?.id === sessionId;
 
-      // ✅ Zu filteredActiveChats hinzufügen
-      const filteredChatIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
-      if (filteredChatIndex !== -1 && !this.filteredActiveChats[filteredChatIndex].messages.some(m => m.id === newMessage.id)) {
-        this.filteredActiveChats[filteredChatIndex].messages.push(newMessage);
-        console.log('✅ Message added to filteredActiveChats');
-      }
-
-      // ✅ Zu selectedChat hinzufügen (nur wenn dieser Chat ausgewählt ist)
-      if (this.selectedChat && this.selectedChat.id === sessionId) {
-        const isDuplicate = this.selectedChat.messages.some(m => m.id === newMessage.id);
-        if (!isDuplicate) {
-          this.selectedChat.messages.push(newMessage);
-          console.log('✅ Message added to selectedChat');
-          this.scrollToBottom();
-        } else {
-          console.log('⚠️ Duplicate message in selectedChat, skipping');
+        // ✅ UnreadCount berechnen
+        let newUnreadCount = this.activeChats[activeChatIndex].unreadCount || 0;
+        // ✅ WICHTIG: Counter erhöhen für user, bot UND agent (wenn Chat nicht ausgewählt ist)
+        if ((messageData.from === 'user' || messageData.from === 'bot' || messageData.from === 'agent') && !isCurrentChat) {
+          newUnreadCount += 1;
+        } else if (isCurrentChat) {
+          newUnreadCount = 0;
         }
+
+        // ✅ IMMUTABLE UPDATE: Neues Chat-Objekt erstellen statt zu mutieren
+        const updatedChat = {
+          ...this.activeChats[activeChatIndex],
+          messages: [...this.activeChats[activeChatIndex].messages, newMessage],
+          lastMessage: newMessage.content,
+          lastMessageTime: newMessage.timestamp,
+          unreadCount: newUnreadCount
+        };
+
+        // ✅ Array immutable updaten
+        this.activeChats = [
+          ...this.activeChats.slice(0, activeChatIndex),
+          updatedChat,
+          ...this.activeChats.slice(activeChatIndex + 1)
+        ];
+
+        // ✅ filteredActiveChats synchron halten
+        const filteredChatIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
+        if (filteredChatIndex !== -1) {
+          this.filteredActiveChats = [
+            ...this.filteredActiveChats.slice(0, filteredChatIndex),
+            updatedChat,
+            ...this.filteredActiveChats.slice(filteredChatIndex + 1)
+          ];
+        }
+
+        // ✅ selectedChat updaten falls ausgewählt
+        if (this.selectedChat && this.selectedChat.id === sessionId) {
+          const isDuplicate = this.selectedChat.messages.some(m => m.id === newMessage.id);
+          if (!isDuplicate) {
+            this.selectedChat = {
+              ...updatedChat,
+              messages: updatedChat.messages.map(m => ({ ...m, read: true }))
+            };
+            this.scrollToBottom();
+          }
+        }
+
+        // ✅ WICHTIG: Nur sortieren wenn Chat NICHT bereits ganz oben ist
+        const needsSort = activeChatIndex !== 0;
+        if (needsSort) {
+          console.log('🔄 Sorting - message not in top chat');
+          this.sortActiveChats();
+        } else {
+          console.log('✅ Smooth update - no sort needed');
+        }
+
+        // ✅ Tab-Titel aktualisieren
+        this.updateTabTitle();
+
+        console.log('✅ Message processing complete (immutable)');
+        return;
       }
     }
 
@@ -2202,6 +2242,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       updatedChat,
       ...this.activeChats.slice(chatIndex + 1)
     ];
+
+    // ✅ FIX: filteredActiveChats AUCH aktualisieren
+    const filteredIndex = this.filteredActiveChats.findIndex(chat => chat.id === sessionId);
+    if (filteredIndex !== -1) {
+      this.filteredActiveChats = [
+        ...this.filteredActiveChats.slice(0, filteredIndex),
+        updatedChat,
+        ...this.filteredActiveChats.slice(filteredIndex + 1)
+      ];
+    }
 
     if (isCurrentChat) {
       this.selectedChat = {
@@ -2949,6 +2999,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   trackByChatId(index: number, chat: Chat): string {
     return chat.id;
+  }
+
+  trackByAdminChatId(index: number, chat: any): string {
+    return chat.session_id || chat.chat_id || index.toString();
   }
 
   // File handling methods

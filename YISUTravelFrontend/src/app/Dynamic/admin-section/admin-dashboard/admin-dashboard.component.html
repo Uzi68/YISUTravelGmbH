@@ -69,7 +69,7 @@
     <div class="chat-list-container">
       <!-- Aktive Chats (standard Ansicht) -->
       <div class="chat-list-section" *ngIf="!showAllChats || !isAdmin">
-        <div *ngFor="let chat of filteredActiveChats"
+        <div *ngFor="let chat of filteredActiveChats; trackBy: trackByChatId"
              class="chat-item"
              [class.active]="selectedChat?.id === chat.id"
              [class.unread]="chat.unreadCount > 0"
@@ -148,7 +148,7 @@
           <span>Keine Chats gefunden</span>
         </div>
 
-        <div *ngFor="let chat of filteredAdminChats"
+        <div *ngFor="let chat of filteredAdminChats; trackBy: trackByAdminChatId"
              class="chat-item admin-chat"
              [class.active]="selectedChat?.id === chat.session_id"
              [class.assigned-to-me]="chat.assigned_to === currentAgent.id"
