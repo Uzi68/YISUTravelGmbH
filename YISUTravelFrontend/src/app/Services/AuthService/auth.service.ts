@@ -6,6 +6,7 @@ import {catchError} from "rxjs/operators";
 import {isPlatformBrowser} from "@angular/common";
 import {response} from "express";
 import {User} from "../../Models/User";
+import {environment} from "../../../environments/environment";
 
 @Injectable({
   providedIn: 'root'
@@ -16,10 +17,8 @@ export class AuthService {
   //Cookie is called and the result is set in initialisation (Initialwert)
   private authenticated = new BehaviorSubject<boolean>(this.getPersistedAuthState());
 
-  //private apiUrl = 'https://backend.yisu-travel.de/api';
-  //private apiUrlXSRF = 'https://backend.yisu-travel.de/sanctum/csrf-cookie';
-  private apiUrl = 'http://localhost:8000/api';
-  private apiUrlXSRF = 'http://localhost:8000/sanctum/csrf-cookie';
+  private apiUrl = environment.apiUrl;
+  private apiUrlXSRF = environment.apiUrl.replace('/api', '/sanctum/csrf-cookie');
 
   constructor(private http: HttpClient, private router: Router, @Inject(PLATFORM_ID) private platformId: Object) {
     this.authenticated.next(this.getPersistedAuthState());

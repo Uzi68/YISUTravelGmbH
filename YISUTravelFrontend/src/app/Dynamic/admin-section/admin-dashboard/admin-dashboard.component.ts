@@ -20,6 +20,7 @@ import {firstValueFrom, of, Subscription} from "rxjs";
 import {ChatbotService} from "../../../Services/chatbot-service/chatbot.service";
 import {AuthService} from "../../../Services/AuthService/auth.service";
 import {PusherService} from "../../../Services/Pusher/pusher.service";
+import {WhatsappService, WhatsAppChat} from "../../../Services/whatsapp/whatsapp.service";
 import {User} from "../../../Models/User";
 import {Visitor} from "../../../Models/Visitor";
 import {catchError} from "rxjs/operators";
@@ -146,10 +147,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   //Alle Chats für den Admin anzeigen lassen
   allAdminChats: any[] = [];
   transferForm: FormGroup;
+
+  // ✅ WhatsApp Integration Properties
+  whatsappChats: WhatsAppChat[] = [];
+  selectedChannelFilter: 'all' | 'website' | 'whatsapp' = 'all';
+  showWhatsAppFileUpload = signal(false);
+  selectedFileType: 'image' | 'document' | null = null;
+  fileCaption = '';
   constructor(
     private chatbotService: ChatbotService,
     private authService: AuthService,
     private pusherService: PusherService,
+    private whatsappService: WhatsappService,
     private cdRef: ChangeDetectorRef,
     private ngZone: NgZone,
     public notificationSound: NotificationSoundService,
@@ -214,6 +223,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
     this.loadChatRequests();
+
+    // ✅ WhatsApp Chats laden
+    this.loadWhatsAppChats();
 
   }
 
@@ -359,13 +371,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     // Aktive Chats filtern (inklusive geschlossene)
     this.filteredActiveChats = this.activeChats.filter(chat => {
-      const matchesSearch = chat.customerName.toLowerCase().includes(searchTerm) ||
-        chat.lastMessage.toLowerCase().includes(searchTerm);
+      const matchesSearch = chat.customerName?.toLowerCase().includes(searchTerm) ||
+        chat.lastMessage?.toLowerCase().includes(searchTerm) ||
+        chat.whatsapp_number?.includes(searchTerm);
 
       // Filter basierend auf dem gewählten Status
       const matchesStatus = this.filterStatus === 'all' || chat.status === this.filterStatus;
 
-      return matchesSearch && matchesStatus;
+      // ✅ NEU: Channel Filter
+      let matchesChannel = true;
+      if (this.selectedChannelFilter !== 'all') {
+        if (this.selectedChannelFilter === 'whatsapp') {
+          matchesChannel = chat.channel === 'whatsapp';
+        } else {
+          matchesChannel = chat.channel !== 'whatsapp';
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesChannel;
     });
 
     // Admin-Chats filtern (unverändert)
@@ -3210,6 +3233,227 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     console.log('Tab title updated:', document.title, '(unread:', this.totalUnreadCount, ')');
   }
+
+  // ========================================
+  // ✅ WHATSAPP INTEGRATION METHODS
+  // ========================================
+
+  /**
+   * Lade WhatsApp Chats und merge mit Website Chats
+   */
+  loadWhatsAppChats(): void {
+    this.whatsappService.getWhatsAppChats().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.whatsappChats = response.chats;
+
+          // Merge WhatsApp Chats mit Website Chats
+          const websiteChats = this.activeChats.filter(c => c.channel !== 'whatsapp');
+          const whatsappChatsConverted = this.whatsappChats.map(wc => ({
+            ...wc,
+            channel: 'whatsapp' as const
+          }));
+
+          this.activeChats = [...websiteChats, ...whatsappChatsConverted as any];
+
+          // Sortiere nach Datum
+          this.activeChats.sort((a, b) => {
+            const dateA = new Date(a.updated_at || a.created_at || new Date()).getTime();
+            const dateB = new Date(b.updated_at || b.created_at || new Date()).getTime();
+            return dateB - dateA;
+          });
+
+          this.filterChats();
+          this.cdRef.detectChanges();
+        }
+      },
+      error: (error) => {
+        console.error('Fehler beim Laden der WhatsApp-Chats:', error);
+      }
+    });
+  }
+
+  /**
+   * Sende WhatsApp Text-Nachricht
+   */
+  sendWhatsAppMessage(message: string, textarea: HTMLTextAreaElement): void {
+    if (!this.selectedChat) return;
+
+    this.whatsappService.sendTextMessage(Number(this.selectedChat.id), message).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.snackBar.open('✅ WhatsApp-Nachricht gesendet', 'OK', { duration: 3000 });
+          textarea.value = '';
+          // Message wird via Pusher aktualisiert
+        }
+      },
+      error: (error) => {
+        console.error('Fehler beim Senden der WhatsApp-Nachricht:', error);
+        this.snackBar.open('❌ Fehler beim Senden der Nachricht', 'OK', { duration: 5000 });
+      }
+    });
+  }
+
+  /**
+   * File-Upload Handler für WhatsApp
+   */
+  onWhatsAppFileSelected(event: any, type: 'image' | 'document'): void {
+    const file: File = event.target.files[0];
+    if (!file || !this.selectedChat) return;
+
+    // Validiere Datei
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+      this.snackBar.open('❌ Datei ist zu groß (max. 100MB)', 'OK', { duration: 5000 });
+      event.target.value = '';
+      return;
+    }
+
+    // Frage nach Caption
+    const caption = prompt(
+      type === 'image' ? 'Optional: Bildunterschrift eingeben' : 'Optional: Beschreibung eingeben'
+    );
+
+    this.snackBar.open('📤 Wird hochgeladen...', '', { duration: 2000 });
+
+    // Sende basierend auf Typ
+    if (type === 'image') {
+      this.whatsappService.sendImage(Number(this.selectedChat.id), file, caption || undefined).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.snackBar.open('✅ Bild erfolgreich gesendet', 'OK', { duration: 3000 });
+          }
+        },
+        error: (error) => {
+          console.error('Fehler beim Senden des Bildes:', error);
+          this.snackBar.open('❌ Fehler beim Senden des Bildes', 'OK', { duration: 5000 });
+        }
+      });
+    } else {
+      this.whatsappService.sendDocument(Number(this.selectedChat.id), file, caption || undefined).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.snackBar.open('✅ Dokument erfolgreich gesendet', 'OK', { duration: 3000 });
+          }
+        },
+        error: (error) => {
+          console.error('Fehler beim Senden des Dokuments:', error);
+          this.snackBar.open('❌ Fehler beim Senden des Dokuments', 'OK', { duration: 5000 });
+        }
+      });
+    }
+
+    // Reset file input
+    event.target.value = '';
+  }
+
+  /**
+   * Filter Chats nach Channel
+   */
+  filterByChannel(channel: 'all' | 'website' | 'whatsapp'): void {
+    this.selectedChannelFilter = channel;
+    this.applyAllFilters();
+  }
+
+  /**
+   * Erweiterte Filter-Methode mit Channel-Support
+   */
+  private applyAllFilters(): void {
+    let filtered = [...this.activeChats];
+
+    // Channel Filter
+    if (this.selectedChannelFilter !== 'all') {
+      filtered = filtered.filter(chat => {
+        if (this.selectedChannelFilter === 'whatsapp') {
+          return chat.channel === 'whatsapp';
+        } else {
+          return chat.channel !== 'whatsapp';
+        }
+      });
+    }
+
+    // Bestehende Filter anwenden (Status, Search, etc.)
+    if (this.filterStatus !== 'all') {
+      filtered = filtered.filter(c => c.status === this.filterStatus);
+    }
+
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.visitor?.first_name?.toLowerCase().includes(query) ||
+        c.visitor?.last_name?.toLowerCase().includes(query) ||
+        c.whatsapp_number?.includes(query)
+      );
+    }
+
+    this.filteredActiveChats = filtered;
+  }
+
+  /**
+   * Prüfe ob Chat WhatsApp ist
+   */
+  isWhatsAppChat(chat: any): boolean {
+    return chat?.channel === 'whatsapp';
+  }
+
+  /**
+   * Formatiere WhatsApp-Nummer
+   */
+  formatWhatsAppNumber(number: string): string {
+    if (!number) return '';
+    const cleaned = number.replace(/\D/g, '');
+    if (cleaned.length >= 10) {
+      const countryCode = cleaned.substring(0, cleaned.length - 10);
+      const rest = cleaned.substring(cleaned.length - 10);
+      const part1 = rest.substring(0, 3);
+      const part2 = rest.substring(3, 7);
+      const part3 = rest.substring(7);
+      return `+${countryCode} ${part1} ${part2} ${part3}`;
+    }
+    return `+${cleaned}`;
+  }
+
+  /**
+   * Hole Channel Icon
+   */
+  getChannelIcon(chat: any): string {
+    return this.isWhatsAppChat(chat) ? '💬' : '📱';
+  }
+
+  /**
+   * Hole Channel Name
+   */
+  getChannelName(chat: any): string {
+    return this.isWhatsAppChat(chat) ? 'WhatsApp' : 'Website';
+  }
+
+  /**
+   * Prüfe ob File-Upload erlaubt ist
+   */
+  canUploadFiles(chat: any): boolean {
+    return this.isWhatsAppChat(chat);
+  }
+
+  /**
+   * Hole Icon für WhatsApp Message Type
+   */
+  getMessageTypeIcon(messageType: string): string {
+    const typeMap: { [key: string]: string } = {
+      'whatsapp_text': 'message',
+      'whatsapp_image': 'image',
+      'whatsapp_document': 'description',
+      'whatsapp_video': 'videocam',
+      'whatsapp_audio': 'mic',
+      'whatsapp_voice': 'record_voice_over',
+      'whatsapp_location': 'location_on',
+      'whatsapp_contacts': 'contacts',
+      'whatsapp_sticker': 'emoji_emotions',
+      'whatsapp_button': 'smart_button',
+      'whatsapp_list': 'list',
+      'whatsapp_template': 'article'
+    };
+    return typeMap[messageType] || 'chat';
+  }
 }
 
 interface Chat {
@@ -3229,6 +3473,16 @@ interface Chat {
   status: string;
   assigned_agent?: string;
   isNew?: boolean;
+  channel?: string;
+  whatsapp_number?: string;
+  visitor?: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+  };
+  updated_at?: string;
+  created_at?: string;
 }
 
 interface Message {

@@ -1744,3 +1744,200 @@
   height: 20px;
   margin-right: 6px;
 }
+
+/* ========================================
+   WhatsApp Integration Styles
+   ======================================== */
+
+/* Channel Filter Buttons */
+.filter-controls mat-button-toggle-group {
+  margin-bottom: 8px;
+}
+
+.filter-controls mat-button-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-controls mat-button-toggle mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+}
+
+/* WhatsApp Channel Badge */
+.channel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.channel-badge.whatsapp {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(37, 211, 102, 0.3);
+}
+
+.channel-badge.whatsapp mat-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+/* Header Badge (larger version) */
+.channel-badge.header-badge {
+  padding: 4px 12px;
+  font-size: 12px;
+  margin-left: 12px;
+}
+
+.channel-badge.header-badge mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+/* Chat Name Row (for inline badges) */
+.chat-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chat-name {
+  font-weight: 600;
+}
+
+/* WhatsApp Number Display */
+.whatsapp-number {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.whatsapp-number .number-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  color: #25D366;
+}
+
+.whatsapp-number-display {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+  color: #555;
+}
+
+/* WhatsApp Message Type Indicator */
+.message-type-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  background: rgba(37, 211, 102, 0.1);
+  border-radius: 12px;
+  font-size: 11px;
+  color: #128C7E;
+  width: fit-content;
+}
+
+.message-type-indicator .type-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  color: #25D366;
+}
+
+.message-type-indicator .type-label {
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+/* WhatsApp Attachment Buttons */
+.attachment-buttons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.attach-button {
+  transition: all 0.2s ease;
+}
+
+.attach-button.whatsapp-image {
+  color: #1976d2;
+}
+
+.attach-button.whatsapp-image:hover {
+  background: rgba(25, 118, 210, 0.1);
+  transform: scale(1.1);
+}
+
+.attach-button.whatsapp-document {
+  color: #ff9800;
+}
+
+.attach-button.whatsapp-document:hover {
+  background: rgba(255, 152, 0, 0.1);
+  transform: scale(1.1);
+}
+
+/* WhatsApp Message Bubbles Enhancement */
+.message.customer[data-channel="whatsapp"] .message-content,
+.message.agent[data-channel="whatsapp"] .message-content {
+  border-left: 3px solid #25D366;
+}
+
+/* Responsive WhatsApp Badges */
+@media (max-width: 768px) {
+  .channel-badge {
+    padding: 2px 6px;
+    font-size: 10px;
+    gap: 3px;
+  }
+
+  .channel-badge mat-icon {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+  }
+
+  .channel-badge.header-badge {
+    display: none;
+  }
+
+  .whatsapp-number {
+    font-size: 11px;
+  }
+}
+
+/* Filter Controls Layout Enhancement */
+.filter-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+@media (min-width: 768px) {
+  .filter-controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}

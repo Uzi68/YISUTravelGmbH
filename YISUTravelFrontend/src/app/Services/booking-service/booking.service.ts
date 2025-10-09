@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import {HttpClient, HttpParams} from "@angular/common/http";
 import {Observable} from "rxjs";
 import {Booking, BookingResponse, BookingStats} from "../../Models/Booking";
+import {environment} from "../../../environments/environment";
 
 @Injectable({
   providedIn: 'root'
@@ -10,8 +11,7 @@ export class BookingService {
 
   constructor(private http: HttpClient) { }
 
-  private  apiUrl = 'http://localhost:8000/api';
- // private apiUrl = 'https://backend.yisu-travel.de/api';
+  private apiUrl = environment.apiUrl;
 
   // Alle Buchungen abrufen
   // Alle Buchungen ohne Pagination

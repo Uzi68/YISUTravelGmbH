@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan:*)",
+      "Bash(npm run build:*)",
+      "Bash(php8.3 artisan migrate:rollback:*)",
+      "Bash(php:*)",
+      "Bash(curl -X GET \"https://backend.yisu-travel.de/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=e2121def246f88163c3f1fc801c83d65e68ef29f23c6820805140f84d8c62704&hub.challenge=test123\" -v)",
+      "Bash(curl -X GET \"https://backend.yisu-travel.de/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=e2121def246f88163c3f1fc801c83d65e68ef29f23c6820805140f84d8c62704&hub.challenge=CHALLENGE_ACCEPTED\")",
+      "Bash(curl -X GET \"https://backend.yisu-travel.de/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=e2121def246f88163c3f1fc801c83d65e68ef29f23c6820805140f84d8c62704&hub.challenge=TEST_FROM_CURL\")",
+      "Bash(curl -X GET \"https://backend.yisu-travel.de/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=WRONG_TOKEN&hub.challenge=TEST\" -i)",
+      "Bash(curl -X GET \"https://backend.yisu-travel.de/api/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=e2121def246f88163c3f1fc801c83d65e68ef29f23c6820805140f84d8c62704&hub.challenge=FINAL_TEST\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

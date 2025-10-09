@@ -1099,6 +1099,8 @@ class ChatbotController extends Controller
 
                     'is_online' => $chat->user ? $chat->user->isOnline() : false,
                     'status' => $chat->status,
+                    'channel' => $chat->channel ?? 'website', // ✅ WICHTIG: Channel hinzufügen
+                    'whatsapp_number' => $chat->whatsapp_number ?? null, // ✅ WhatsApp-Nummer falls vorhanden
                     'assigned_to' => $chat->assigned_to,
                     'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
                     'messages' => $chat->messages->map(function ($message) use ($user) {
@@ -1191,12 +1193,39 @@ class ChatbotController extends Controller
             $messageId = \Illuminate\Support\Str::uuid();
 
             // ✅ WICHTIG: Bei Agent-Nachrichten den aktuellen Agent-Namen speichern
-            $metadata = null;
+            $metadata = [];
             if ($validated['isAgent'] && Auth::check()) {
-                $metadata = json_encode([
+                $metadata = [
                     'agent_id' => Auth::id(),
                     'agent_name' => Auth::user()->name
-                ]);
+                ];
+            }
+
+            // ✅ NEU: Wenn WhatsApp-Chat, sende über WhatsApp API
+            if ($chat->channel === 'whatsapp' && $chat->whatsapp_number) {
+                $whatsappService = app(\App\Services\WhatsAppService::class);
+
+                $sendResult = $whatsappService->sendTextMessage(
+                    $chat->whatsapp_number,
+                    $validated['content']
+                );
+
+                if (!$sendResult['success']) {
+                    Log::error('Failed to send WhatsApp message', [
+                        'chat_id' => $chat->id,
+                        'error' => $sendResult['error'] ?? 'Unknown error'
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Fehler beim Senden der WhatsApp-Nachricht',
+                        'error' => $sendResult['error'] ?? 'Unknown error'
+                    ], 500);
+                }
+
+                // Füge WhatsApp Message ID zu Metadata hinzu
+                $metadata['whatsapp_message_id'] = $sendResult['message_id'];
+                $metadata['sent_via_whatsapp'] = true;
             }
 
             $message = Message::create([
@@ -1204,7 +1233,7 @@ class ChatbotController extends Controller
                 'chat_id' => $chat->id,
                 'from' => $validated['isAgent'] ? 'agent' : 'user',
                 'text' => $validated['content'],
-                'metadata' => $metadata,
+                'metadata' => json_encode($metadata),
                 'created_at' => now(),
                 'updated_at' => now()
             ]);

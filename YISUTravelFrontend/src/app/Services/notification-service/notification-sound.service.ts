@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface NotificationOptions {
   title: string;
@@ -51,11 +52,11 @@ export class NotificationSoundService {
 
   private setupAudioSources(): void {
     try {
-      this.notificationSound = new Audio('http://localhost:8000/storage/sounds/notification.mp3');
+      this.notificationSound = new Audio(`${environment.backendUrl}/storage/sounds/notification.mp3`);
       this.notificationSound.preload = 'auto';
       this.notificationSound.volume = 0.7;
 
-      this.transferSound = new Audio('http://localhost:8000/storage/sounds/transfer.mp3');
+      this.transferSound = new Audio(`${environment.backendUrl}/storage/sounds/transfer.mp3`);
       this.transferSound.preload = 'auto';
       this.transferSound.volume = 0.8;
 

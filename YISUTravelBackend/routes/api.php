@@ -9,6 +9,8 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatRequestController;
 use App\Http\Controllers\MessagePusherController;
 use App\Http\Controllers\MessageAttachmentController;
+use App\Http\Controllers\WhatsAppWebhookController;
+use App\Http\Controllers\WhatsAppMessageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -266,3 +268,24 @@ Route::post('/broadcasting/auth/visitor', function (Request $request) {
         ->header('Content-Type', 'application/json');
 
 })->withoutMiddleware(['auth', 'auth:sanctum']);
+
+/*
+|--------------------------------------------------------------------------
+| WhatsApp Business API Routes
+|--------------------------------------------------------------------------
+*/
+
+// WhatsApp Webhook moved to web.php to bypass statefulApi middleware
+// See routes/web.php for webhook routes
+
+// WhatsApp Message Routes (für authentifizierte Agents)
+Route::middleware(['auth'])->prefix('whatsapp')->group(function () {
+    // Nachrichtenversand
+    Route::post('/send-text', [WhatsAppMessageController::class, 'sendTextMessage']);
+    Route::post('/send-image', [WhatsAppMessageController::class, 'sendImage']);
+    Route::post('/send-document', [WhatsAppMessageController::class, 'sendDocument']);
+    Route::post('/send-template', [WhatsAppMessageController::class, 'sendTemplate']);
+
+    // WhatsApp Chats abrufen
+    Route::get('/chats', [WhatsAppMessageController::class, 'getWhatsAppChats']);
+});

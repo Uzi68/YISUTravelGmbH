@@ -5,14 +5,14 @@ import {catchError, map} from "rxjs/operators";
 import {Visitor} from "../../Models/Visitor";
 import {ChatbotResponse, ChatbotResponseCreate} from "../../Models/Chatbot";
 import {ApiResponse} from "../../Models/apiresponse.model";
+import {environment} from "../../../environments/environment";
 
 @Injectable({
   providedIn: 'root'
 })
 export class ChatbotService {
 
-  private apiUrl = 'http://localhost:8000/api';
-  //private apiUrl = 'https://backend.yisu-travel.de/api';
+  private apiUrl = environment.apiUrl;
 
   private isChatOpen = new BehaviorSubject<boolean>(false);
   isChatOpen$ = this.isChatOpen.asObservable();

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface VisitorNotificationOptions {
   title: string;
@@ -46,7 +47,7 @@ export class VisitorNotificationService {
 
   private setupAudioSource(): void {
     try {
-      this.notificationSound = new Audio('http://localhost:8000/storage/sounds/notification.mp3');
+      this.notificationSound = new Audio(`${environment.backendUrl}/storage/sounds/notification.mp3`);
       this.notificationSound.preload = 'auto';
       this.notificationSound.volume = 0.6;
     } catch (error) {
