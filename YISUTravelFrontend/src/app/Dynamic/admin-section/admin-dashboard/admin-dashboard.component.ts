@@ -1777,6 +1777,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private handleIncomingMessageGlobal(data: any): void {
     console.log('📥 handleIncomingMessageGlobal - Full data:', data);
 
+    // ✅ DEBUG: WhatsApp-spezifisches Logging
+    if (data.channel === 'whatsapp') {
+      console.log('📱 WhatsApp Message Broadcast received:', {
+        customer_first_name: data.customer_first_name,
+        customer_last_name: data.customer_last_name,
+        customer_name: data.customer_name,
+        customer_phone: data.customer_phone,
+        whatsapp_number: data.whatsapp_number,
+        last_activity: data.last_activity
+      });
+    }
+
     const messageData = data.message;
     const sessionId = messageData.session_id;
 
@@ -1903,13 +1915,49 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         // System-Nachrichten (from === 'system') ändern den Counter NICHT
 
         // ✅ IMMUTABLE UPDATE: Neues Chat-Objekt erstellen statt zu mutieren
+        // ✅ WICHTIG: Aktualisiere Kundendaten aus Broadcast (WhatsApp-Namen!)
+        const newFirstName = data.customer_first_name || this.activeChats[activeChatIndex].customerFirstName;
+        const newLastName = data.customer_last_name || this.activeChats[activeChatIndex].customerLastName;
+
+        // ✅ KRITISCH: customerName MUSS aus den aktuellen Namen neu berechnet werden!
+        let newCustomerName = data.customer_name;
+        if (!newCustomerName || newCustomerName === 'Anonymer Benutzer') {
+          // Wenn kein customer_name gebroadcastet wurde oder es "Anonymer Benutzer" ist,
+          // berechne ihn aus first_name und last_name
+          if (newFirstName && newFirstName !== 'WhatsApp' && newFirstName !== 'Anonymous') {
+            newCustomerName = `${newFirstName} ${newLastName}`.trim();
+          } else if (data.whatsapp_number) {
+            // Fallback: Zeige WhatsApp-Nummer wenn kein Name vorhanden
+            newCustomerName = '+' + data.whatsapp_number;
+          } else {
+            // Letzter Fallback
+            newCustomerName = this.activeChats[activeChatIndex].customerName;
+          }
+        }
+
         const updatedChat = {
           ...this.activeChats[activeChatIndex],
           messages: [...this.activeChats[activeChatIndex].messages, newMessage],
           lastMessage: newMessage.content,
           lastMessageTime: newMessage.timestamp,
-          unreadCount: newUnreadCount
+          unreadCount: newUnreadCount,
+          customerFirstName: newFirstName,
+          customerLastName: newLastName,
+          customerName: newCustomerName,
+          customerPhone: data.customer_phone || this.activeChats[activeChatIndex].customerPhone,
+          // ✅ WhatsApp-spezifische Daten
+          channel: data.channel || this.activeChats[activeChatIndex].channel,
+          whatsapp_number: data.whatsapp_number || this.activeChats[activeChatIndex].whatsapp_number,
+          // ✅ Last Activity für Zuletzt-Online-Status
+          last_activity: data.last_activity || this.activeChats[activeChatIndex].last_activity
         };
+
+        console.log('✅ Chat updated with new customer data:', {
+          customerName: updatedChat.customerName,
+          customerFirstName: updatedChat.customerFirstName,
+          customerLastName: updatedChat.customerLastName,
+          whatsapp_number: updatedChat.whatsapp_number
+        });
 
         // ✅ Array immutable updaten
         this.activeChats = [
@@ -2132,12 +2180,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         const isSelected = this.selectedChat?.id === chat.session_id;
         const isNew = chat.status === 'human' && !chat.assigned_agent;
 
-        let customerName = chat.customer_first_name && chat.customer_last_name
-          ? `${chat.customer_first_name} ${chat.customer_last_name}`
-          : 'Anonymer Benutzer';
+        // ✅ WICHTIG: Nutze customer_name vom Backend (wenn vorhanden)
+        let customerName = chat.customer_name;
 
-        // Nur Visitor-Daten abrufen, wenn keine Namen vorhanden sind
-        if (!chat.customer_first_name && !chat.customer_last_name) {
+        // ✅ Fallback: Berechne aus first_name und last_name (wenn customer_name fehlt)
+        if (!customerName || customerName === 'Anonymer Benutzer') {
+          if (chat.customer_first_name || chat.customer_last_name) {
+            customerName = `${chat.customer_first_name || ''} ${chat.customer_last_name || ''}`.trim();
+          } else {
+            customerName = 'Anonymer Benutzer';
+          }
+        }
+
+        // Nur Visitor-Daten abrufen, wenn immer noch kein Name vorhanden ist
+        if (customerName === 'Anonymer Benutzer' && !chat.customer_first_name && !chat.customer_last_name) {
           try {
             const visitor = await firstValueFrom(
               this.chatbotService.getVisitorDetails(chat.session_id).pipe(
@@ -2169,11 +2225,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           customerName: customerName,
           customerFirstName: chat.customer_first_name || '',
           customerLastName: chat.customer_last_name || '',
+          customerPhone: chat.customer_phone || '',
           customerAvatar: chat.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
           lastMessage: chat.last_message || '',
           lastMessageTime: new Date(chat.last_message_time || Date.now()),
           unreadCount: isSelected ? 0 : (chat.unread_count || 0),
           isOnline: chat.is_online || false,
+          last_activity: chat.last_activity || null,
           messages: Array.isArray(chat.messages)
             ? chat.messages.map((msg: any) => {
                 return {
@@ -2193,6 +2251,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           status: chat.status || '',
           assigned_agent: chat.assigned_agent || '',
           assigned_to: chat.assigned_to,
+          channel: chat.channel || 'website',
+          whatsapp_number: chat.whatsapp_number || null,
           isNew: isNew
         };
       }));
@@ -3462,12 +3522,14 @@ interface Chat {
   customerName: string;
   customerFirstName: string;
   customerLastName: string;
+  customerPhone?: string;
   customerAvatar: string;
   lastMessage: string;
   lastMessageTime: Date;
   unreadCount: number;
   isOnline: boolean;
   lastOnline?: Date;
+  last_activity?: string;  // ✅ ISO 8601 Timestamp für Zuletzt-Online-Status
   messages: Message[];
   assigned_to?: number | null;
   status: string;

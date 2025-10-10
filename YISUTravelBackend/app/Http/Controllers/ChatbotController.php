@@ -180,10 +180,11 @@ class ChatbotController extends Controller
         ]);
 
         // System-Nachricht erstellen
+        $messageText = "{$agent->name} hat den Chat übernommen";
         $systemMessage = Message::create([
             'chat_id' => $chat->id,
             'from' => 'system',
-            'text' => "{$agent->name} hat den Chat übernommen",
+            'text' => $messageText,
             'message_type' => 'assignment',
             'metadata' => [
                 'assigned_agent_id' => $agent->id,
@@ -191,6 +192,9 @@ class ChatbotController extends Controller
                 'assigned_at' => now()
             ]
         ]);
+
+        // ✅ NEU: Sende System-Nachricht auch via WhatsApp
+        $this->sendMessageViaWhatsAppIfNeeded($chat, $messageText, 'system');
 
         // Assignment-Daten für Broadcasting
         $assignmentData = [
@@ -413,8 +417,11 @@ class ChatbotController extends Controller
                     'session_id' => $chat->session_id,
                     'chat_id' => $chat->id,
                     'status' => 'bot',
-                    'customer_first_name' => $chat->visitor?->first_name ?? 'Anonymous',
-                    'customer_last_name' => $chat->visitor?->last_name ?? '',
+                    'channel' => $chat->channel ?? 'website',
+                    'whatsapp_number' => $chat->whatsapp_number ?? null,
+                    'customer_first_name' => $chat->visitor?->first_name ?? ($chat->channel === 'whatsapp' ? 'WhatsApp' : 'Anonymous'),
+                    'customer_last_name' => $chat->visitor?->last_name ?? ($chat->channel === 'whatsapp' ? 'Kunde' : ''),
+                    'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
                     'last_message' => 'Chat reaktiviert - Chatbot aktiv',
                     'last_message_time' => now(),
                     'assigned_to' => null,
@@ -1042,9 +1049,11 @@ class ChatbotController extends Controller
                 'session_id' => $chat->session_id,
                 'chat_id' => $chat->id,
                 'status' => 'human',
+                'channel' => $chat->channel ?? 'website',
+                'whatsapp_number' => $chat->whatsapp_number ?? null,
                 'customer_first_name' => $visitor->first_name,
                 'customer_last_name' => $visitor->last_name,
-                'customer_phone' => $visitor->phone,
+                'customer_phone' => $visitor->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
                 'last_message' => $validated['message'],
                 'last_message_time' => now(),
                 'unread_count' => 1,
@@ -1082,12 +1091,49 @@ class ChatbotController extends Controller
                     ->sortByDesc('sent_at')
                     ->first();
 
+                // ✅ NEU: Dynamische Kundenname basierend auf Channel
+                $customerFirstName = 'Anonymous';
+                $customerLastName = '';
+
+                if ($chat->visitor) {
+                    // Visitor existiert - prüfe ob er echte Namen hat
+                    if ($chat->visitor->first_name && $chat->visitor->first_name !== 'WhatsApp') {
+                        // Echter Name vom Visitor
+                        $customerFirstName = $chat->visitor->first_name;
+                        $customerLastName = $chat->visitor->last_name ?? '';
+                    } elseif ($chat->channel === 'whatsapp') {
+                        // WhatsApp Visitor ohne echten Namen
+                        $customerFirstName = 'WhatsApp';
+                        $customerLastName = 'Kunde';
+                    } else {
+                        // Website Visitor ohne Namen
+                        $customerFirstName = 'Anonymous';
+                        $customerLastName = '';
+                    }
+                } elseif ($chat->channel === 'whatsapp') {
+                    // Kein Visitor aber WhatsApp Channel
+                    $customerFirstName = 'WhatsApp';
+                    $customerLastName = 'Kunde';
+                }
+
+                // ✅ WICHTIG: customer_name berechnen (für WhatsApp-Namen)
+                $customerName = trim($customerFirstName . ' ' . $customerLastName);
+                if (!$customerName || $customerName === 'Anonymous' || $customerName === 'WhatsApp Kunde') {
+                    // Wenn kein Name vorhanden, zeige WhatsApp-Nummer
+                    if ($chat->channel === 'whatsapp' && $chat->whatsapp_number) {
+                        $customerName = '+' . $chat->whatsapp_number;
+                    } else {
+                        $customerName = 'Anonymer Benutzer';
+                    }
+                }
+
                 $chatData = [
                     'session_id' => $chat->session_id,
                     'chat_id' => $chat->id,
-                    'customer_first_name' => $chat->visitor ? $chat->visitor->first_name : 'Anonymous',
-                    'customer_last_name' => $chat->visitor ? $chat->visitor->last_name : 'Anonymous',
-                    'customer_phone' => $chat->visitor ? $chat->visitor->phone : 'Nicht bekannt',
+                    'customer_first_name' => $customerFirstName,
+                    'customer_last_name' => $customerLastName,
+                    'customer_name' => $customerName, // ✅ NEU: Vollständiger Name
+                    'customer_phone' => $chat->visitor ? $chat->visitor->phone : ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
                     'customer_avatar' => $chat->user ? $chat->user->avatar : asset('storage/images/user.png'),
                     'last_message' => $lastMessage ? $lastMessage->text : 'No messages yet',
                     'last_message_time' => $lastMessage ? $lastMessage->created_at : $chat->updated_at,
@@ -1102,6 +1148,7 @@ class ChatbotController extends Controller
                     'status' => $chat->status,
                     'channel' => $chat->channel ?? 'website', // ✅ WICHTIG: Channel hinzufügen
                     'whatsapp_number' => $chat->whatsapp_number ?? null, // ✅ WhatsApp-Nummer falls vorhanden
+                    'last_activity' => $chat->last_activity ? $chat->last_activity->toIso8601String() : null, // ✅ Zuletzt-Online-Status
                     'assigned_to' => $chat->assigned_to,
                     'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
                     'messages' => $chat->messages->map(function ($message) use ($user) {
@@ -1159,18 +1206,19 @@ class ChatbotController extends Controller
 
 
     /**
-     * Send a message as an agent - KORRIGIERT
+     * Send a message as an agent - KORRIGIERT MIT ATTACHMENT SUPPORT
      */
     public function sendAgentMessage(Request $request)
     {
         $validated = $request->validate([
             'chat_id' => 'required|exists:chats,id',
-            'content' => 'required|string|max:1000',
+            'content' => 'nullable|string|max:1000',
             'isAgent' => 'required|boolean',
-            'session_id' => 'required|string'
+            'session_id' => 'required|string',
+            'attachment' => 'nullable|file|max:102400' // Max 100MB
         ]);
 
-        return DB::transaction(function () use ($validated) {
+        return DB::transaction(function () use ($validated, $request) {
             $chat = Chat::lockForUpdate()->find($validated['chat_id']);
             $agent = Auth::user();
 
@@ -1202,45 +1250,180 @@ class ChatbotController extends Controller
                 ];
             }
 
-            // ✅ NEU: Wenn WhatsApp-Chat, sende über WhatsApp API
+            $messageText = $validated['content'] ?? '';
+            $hasAttachment = $request->hasFile('attachment');
+
+            // ✅ DEBUG: Log incoming request
+            \Log::info('sendAgentMessage called', [
+                'chat_id' => $chat->id,
+                'channel' => $chat->channel,
+                'whatsapp_number' => $chat->whatsapp_number,
+                'has_attachment' => $hasAttachment,
+                'has_content' => !empty($messageText),
+                'request_files' => $request->allFiles(),
+                'request_all' => $request->all()
+            ]);
+
+            // ✅ NEU: Wenn WhatsApp-Chat mit Attachment, verarbeite Media
             if ($chat->channel === 'whatsapp' && $chat->whatsapp_number) {
                 $whatsappService = app(\App\Services\WhatsAppService::class);
 
-                $sendResult = $whatsappService->sendTextMessage(
-                    $chat->whatsapp_number,
-                    $validated['content']
-                );
+                if ($hasAttachment) {
+                    // Verarbeite Attachment für WhatsApp
+                    $file = $request->file('attachment');
+                    $mimeType = $file->getMimeType();
+                    $fileType = $this->determineFileType($mimeType);
 
-                if (!$sendResult['success']) {
-                    \Log::error('Failed to send WhatsApp message', [
-                        'chat_id' => $chat->id,
-                        'error' => $sendResult['error'] ?? 'Unknown error'
+                    \Log::info('Processing WhatsApp attachment', [
+                        'file_name' => $file->getClientOriginalName(),
+                        'mime_type' => $mimeType,
+                        'file_type' => $fileType,
+                        'file_size' => $file->getSize()
                     ]);
 
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Fehler beim Senden der WhatsApp-Nachricht',
-                        'error' => $sendResult['error'] ?? 'Unknown error'
-                    ], 500);
+                    // Speichere Datei lokal
+                    $filename = time() . '_' . $file->getClientOriginalName();
+                    $path = $file->storeAs("whatsapp_uploads/{$fileType}s", $filename, 'public');
+                    $fullPath = \Storage::disk('public')->path($path);
+
+                    \Log::info('File saved locally', [
+                        'path' => $path,
+                        'full_path' => $fullPath,
+                        'file_exists' => file_exists($fullPath)
+                    ]);
+
+                    // Upload zu WhatsApp
+                    $uploadResult = $whatsappService->uploadMedia($fullPath, $mimeType);
+
+                    \Log::info('WhatsApp upload result', [
+                        'success' => $uploadResult['success'],
+                        'media_id' => $uploadResult['media_id'] ?? null,
+                        'error' => $uploadResult['error'] ?? null,
+                        'full_result' => $uploadResult
+                    ]);
+
+                    if (!$uploadResult['success']) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Fehler beim Upload zu WhatsApp',
+                            'error' => $uploadResult['error'] ?? 'Unknown error'
+                        ], 500);
+                    }
+
+                    $mediaId = $uploadResult['media_id'];
+
+                    // Sende Media über WhatsApp
+                    $sendResult = $this->sendWhatsAppMedia(
+                        $whatsappService,
+                        $chat->whatsapp_number,
+                        $fileType,
+                        $mediaId,
+                        $messageText,
+                        $file->getClientOriginalName()
+                    );
+
+                    \Log::info('WhatsApp send media result', [
+                        'success' => $sendResult['success'],
+                        'message_id' => $sendResult['message_id'] ?? null,
+                        'error' => $sendResult['error'] ?? null,
+                        'full_result' => $sendResult
+                    ]);
+
+                    if (!$sendResult['success']) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Fehler beim Senden der WhatsApp-Nachricht',
+                            'error' => $sendResult['error'] ?? 'Unknown error'
+                        ], 500);
+                    }
+
+                    $metadata['whatsapp_message_id'] = $sendResult['message_id'];
+                    $metadata['whatsapp_media_id'] = $mediaId;
+                    $metadata['sent_via_whatsapp'] = true;
+
+                    // Erstelle Message mit Attachment
+                    $message = Message::create([
+                        'id' => $messageId,
+                        'chat_id' => $chat->id,
+                        'from' => $validated['isAgent'] ? 'agent' : 'user',
+                        'text' => $messageText ?: "[{$fileType}]",
+                        'metadata' => json_encode($metadata),
+                        'message_type' => "whatsapp_{$fileType}",
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+
+                    // Erstelle Attachment-Eintrag
+                    \App\Models\MessageAttachment::create([
+                        'message_id' => $message->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_type' => $fileType,
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $mimeType
+                    ]);
+
+                } else {
+                    // Nur Text-Nachricht
+                    $sendResult = $whatsappService->sendTextMessage(
+                        $chat->whatsapp_number,
+                        $messageText
+                    );
+
+                    if (!$sendResult['success']) {
+                        \Log::error('Failed to send WhatsApp message', [
+                            'chat_id' => $chat->id,
+                            'error' => $sendResult['error'] ?? 'Unknown error'
+                        ]);
+
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Fehler beim Senden der WhatsApp-Nachricht',
+                            'error' => $sendResult['error'] ?? 'Unknown error'
+                        ], 500);
+                    }
+
+                    $metadata['whatsapp_message_id'] = $sendResult['message_id'];
+                    $metadata['sent_via_whatsapp'] = true;
+
+                    $message = Message::create([
+                        'id' => $messageId,
+                        'chat_id' => $chat->id,
+                        'from' => $validated['isAgent'] ? 'agent' : 'user',
+                        'text' => $messageText,
+                        'metadata' => json_encode($metadata),
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
                 }
+            } else {
+                // Regular non-WhatsApp chat - handle normally
+                $message = Message::create([
+                    'id' => $messageId,
+                    'chat_id' => $chat->id,
+                    'from' => $validated['isAgent'] ? 'agent' : 'user',
+                    'text' => $messageText,
+                    'metadata' => json_encode($metadata),
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
 
-                // Füge WhatsApp Message ID zu Metadata hinzu
-                $metadata['whatsapp_message_id'] = $sendResult['message_id'];
-                $metadata['sent_via_whatsapp'] = true;
+                // Handle attachment for regular chat
+                if ($hasAttachment) {
+                    $file = $request->file('attachment');
+                    $filename = time() . '_' . $file->getClientOriginalName();
+                    $path = $file->storeAs('attachments', $filename, 'public');
+
+                    \App\Models\MessageAttachment::create([
+                        'message_id' => $message->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_type' => $this->determineFileType($file->getMimeType()),
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType()
+                    ]);
+                }
             }
-
-            $message = Message::create([
-                'id' => $messageId,
-                'chat_id' => $chat->id,
-                'from' => $validated['isAgent'] ? 'agent' : 'user',
-                'text' => $validated['content'],
-                'metadata' => json_encode($metadata),
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-
-            // ❌ ENTFERNT: Automatische Zuweisung komplett entfernen
-            // Keine automatische Assignment-Logik mehr
 
             // Chat als aktiv markieren (ohne Assignment zu ändern)
             $chat->update([
@@ -1261,6 +1444,9 @@ class ChatbotController extends Controller
             $sessionId = $validated['session_id'] ?? $chat->session_id;
             $message->session_id = $sessionId;
 
+            // Load attachments for response
+            $message->load('attachments');
+
             // Broadcasting
             $this->broadcastMessageWithRetry($message, $sessionId, $assignmentData);
 
@@ -1271,10 +1457,58 @@ class ChatbotController extends Controller
                     'text' => $message->text,
                     'from' => $message->from,
                     'created_at' => $message->created_at,
-                    'session_id' => $sessionId
+                    'session_id' => $sessionId,
+                    'has_attachment' => $message->attachments->count() > 0,
+                    'attachments' => $message->attachments->map(function($attachment) {
+                        return [
+                            'id' => $attachment->id,
+                            'file_name' => $attachment->file_name,
+                            'file_type' => $attachment->file_type,
+                            'file_size' => $attachment->file_size,
+                            'download_url' => url('api/attachments/' . $attachment->id . '/download')
+                        ];
+                    })
                 ]
             ]);
         });
+    }
+
+    /**
+     * ✅ Helper: Bestimme Dateityp basierend auf MIME-Type
+     */
+    private function determineFileType(string $mimeType): string
+    {
+        if (str_starts_with($mimeType, 'image/')) {
+            return 'image';
+        } elseif (str_starts_with($mimeType, 'video/')) {
+            return 'video';
+        } elseif (str_starts_with($mimeType, 'audio/')) {
+            return 'audio';
+        } elseif (str_starts_with($mimeType, 'application/pdf') ||
+                  str_contains($mimeType, 'document') ||
+                  str_contains($mimeType, 'msword') ||
+                  str_contains($mimeType, 'spreadsheet') ||
+                  str_contains($mimeType, 'presentation')) {
+            return 'document';
+        }
+        return 'document';
+    }
+
+    /**
+     * ✅ Helper: Sende Media über WhatsApp basierend auf Typ
+     */
+    private function sendWhatsAppMedia($whatsappService, string $phoneNumber, string $fileType, string $mediaId, ?string $caption, ?string $filename): array
+    {
+        switch ($fileType) {
+            case 'image':
+                return $whatsappService->sendImageById($phoneNumber, $mediaId, $caption);
+            case 'video':
+                return $whatsappService->sendVideoById($phoneNumber, $mediaId, $caption);
+            case 'document':
+                return $whatsappService->sendDocumentById($phoneNumber, $mediaId, $caption, $filename);
+            default:
+                return ['success' => false, 'error' => 'Unsupported file type'];
+        }
     }
 
     private function broadcastMessageWithRetry($message, $sessionId, $assignmentData = null, $attempts = 3)
@@ -1621,10 +1855,11 @@ class ChatbotController extends Controller
             ]);
 
             // Freundliche Abschiedsnachricht für den Visitor (nach Agent-Chat-Ende)
+            $farewellText = 'Vielen Dank für die Nutzung unseres Supports. Sie können jederzeit einen neuen Chat beginnen.';
             $farewellMessage = Message::create([
                 'chat_id' => $chat->id,
                 'from' => 'bot',
-                'text' => 'Vielen Dank für die Nutzung unseres Supports. Sie können jederzeit einen neuen Chat beginnen.',
+                'text' => $farewellText,
                 'message_type' => 'chat_farewell',
                 'metadata' => [
                     'ended_by' => 'agent',
@@ -1632,6 +1867,10 @@ class ChatbotController extends Controller
                     'farewell_sent_at' => now()
                 ]
             ]);
+
+            // ✅ NEU: Sende System-Nachrichten auch via WhatsApp
+            $this->sendMessageViaWhatsAppIfNeeded($chat, $endMessage, 'system');
+            $this->sendMessageViaWhatsAppIfNeeded($chat, $farewellText, 'system');
 
             // Assignment-Daten für Broadcasting
             $assignmentData = [
@@ -1654,8 +1893,11 @@ class ChatbotController extends Controller
                     'session_id' => $chat->session_id,
                     'chat_id' => $chat->id,
                     'status' => 'closed',
-                    'customer_first_name' => $chat->visitor?->first_name ?? 'Anonymous',
-                    'customer_last_name' => $chat->visitor?->last_name ?? '',
+                    'channel' => $chat->channel ?? 'website',
+                    'whatsapp_number' => $chat->whatsapp_number ?? null,
+                    'customer_first_name' => $chat->visitor?->first_name ?? ($chat->channel === 'whatsapp' ? 'WhatsApp' : 'Anonymous'),
+                    'customer_last_name' => $chat->visitor?->last_name ?? ($chat->channel === 'whatsapp' ? 'Kunde' : ''),
+                    'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
                     'last_message' => $endMessage,
                     'last_message_time' => now(),
                     'ended_by' => 'agent',
@@ -1753,8 +1995,11 @@ class ChatbotController extends Controller
                 'session_id' => $chat->session_id,
                 'chat_id' => $chat->id,
                 'status' => 'closed',
-                'customer_first_name' => $chat->visitor?->first_name ?? 'Anonymous',
-                'customer_last_name' => $chat->visitor?->last_name ?? '',
+                'channel' => $chat->channel ?? 'website',
+                'whatsapp_number' => $chat->whatsapp_number ?? null,
+                'customer_first_name' => $chat->visitor?->first_name ?? ($chat->channel === 'whatsapp' ? 'WhatsApp' : 'Anonymous'),
+                'customer_last_name' => $chat->visitor?->last_name ?? ($chat->channel === 'whatsapp' ? 'Kunde' : ''),
+                'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
                 'last_message' => 'Chat wurde vom Benutzer beendet',
                 'last_message_time' => now(),
                 'ended_by' => 'visitor',
@@ -1835,13 +2080,38 @@ class ChatbotController extends Controller
             ->map(function ($chat) {
                 $lastMessage = $chat->messages->last();
                 $user = Auth::user();
+
+                // ✅ NEU: Dynamischer Kundenname basierend auf Channel
+                $customerFirstName = 'Anonymous';
+                $customerLastName = '';
+
+                if ($chat->visitor) {
+                    // Visitor existiert - prüfe ob er echte Namen hat
+                    if ($chat->visitor->first_name && $chat->visitor->first_name !== 'WhatsApp') {
+                        // Echter Name vom Visitor
+                        $customerFirstName = $chat->visitor->first_name;
+                        $customerLastName = $chat->visitor->last_name ?? '';
+                    } elseif ($chat->channel === 'whatsapp') {
+                        // WhatsApp Visitor ohne echten Namen
+                        $customerFirstName = 'WhatsApp';
+                        $customerLastName = 'Kunde';
+                    } else {
+                        // Website Visitor ohne Namen
+                        $customerFirstName = 'Anonymous';
+                        $customerLastName = '';
+                    }
+                } elseif ($chat->channel === 'whatsapp') {
+                    // Kein Visitor aber WhatsApp Channel
+                    $customerFirstName = 'WhatsApp';
+                    $customerLastName = 'Kunde';
+                }
+
                 return [
                     'session_id' => $chat->session_id,
                     'chat_id' => $chat->id,
-                   // 'customer_name' => $chat->visitor ? $chat->visitor->name : 'Anonymous',
-                    'customer_first_name' => $chat->visitor ? $chat->visitor->first_name : 'Anonymous',
-                    'customer_last_name' => $chat->visitor ? $chat->visitor->last_name : 'Anonymous',
-                    'customer_phone' => $chat->visitor ? $chat->visitor->phone : 'Nicht bekannt',
+                    'customer_first_name' => $customerFirstName,
+                    'customer_last_name' => $customerLastName,
+                    'customer_phone' => $chat->visitor ? $chat->visitor->phone : ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
                     'customer_avatar' => $chat->user ? $chat->user->avatar : asset('storage/images/user.png'),
                     'last_message' => $lastMessage ? $lastMessage->text : 'No messages yet',
                     'last_message_time' => $lastMessage ? $lastMessage->created_at : $chat->updated_at,
@@ -1853,6 +2123,8 @@ class ChatbotController extends Controller
                         ->count(),
                     'is_online' => $chat->user ? $chat->user->isOnline() : false,
                     'status' => $chat->status,
+                    'channel' => $chat->channel ?? 'website',
+                    'whatsapp_number' => $chat->whatsapp_number ?? null,
                     'assigned_to' => $chat->assigned_to,
                     'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
                     'messages' => $chat->messages->map(function ($message) use ($user) {
@@ -2057,8 +2329,11 @@ class ChatbotController extends Controller
                         'session_id' => $chat->session_id,
                         'chat_id' => $chat->id,
                         'status' => 'human',
-                        'customer_first_name' => $chat->visitor?->first_name ?? 'Anonymous',
-                        'customer_last_name' => $chat->visitor?->last_name ?? '',
+                        'channel' => $chat->channel ?? 'website',
+                        'whatsapp_number' => $chat->whatsapp_number ?? null,
+                        'customer_first_name' => $chat->visitor?->first_name ?? ($chat->channel === 'whatsapp' ? 'WhatsApp' : 'Anonymous'),
+                        'customer_last_name' => $chat->visitor?->last_name ?? ($chat->channel === 'whatsapp' ? 'Kunde' : ''),
+                        'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
                         'last_message' => $responseText,
                         'last_message_time' => now(),
                         'unread_count' => 1,
@@ -2196,8 +2471,11 @@ class ChatbotController extends Controller
                         'session_id' => $chat->session_id,
                         'chat_id' => $chat->id,
                         'status' => $chat->status, // Aktueller Status beibehalten
-                        'customer_first_name' => $chat->visitor?->first_name ?? 'Anonymous',
-                        'customer_last_name' => $chat->visitor?->last_name ?? '',
+                        'channel' => $chat->channel ?? 'website',
+                        'whatsapp_number' => $chat->whatsapp_number ?? null,
+                        'customer_first_name' => $chat->visitor?->first_name ?? ($chat->channel === 'whatsapp' ? 'WhatsApp' : 'Anonymous'),
+                        'customer_last_name' => $chat->visitor?->last_name ?? ($chat->channel === 'whatsapp' ? 'Kunde' : ''),
+                        'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
                         'last_message' => $message->text,
                         'last_message_time' => $message->created_at,
                         'unread_count' => Message::where('chat_id', $chat->id)
@@ -2294,6 +2572,39 @@ class ChatbotController extends Controller
             'success' => true,
             'message' => 'Notification status saved'
         ]);
+    }
+
+    /**
+     * ✅ Helper: Sende Nachricht via WhatsApp wenn es ein WhatsApp-Chat ist
+     */
+    private function sendMessageViaWhatsAppIfNeeded($chat, string $messageText, string $messageType = 'text'): ?array
+    {
+        if ($chat->channel !== 'whatsapp' || !$chat->whatsapp_number) {
+            return null;
+        }
+
+        $whatsappService = app(\App\Services\WhatsAppService::class);
+
+        try {
+            $result = $whatsappService->sendTextMessage($chat->whatsapp_number, $messageText);
+
+            if (!$result['success']) {
+                \Log::error('Failed to send WhatsApp message', [
+                    'chat_id' => $chat->id,
+                    'whatsapp_number' => $chat->whatsapp_number,
+                    'message_type' => $messageType,
+                    'error' => $result['error'] ?? 'Unknown error'
+                ]);
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            \Log::error('Exception sending WhatsApp message', [
+                'chat_id' => $chat->id,
+                'error' => $e->getMessage()
+            ]);
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
     }
 
 }

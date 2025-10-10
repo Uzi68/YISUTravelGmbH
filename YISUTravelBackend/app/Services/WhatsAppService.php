@@ -186,6 +186,28 @@ class WhatsAppService
     }
 
     /**
+     * Sende Video via Media ID
+     */
+    public function sendVideoById(string $to, string $mediaId, ?string $caption = null): array
+    {
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'recipient_type' => 'individual',
+            'to' => $this->formatPhoneNumber($to),
+            'type' => 'video',
+            'video' => [
+                'id' => $mediaId
+            ]
+        ];
+
+        if ($caption) {
+            $payload['video']['caption'] = $caption;
+        }
+
+        return $this->sendRequest($payload);
+    }
+
+    /**
      * Sende Audio
      */
     public function sendAudio(string $to, string $audioUrl): array

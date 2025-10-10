@@ -31,12 +31,14 @@ class Chat extends Model
         'state',
         'context',
         'transfer_count',
-        'last_agent_activity'
+        'last_agent_activity',
+        'last_activity'        // ✅ Zuletzt-Online-Status für Visitor
     ];
 
     protected $casts = [
         'assigned_at' => 'datetime',
         'closed_at' => 'datetime',
+        'last_activity' => 'datetime',
         'chat_id' => 'string'
     ];
 

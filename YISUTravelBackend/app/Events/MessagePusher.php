@@ -46,7 +46,7 @@ class MessagePusher implements ShouldBroadcast
 
     public function broadcastWith()
     {
-        // WICHTIG: Attachments immer frisch laden, da dynamische Properties nach Serialisierung verloren gehen
+        // WICHTIG: Attachments sollten bereits geladen sein (via Eager Loading im Controller)
         if (!$this->message->relationLoaded('attachments')) {
             $this->message->load('attachments');
         }
@@ -86,17 +86,66 @@ class MessagePusher implements ShouldBroadcast
             $data = array_merge($data, $this->assignmentData);
         }
 
-        // ✅ WICHTIG: Kundendaten für Notifications hinzufügen
-        // Lade Chat mit Visitor-Daten
-        $chat = \App\Models\Chat::where('session_id', $this->sessionId)->first();
-        if ($chat && $chat->visitor_id) {
-            $visitor = \App\Models\Visitor::find($chat->visitor_id);
+        // ✅ WICHTIG: Kundendaten aus bereits geladener Relation verwenden (verhindert doppelte DB-Queries)
+        // Nutze die bereits geladene Chat-Relation wenn verfügbar
+        $chat = $this->message->relationLoaded('chat')
+            ? $this->message->chat
+            : \App\Models\Chat::where('session_id', $this->sessionId)->with('visitor')->first();
+
+        if ($chat) {
+            // ✅ WhatsApp-spezifische Daten hinzufügen
+            if ($chat->channel === 'whatsapp') {
+                $data['channel'] = 'whatsapp';
+                $data['whatsapp_number'] = $chat->whatsapp_number;
+            }
+
+            // ✅ Last Activity für Zuletzt-Online-Status hinzufügen
+            if ($chat->last_activity) {
+                $data['last_activity'] = $chat->last_activity->toIso8601String();
+            }
+
+            // ✅ Nutze bereits geladene Visitor-Relation falls verfügbar
+            $visitor = $chat->relationLoaded('visitor') ? $chat->visitor : null;
+
             if ($visitor) {
                 $data['customer_first_name'] = $visitor->first_name;
                 $data['customer_last_name'] = $visitor->last_name;
                 $data['customer_email'] = $visitor->email;
-                $data['customer_name'] = trim($visitor->first_name . ' ' . $visitor->last_name) ?: 'Unbekannter Kunde';
+                $data['customer_phone'] = $visitor->phone;
+
+                // ✅ Für WhatsApp: Zeige den echten Namen falls vorhanden
+                if ($chat->channel === 'whatsapp') {
+                    // Wenn wir einen echten Namen haben (nicht nur "WhatsApp Kunde")
+                    if ($visitor->first_name && $visitor->first_name !== 'WhatsApp') {
+                        $data['customer_name'] = trim($visitor->first_name . ' ' . $visitor->last_name);
+                    } else {
+                        // Fallback: Zeige WhatsApp-Nummer wenn kein Name vorhanden
+                        $data['customer_name'] = $chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'WhatsApp Kunde';
+                    }
+                } else {
+                    $data['customer_name'] = trim($visitor->first_name . ' ' . $visitor->last_name) ?: 'Unbekannter Kunde';
+                }
+            } elseif ($chat->channel === 'whatsapp') {
+                // ✅ WhatsApp-Chat ohne Visitor
+                $data['customer_first_name'] = 'WhatsApp';
+                $data['customer_last_name'] = 'Kunde';
+                $data['customer_name'] = $chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'WhatsApp Kunde';
+                $data['customer_phone'] = $chat->whatsapp_number ? '+' . $chat->whatsapp_number : null;
             }
+        }
+
+        // ✅ DEBUG: Log was gebroadcastet wird (für WhatsApp-Debugging)
+        if (isset($data['channel']) && $data['channel'] === 'whatsapp') {
+            \Log::info('WhatsApp MessagePusher Broadcast:', [
+                'session_id' => $this->sessionId,
+                'customer_first_name' => $data['customer_first_name'] ?? null,
+                'customer_last_name' => $data['customer_last_name'] ?? null,
+                'customer_name' => $data['customer_name'] ?? null,
+                'customer_phone' => $data['customer_phone'] ?? null,
+                'whatsapp_number' => $data['whatsapp_number'] ?? null,
+                'last_activity' => $data['last_activity'] ?? null,
+                'message_from' => $data['message']['from'] ?? null
+            ]);
         }
 
         return $data;

@@ -180,6 +180,9 @@ class WhatsAppWebhookController extends Controller
             // Finde oder erstelle Chat für diesen WhatsApp-Kontakt
             $chat = $this->findOrCreateWhatsAppChat($visitor, $from);
 
+            // ✅ Aktualisiere last_activity für Zuletzt-Online-Status
+            $chat->update(['last_activity' => now()]);
+
             // Extrahiere Nachrichteninhalt basierend auf Typ
             $messageContent = $this->extractMessageContent($messageData, $messageType);
 
@@ -205,6 +208,9 @@ class WhatsAppWebhookController extends Controller
 
             // Markiere WhatsApp-Nachricht als gelesen
             $this->whatsappService->markAsRead($messageId);
+
+            // ✅ WICHTIG: Lade Message mit Chat und Visitor-Relationen für Broadcasting
+            $message->load(['chat.visitor', 'attachments']);
 
             // Broadcast über Pusher an Admin Dashboard
             broadcast(new MessagePusher($message, $chat->session_id))->toOthers();
@@ -370,35 +376,75 @@ class WhatsAppWebhookController extends Controller
     {
         $sessionId = 'whatsapp_' . $whatsappNumber;
 
+        // Extrahiere Kontaktdaten IMMER (auch für Updates)
+        $contactData = $contacts[0] ?? null;
+        $contactName = $contactData['profile']['name'] ?? null;
+
+        \Log::info('WhatsApp contact data', [
+            'whatsapp_number' => $whatsappNumber,
+            'contact_name' => $contactName,
+            'full_contact_data' => $contactData
+        ]);
+
+        // Splitze Namen in Vor- und Nachname
+        $firstName = 'WhatsApp';
+        $lastName = 'Kunde';
+
+        if ($contactName) {
+            $nameParts = explode(' ', trim($contactName), 2);
+            $firstName = $nameParts[0];
+            $lastName = $nameParts[1] ?? '';
+        }
+
         // Versuche Visitor anhand WhatsApp-Nummer ODER Session-ID zu finden
         $visitor = Visitor::where('whatsapp_number', $whatsappNumber)
             ->orWhere('session_id', $sessionId)
             ->first();
 
         if ($visitor) {
-            // Aktualisiere WhatsApp-Nummer falls noch nicht gesetzt
-            if (!$visitor->whatsapp_number) {
-                $visitor->update(['whatsapp_number' => $whatsappNumber]);
+            // ✅ WICHTIG: Aktualisiere IMMER den Namen, falls er sich geändert hat
+            $updateData = [
+                'whatsapp_number' => $whatsappNumber,
+                'phone' => '+' . $whatsappNumber,
+            ];
+
+            // Nur Namen aktualisieren wenn wir einen echten Namen haben
+            if ($contactName) {
+                $updateData['first_name'] = $firstName;
+                $updateData['last_name'] = $lastName;
             }
+
+            $visitor->update($updateData);
+
+            \Log::info('Updated existing WhatsApp visitor', [
+                'visitor_id' => $visitor->id,
+                'first_name' => $visitor->first_name,
+                'last_name' => $visitor->last_name,
+                'whatsapp_number' => $visitor->whatsapp_number
+            ]);
+
             return $visitor;
         }
 
-        // Extrahiere Kontaktdaten
-        $contactData = $contacts[0] ?? null;
-        $contactName = $contactData['profile']['name'] ?? 'WhatsApp User';
+        // Erstelle neuen Visitor
+        $newVisitor = Visitor::create([
+            'session_id' => $sessionId,
+            'whatsapp_number' => $whatsappNumber,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'phone' => '+' . $whatsappNumber,
+            'email' => null,
+            'channel' => 'whatsapp'
+        ]);
 
-        // Erstelle neuen Visitor mit updateOrCreate statt create
-        return Visitor::updateOrCreate(
-            ['session_id' => $sessionId], // Eindeutiger Key
-            [
-                'whatsapp_number' => $whatsappNumber,
-                'first_name' => $contactName,
-                'last_name' => '',
-                'phone' => '+' . $whatsappNumber,
-                'email' => null,
-                'channel' => 'whatsapp'
-            ]
-        );
+        \Log::info('Created new WhatsApp visitor', [
+            'visitor_id' => $newVisitor->id,
+            'first_name' => $newVisitor->first_name,
+            'last_name' => $newVisitor->last_name,
+            'whatsapp_number' => $newVisitor->whatsapp_number
+        ]);
+
+        return $newVisitor;
     }
 
     /**
@@ -412,6 +458,27 @@ class WhatsAppWebhookController extends Controller
             ->first();
 
         if ($chat) {
+            // ✅ WICHTIG: Aktualisiere visitor_id falls er sich geändert hat
+            if ($chat->visitor_id !== $visitor->id) {
+                $chat->update(['visitor_id' => $visitor->id]);
+                \Log::info('Updated chat visitor_id', [
+                    'chat_id' => $chat->id,
+                    'old_visitor_id' => $chat->visitor_id,
+                    'new_visitor_id' => $visitor->id
+                ]);
+            }
+
+            // ✅ SEHR WICHTIG: Lade Visitor-Relation neu, damit MessagePusher aktuelle Daten hat
+            $chat->load('visitor');
+
+            \Log::info('Chat loaded with visitor', [
+                'chat_id' => $chat->id,
+                'visitor_id' => $chat->visitor_id,
+                'visitor_loaded' => $chat->visitor ? true : false,
+                'visitor_first_name' => $chat->visitor ? $chat->visitor->first_name : null,
+                'visitor_whatsapp_number' => $chat->visitor ? $chat->visitor->whatsapp_number : null
+            ]);
+
             return $chat;
         }
 
