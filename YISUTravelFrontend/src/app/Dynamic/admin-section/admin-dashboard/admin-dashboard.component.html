@@ -113,12 +113,6 @@
               </span>
             </div>
 
-            <!-- WhatsApp Number Display - nur für Admins -->
-            <div class="whatsapp-number" *ngIf="chat.whatsapp_number && isAdmin">
-              <mat-icon class="number-icon">phone</mat-icon>
-              {{formatWhatsAppNumber(chat.whatsapp_number)}}
-            </div>
-
             <div class="chat-preview">{{chat.lastMessage | truncate:25}}</div>
 
             <div class="chat-status-container">
@@ -205,12 +199,6 @@
               <span class="channel-badge whatsapp" *ngIf="chat.channel === 'whatsapp'" matTooltip="WhatsApp Chat">
                 <mat-icon>chat</mat-icon>
               </span>
-            </div>
-
-            <!-- WhatsApp Number Display - nur für Admins -->
-            <div class="whatsapp-number" *ngIf="chat.whatsapp_number && isAdmin">
-              <mat-icon class="number-icon">phone</mat-icon>
-              {{formatWhatsAppNumber(chat.whatsapp_number)}}
             </div>
 
             <div class="chat-preview">{{chat.last_message | truncate:25}}</div>
@@ -310,21 +298,26 @@
             </div>
           </div>
 
-          <div class="visitor-details" *ngIf="visitor">
+          <!-- ✅ Visitor Details mit korrekter Telefonnummer-Anzeige -->
+          <div class="visitor-details">
             @if (isAdmin) {
-              <div class="detail-item" *ngIf="visitor.phone">
+              <!-- ✅ Für WhatsApp-Chats: Zeige WhatsApp-Nummer -->
+              <div class="detail-item" *ngIf="isWhatsAppChat(selectedChat) && selectedChat.whatsapp_number">
+                <mat-icon class="detail-icon">chat</mat-icon>
+                <a href="https://wa.me/{{selectedChat.whatsapp_number}}" target="_blank" class="whatsapp-link">
+                  {{formatWhatsAppNumber(selectedChat.whatsapp_number)}}
+                </a>
+              </div>
+
+              <!-- ✅ Für Website-Chats: Zeige normale Telefonnummer (nur wenn visitor existiert) -->
+              <div class="detail-item" *ngIf="!isWhatsAppChat(selectedChat) && visitor?.phone">
                 <mat-icon class="detail-icon">phone</mat-icon>
                 <a href="tel:{{visitor.phone}}" class="phone-link">{{visitor.phone}}</a>
               </div>
             }
 
-            <!-- WhatsApp Number in Visitor Details - nur für Admins -->
-            <div class="detail-item" *ngIf="selectedChat.whatsapp_number && isAdmin">
-              <mat-icon class="detail-icon">chat</mat-icon>
-              <span class="whatsapp-number-display">{{formatWhatsAppNumber(selectedChat.whatsapp_number)}}</span>
-            </div>
-
-            <div class="detail-item" *ngIf="visitor.email">
+            <!-- ✅ Email nur anzeigen wenn visitor existiert -->
+            <div class="detail-item" *ngIf="visitor?.email">
               <mat-icon class="detail-icon">email</mat-icon>
               <a href="mailto:{{visitor.email}}" class="email-link">{{visitor.email}}</a>
             </div>
@@ -540,62 +533,23 @@
 
       <!-- Input Container -->
       <div class="input-container" *ngIf="canWrite(selectedChat)">
-        <!-- Regular File Input (Website Chats) -->
+        <!-- ✅ Unified File Input for all chat types (Website & WhatsApp) -->
         <input
           type="file"
           #fileInput
-          (change)="onFileSelected($event)"
+          (change)="isWhatsAppChat(selectedChat) ? onWhatsAppFileSelected($event) : onFileSelected($event)"
           style="display: none"
-          accept="*/*"
+          [accept]="isWhatsAppChat(selectedChat) ? 'image/jpeg,image/png,image/gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,video/mp4,video/quicktime' : '*/*'"
         />
 
-        <!-- WhatsApp Image Input -->
-        <input
-          type="file"
-          #whatsappImageInput
-          (change)="onWhatsAppFileSelected($event, 'image')"
-          style="display: none"
-          accept="image/jpeg,image/png"
-        />
-
-        <!-- WhatsApp Document Input -->
-        <input
-          type="file"
-          #whatsappDocumentInput
-          (change)="onWhatsAppFileSelected($event, 'document')"
-          style="display: none"
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
-        />
-
-        <!-- File Attachment Buttons -->
+        <!-- File Attachment Button - Universal for all chats -->
         <div class="attachment-buttons">
-          <!-- Website Chat: Single attach button -->
           <button
-            *ngIf="!isWhatsAppChat(selectedChat)"
             mat-icon-button
             class="attach-button"
             (click)="fileInput.click()"
-            matTooltip="Datei anhängen">
+            [matTooltip]="isWhatsAppChat(selectedChat) ? 'Datei anhängen (Bilder, Dokumente, Videos)' : 'Datei anhängen'">
             <mat-icon>attach_file</mat-icon>
-          </button>
-
-          <!-- WhatsApp Chat: Image & Document buttons -->
-          <button
-            *ngIf="isWhatsAppChat(selectedChat) && canUploadFiles(selectedChat)"
-            mat-icon-button
-            class="attach-button whatsapp-image"
-            (click)="whatsappImageInput.click()"
-            matTooltip="Bild senden">
-            <mat-icon>image</mat-icon>
-          </button>
-
-          <button
-            *ngIf="isWhatsAppChat(selectedChat) && canUploadFiles(selectedChat)"
-            mat-icon-button
-            class="attach-button whatsapp-document"
-            (click)="whatsappDocumentInput.click()"
-            matTooltip="Dokument senden">
-            <mat-icon>description</mat-icon>
           </button>
         </div>
 

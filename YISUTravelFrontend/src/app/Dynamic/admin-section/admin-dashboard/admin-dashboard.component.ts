@@ -3302,9 +3302,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * File-Upload Handler für WhatsApp
+   * ✅ Unified File-Upload Handler für WhatsApp (automatische Typ-Erkennung)
    */
-  onWhatsAppFileSelected(event: any, type: 'image' | 'document'): void {
+  onWhatsAppFileSelected(event: any): void {
     const file: File = event.target.files[0];
     if (!file || !this.selectedChat) return;
 
@@ -3316,15 +3316,27 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // ✅ Automatische Typ-Erkennung basierend auf MIME-Type
+    const fileType = file.type;
+    const isImage = fileType.startsWith('image/');
+    const isVideo = fileType.startsWith('video/');
+    const isDocument = !isImage && !isVideo; // Alles andere ist ein Dokument
+
+    // Bestimme Caption-Prompt basierend auf Dateityp
+    let captionPrompt = 'Optional: Beschreibung eingeben';
+    if (isImage) {
+      captionPrompt = 'Optional: Bildunterschrift eingeben';
+    } else if (isVideo) {
+      captionPrompt = 'Optional: Video-Beschreibung eingeben';
+    }
+
     // Frage nach Caption
-    const caption = prompt(
-      type === 'image' ? 'Optional: Bildunterschrift eingeben' : 'Optional: Beschreibung eingeben'
-    );
+    const caption = prompt(captionPrompt);
 
     this.snackBar.open('📤 Wird hochgeladen...', '', { duration: 2000 });
 
-    // Sende basierend auf Typ
-    if (type === 'image') {
+    // ✅ Sende basierend auf automatisch erkanntem Typ
+    if (isImage) {
       this.whatsappService.sendImage(Number(this.selectedChat.id), file, caption || undefined).subscribe({
         next: (response) => {
           if (response.success) {
@@ -3336,7 +3348,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           this.snackBar.open('❌ Fehler beim Senden des Bildes', 'OK', { duration: 5000 });
         }
       });
+    } else if (isVideo) {
+      // Video-Support (falls WhatsApp-Service sendVideo hat, ansonsten als Dokument)
+      this.whatsappService.sendDocument(Number(this.selectedChat.id), file, caption || undefined).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.snackBar.open('✅ Video erfolgreich gesendet', 'OK', { duration: 3000 });
+          }
+        },
+        error: (error) => {
+          console.error('Fehler beim Senden des Videos:', error);
+          this.snackBar.open('❌ Fehler beim Senden des Videos', 'OK', { duration: 5000 });
+        }
+      });
     } else {
+      // Dokument
       this.whatsappService.sendDocument(Number(this.selectedChat.id), file, caption || undefined).subscribe({
         next: (response) => {
           if (response.success) {
