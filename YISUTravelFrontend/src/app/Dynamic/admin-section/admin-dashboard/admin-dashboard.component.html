@@ -113,8 +113,8 @@
               </span>
             </div>
 
-            <!-- WhatsApp Number Display -->
-            <div class="whatsapp-number" *ngIf="chat.whatsapp_number">
+            <!-- WhatsApp Number Display - nur für Admins -->
+            <div class="whatsapp-number" *ngIf="chat.whatsapp_number && isAdmin">
               <mat-icon class="number-icon">phone</mat-icon>
               {{formatWhatsAppNumber(chat.whatsapp_number)}}
             </div>
@@ -207,8 +207,8 @@
               </span>
             </div>
 
-            <!-- WhatsApp Number Display -->
-            <div class="whatsapp-number" *ngIf="chat.whatsapp_number">
+            <!-- WhatsApp Number Display - nur für Admins -->
+            <div class="whatsapp-number" *ngIf="chat.whatsapp_number && isAdmin">
               <mat-icon class="number-icon">phone</mat-icon>
               {{formatWhatsAppNumber(chat.whatsapp_number)}}
             </div>
@@ -318,8 +318,8 @@
               </div>
             }
 
-            <!-- WhatsApp Number in Visitor Details -->
-            <div class="detail-item" *ngIf="selectedChat.whatsapp_number">
+            <!-- WhatsApp Number in Visitor Details - nur für Admins -->
+            <div class="detail-item" *ngIf="selectedChat.whatsapp_number && isAdmin">
               <mat-icon class="detail-icon">chat</mat-icon>
               <span class="whatsapp-number-display">{{formatWhatsAppNumber(selectedChat.whatsapp_number)}}</span>
             </div>

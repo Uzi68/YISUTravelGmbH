@@ -88,10 +88,12 @@ export class PusherService {
 
     const wrappedCallback = (data: T) => {
       this.ngZone.run(() => {
-        // Benachrichtigung bei neuem Tab und wenn gewünscht
-        if (options.notify && this.shouldNotify()) {
-          this.handleNotification(data);
-        }
+        // ✅ DEAKTIVIERT: Alte Notification-Logik (wird jetzt von NotificationSoundService übernommen)
+        // Die Benachrichtigungen werden jetzt zentral über den NotificationSoundService
+        // im admin-dashboard.component.ts handleIncomingMessageGlobal() verwaltet
+        // if (options.notify && this.shouldNotify()) {
+        //   this.handleNotification(data);
+        // }
         callback(data);
       });
     };

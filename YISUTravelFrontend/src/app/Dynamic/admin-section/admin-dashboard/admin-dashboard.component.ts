@@ -740,7 +740,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       if (isTransferredToMe) {
         // 🔔 WICHTIGE BENACHRICHTIGUNG: Chat wurde an mich übertragen
         const fromAgentName = chatData.from_agent_name || 'Ein Kollege';
-        const customerName = `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Ein Kunde';
+        // ✅ WICHTIG: Nutze customer_name vom Backend (für WhatsApp-Namen)
+        const customerName = chatData.customer_name ||
+                            `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() ||
+                            'Ein Kunde';
         const isCurrentlySelected = this.selectedChat?.id === sessionId;
 
         this.notificationSound.notifyTransfer(
@@ -956,7 +959,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (data.type === 'chat_escalated' && data.chat) {
       const chatData = data.chat;
       const sessionId = chatData.session_id;
-      const customerName = `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Ein Kunde';
+      // ✅ WICHTIG: Nutze customer_name vom Backend (für WhatsApp-Namen)
+      const customerName = chatData.customer_name ||
+                          `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() ||
+                          'Ein Kunde';
 
       const existingIndex = this.activeChats.findIndex(c => c.id === sessionId);
 
@@ -1006,8 +1012,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
       }
 
-      // 🔔 WICHTIGE NOTIFICATION: Neue Chat-Anfrage
-      this.notificationSound.notifyNewChatRequest(customerName, sessionId);
+      // 🔔 NOTIFICATION entfernt - wird bereits durch message.received Event gesendet
+      // Die message.received Benachrichtigung hat die korrekten Kundendaten und wird
+      // VOR diesem chat_escalated Event empfangen
+      // this.notificationSound.notifyNewChatRequest(customerName, sessionId);
       this.showToast(`🆕 Neue Chat-Anfrage von ${customerName}`, 'success');
 
       this.sortActiveChats();
@@ -1051,7 +1059,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         const newChat: Chat = {
           id: chatData.session_id,
           chatId: chatData.chat_id,
-          customerName: `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Anonymer Benutzer',
+          customerName: chatData.customer_name || `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Anonymer Benutzer',
           customerFirstName: chatData.customer_first_name || '',
           customerLastName: chatData.customer_last_name || '',
           customerAvatar: chatData.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
@@ -1697,7 +1705,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private handleChatUpdate(data: any): void {
     console.log('Chat Update empfangen (chats.updated):', data);
 
-    // ✅ NEU: Leite ALLE Event-Typen an handleAllChatsUpdate weiter
+    // ✅ Leite ALLE Event-Typen an handleAllChatsUpdate weiter
     // Dies ist der korrekte Handler für AllChatsUpdate Events vom Backend
     if (data.type) {
       console.log('🔄 Forwarding to handleAllChatsUpdate, type:', data.type);
@@ -1705,77 +1713,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // ✅ Legacy: Alte Chat-Escalation Logik (falls kein type vorhanden)
-
-    if (data.type === 'chat_escalated' && data.chat) {
-      const chatData = data.chat;
-
-      const existingIndex = this.activeChats.findIndex(c => c.id === chatData.session_id);
-
-      if (existingIndex === -1) {
-        const newChat: Chat = {
-          id: chatData.session_id,
-          chatId: chatData.chat_id,
-          customerName: `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Anonymer Benutzer',
-          customerFirstName: chatData.customer_first_name || '',
-          customerLastName: chatData.customer_last_name || '',
-          customerAvatar: 'https://randomuser.me/api/portraits/lego/1.jpg',
-          lastMessage: chatData.last_message,
-          lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: chatData.unread_count || 1,
-          isOnline: true,
-          messages: [],
-          status: chatData.status,
-          assigned_to: chatData.assigned_to,
-          assigned_agent: chatData.assigned_agent,
-          isNew: true
-        };
-
-        this.activeChats = [newChat, ...this.activeChats];
-        this.filteredActiveChats = [newChat, ...this.filteredActiveChats];
-      } else {
-        // ✅ WICHTIG: Behalte den höheren unreadCount (lokal vs. Backend)
-        const currentUnread = this.activeChats[existingIndex].unreadCount || 0;
-        const backendUnread = chatData.unread_count || 0;
-
-        const updatedChat = {
-          ...this.activeChats[existingIndex],
-          status: chatData.status,
-          lastMessage: chatData.last_message,
-          lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: Math.max(currentUnread, backendUnread), // ✅ Nehme den höheren Wert
-          assigned_to: chatData.assigned_to,
-          assigned_agent: chatData.assigned_agent,
-          isNew: true
-        };
-
-        this.activeChats[existingIndex] = updatedChat;
-
-        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chatData.session_id);
-        if (filteredIndex !== -1) {
-          this.filteredActiveChats[filteredIndex] = { ...updatedChat };
-        }
-      }
-
-      this.sortActiveChats();
-      this.cdRef.detectChanges();
-
-      // ✅ KORRIGIERT: Nur Sound wenn Tab inaktiv
-      this.notificationSound.playNotificationSoundIfTabInactive();
-
-      setTimeout(() => {
-        const newChatElement = document.querySelector('.chat-item.is-new');
-        if (newChatElement) {
-          newChatElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }, 100);
-    }
+    // ✅ Fallback für Events ohne type (sollte nicht vorkommen)
+    console.warn('⚠️ Chat update received without type:', data);
+    // Alle Events mit type werden durch handleAllChatsUpdate verarbeitet
   }
 
 
 
   private handleIncomingMessageGlobal(data: any): void {
     console.log('📥 handleIncomingMessageGlobal - Full data:', data);
+    console.log('📥 CALLED FROM STACK:', new Error().stack?.split('\n')[2]?.trim()); // Zeigt wo die Methode aufgerufen wurde
 
     // ✅ DEBUG: WhatsApp-spezifisches Logging
     if (data.channel === 'whatsapp') {
