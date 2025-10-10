@@ -21,6 +21,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\ChatbotResponse;
@@ -1211,7 +1212,7 @@ class ChatbotController extends Controller
                 );
 
                 if (!$sendResult['success']) {
-                    Log::error('Failed to send WhatsApp message', [
+                    \Log::error('Failed to send WhatsApp message', [
                         'chat_id' => $chat->id,
                         'error' => $sendResult['error'] ?? 'Unknown error'
                     ]);
