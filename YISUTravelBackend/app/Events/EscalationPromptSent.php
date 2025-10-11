@@ -30,7 +30,7 @@ class EscalationPromptSent implements ShouldBroadcast
     {
         return [
             new Channel('chat.' . $this->sessionId),
-            new Channel('all.active.chats')
+            new PrivateChannel('all.active.chats')
         ];
     }
 

@@ -34,8 +34,8 @@ class MessagePusher implements ShouldBroadcast
     public function broadcastOn()
     {
         return [
-            new Channel('chat.' . $this->sessionId),  // Für den Visitor
-            new Channel('all.active.chats')           // Für Admin Dashboard
+            new Channel('chat.' . $this->sessionId),  // ✅ Public für Visitor (kein Login)
+            new PrivateChannel('all.active.chats')    // ✅ Private für Admin Dashboard (nur authentifiziert)
         ];
     }
 

@@ -28,7 +28,7 @@ class ChatEnded implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new Channel('all.active.chats');
+        return new PrivateChannel('all.active.chats');
     }
 
     public function broadcastAs()

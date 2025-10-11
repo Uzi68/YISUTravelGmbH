@@ -24,7 +24,7 @@ class AllChatsUpdate implements ShouldBroadcast
     public function broadcastOn()
     {
         return [
-            new Channel('all.active.chats'),
+            new PrivateChannel('all.active.chats'), // ✅ Private Channel für Admin Dashboard
         ];
     }
 

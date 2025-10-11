@@ -48,8 +48,51 @@ export class PusherService {
         cluster: 'eu',
         forceTLS: true,
         encrypted: true,
-        authEndpoint: '/broadcasting/auth',
-        withCredentials: true,
+        // ✅ Auth-Endpoint für Private Channels
+        authEndpoint: 'http://localhost:8000/broadcasting/auth',
+        auth: {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
+        },
+        // ✅ Custom Authorizer um sicherzustellen, dass Cookies UND XSRF-Token gesendet werden
+        authorizer: (channel: any, options: any) => {
+          return {
+            authorize: (socketId: string, callback: Function) => {
+              fetch('http://localhost:8000/broadcasting/auth', {
+                method: 'POST',
+                credentials: 'include', // ✅ WICHTIG: Sendet Cookies mit!
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  socket_id: socketId,
+                  channel_name: channel.name
+                })
+              })
+              .then(response => {
+                if (!response.ok) {
+                  console.error('❌ Auth failed with status:', response.status);
+                  callback(new Error(`Auth failed: ${response.status}`), null);
+                  return;
+                }
+                return response.json();
+              })
+              .then(data => {
+                if (data) {
+                  console.log('✅ Auth successful for channel:', channel.name);
+                  callback(null, data);
+                }
+              })
+              .catch(error => {
+                console.error('❌ Auth request error:', error);
+                callback(error, null);
+              });
+            }
+          };
+        }
       });
       // Verbindungsüberwachung
 
@@ -98,7 +141,19 @@ export class PusherService {
       });
     };
 
-    const channel = this.echo.channel(channelName);
+    // ✅ WICHTIG: Unterscheide zwischen Public und Private Channels
+    // Private Channels: all.active.chats, agent.{id}, admin-dashboard, escalations, transfer.*
+    // Public Channels: chat.{sessionId}, visitor.{sessionId}
+    const isPrivateChannel = channelName.includes('all.active.chats') ||
+                           channelName.includes('agent.') ||
+                           channelName.includes('admin-dashboard') ||
+                           channelName.includes('escalations') ||
+                           channelName.includes('transfer.');
+
+    // Laravel Echo fügt automatisch 'private-' Prefix hinzu bei echo.private()
+    const channel = isPrivateChannel
+      ? this.echo.private(channelName)  // ✅ Private Channel (Auth required)
+      : this.echo.channel(channelName); // ✅ Public Channel (für Visitors)
 
     // Event-Name mit Punkt prefixen für Laravel Echo
     const formattedEvent = event.startsWith('.') ? event : `.${event}`;

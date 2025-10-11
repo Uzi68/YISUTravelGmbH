@@ -31,7 +31,7 @@ class ChatTransferred implements ShouldBroadcast
     {
         return [
             new Channel('chat.' . $this->chat->session_id),
-            new Channel('all.active.chats'),
+            new PrivateChannel('all.active.chats'),
             new Channel('agent.' . $this->fromAgent->id),
             new Channel('agent.' . $this->toAgent->id)
         ];
