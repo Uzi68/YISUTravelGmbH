@@ -146,6 +146,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private audioDurations = new Map<string, string>();
   private audioCurrentTimes = new Map<string, string>();
 
+  // ✅ Loading state für Chat-Wechsel
+  isLoadingChat = false;
+
 // Neue Properties für Filter
   searchQuery = '';
   filterStatus = 'all';
@@ -1974,7 +1977,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
               ...updatedChat,
               messages: updatedChat.messages.map(m => ({ ...m, read: true }))
             };
-            this.scrollToBottom();
+
+            // ✅ FIX: Setze shouldScrollToBottom=true für garantiertes Auto-Scroll
+            this.shouldScrollToBottom = true;
+            this.scrollToBottom(false);
 
             // ✅ NEU: Backend-Call um Nachrichten als gelesen zu markieren wenn Chat aktiv betrachtet wird
             // Dies verhindert, dass beim Reload ungelesene Nachrichten angezeigt werden
@@ -2481,7 +2487,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         ...updatedChat,
         messages: updatedChat.messages.map(m => ({ ...m, read: true }))
       };
-      this.scrollToBottom();
+
+      // ✅ FIX: Setze shouldScrollToBottom=true um Auto-Scroll zu garantieren
+      // Dies stellt sicher, dass neue Nachrichten (auch System-Nachrichten) immer scrollen
+      this.shouldScrollToBottom = true;
+
+      // ✅ Scroll mit smooth behavior
+      this.scrollToBottom(false);
 
       // SOFORT als gelesen markieren im Backend
       this.markMessagesAsRead(updatedChat.chatId, sessionId);
@@ -2506,20 +2518,28 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
 
-  scrollToBottom() {
+  scrollToBottom(immediate: boolean = false) {
     const container = this.messageContainer?.nativeElement;
-    if (!container || !this.shouldScrollToBottom) return;
+    if (!container) return;
 
-    requestAnimationFrame(() => {
-      try {
-        container.scroll({
-          top: container.scrollHeight,
-          behavior: 'smooth'
-        });
-      } catch (e) {
+    // ✅ Wenn immediate=true, scrolle SOFORT ohne Animation (für Chat-Wechsel)
+    // ✅ Wenn immediate=false, nur scrollen wenn User bereits unten war
+    if (immediate) {
+      requestAnimationFrame(() => {
         container.scrollTop = container.scrollHeight;
-      }
-    });
+      });
+    } else if (this.shouldScrollToBottom) {
+      requestAnimationFrame(() => {
+        try {
+          container.scroll({
+            top: container.scrollHeight,
+            behavior: 'smooth'
+          });
+        } catch (e) {
+          container.scrollTop = container.scrollHeight;
+        }
+      });
+    }
   }
 
   assignAdminChat(adminChat: any): void {
@@ -2585,6 +2605,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   selectChat(chat: Chat): void {
     this.ngZone.run(() => {
+      // ✅ FIX: Setze Loading-State um Flickern zu vermeiden
+      this.isLoadingChat = true;
+
       // Setze unreadCount = 0 und alle Nachrichten auf read = true
       this.activeChats = this.activeChats.map(c =>
         c.id === chat.id
@@ -2604,8 +2627,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         messages: chat.messages.map(m => ({ ...m, read: true }))
       };
 
-      // Scroll nach unten
-      setTimeout(() => this.scrollToBottom(), 100);
+      // ✅ FIX: Setze shouldScrollToBottom=true damit Auto-Scroll funktioniert
+      this.shouldScrollToBottom = true;
+
+      // ✅ FIX: Warte auf nächsten Frame, dann scrolle UND zeige Chat
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.scrollToBottom(true);
+          this.isLoadingChat = false;
+          this.cdRef.detectChanges();
+        });
+      });
+
       this.loadAssignmentStatus(chat.id.toString());
 
       // Speichere im localStorage

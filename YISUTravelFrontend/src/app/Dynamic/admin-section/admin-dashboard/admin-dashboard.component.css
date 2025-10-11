@@ -863,6 +863,13 @@
   background-image:
     radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.03) 1px, transparent 0);
   background-size: 20px 20px;
+  transition: opacity 0.1s ease;
+}
+
+/* ✅ Verstecke Chat während des Ladens um Flickern zu vermeiden */
+.message-area.loading {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .message {

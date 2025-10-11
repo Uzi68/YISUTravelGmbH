@@ -388,7 +388,10 @@
     </div>
 -->
     <!-- Nachrichtenbereich -->
-    <div class="message-area" #messagesContainer (scroll)="onScroll($event)">
+    <div class="message-area"
+         #messagesContainer
+         (scroll)="onScroll($event)"
+         [class.loading]="isLoadingChat">
       <div *ngFor="let message of selectedChat.messages; trackBy: trackByMessageId"
            class="message"
            [class.agent]="message.isAgent"
