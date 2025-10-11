@@ -1,19 +1,5 @@
 <div class="chat-app">
-  <!-- Notification Banner -->
-  <div class="notification-permission-banner" *ngIf="!notificationSound.hasPermission && notificationSound.isSupported">
-    <div class="banner-content">
-      <mat-icon class="banner-icon">notifications_off</mat-icon>
-      <div class="banner-text">
-        <strong>Benachrichtigungen deaktiviert</strong><br>
-        <small>Aktivieren Sie Benachrichtigungen um über neue Nachrichten informiert zu werden</small>
-      </div>
-    </div>
-    <div class="banner-actions">
-      <button class="banner-button" (click)="showNotificationPermissionDialog()">
-        Aktivieren
-      </button>
-    </div>
-  </div>
+  <!-- Notification Banner - ENTFERNT: Redundant mit Permission Dialog -->
 
   <!-- Sidebar -->
   <div class="chat-sidebar" [class.hidden]="selectedChat" @slideInOut>
