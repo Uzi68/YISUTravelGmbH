@@ -106,6 +106,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   };
   private sortDebounce: any;
   loadingAdminChats = false;
+  isReloadingChats = false; // ✅ Verhindert zu häufige Chat-Reloads
   // Neue Properties
   showAllChats = false;
   selectedAdminChat: any = null;
@@ -588,13 +589,35 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.pusherSubscriptions.push({ channel: `chat.${chat.id}`, subscription: chatSub });
     });
 
-    // 1. Globaler Message Listener für Chat-Updates (nicht für Nachrichten)
+    // 1. Globaler Message Listener für NEUE Website-Chats (die noch nicht in activeChats sind)
     const globalSub = this.pusherService.listenToChannel(
       'all.active.chats',
       'message.received',
       (data: any) => {
-        console.log('🎯 ADMIN DASHBOARD: Message received on all.active.chats channel (should not happen for messages):', data);
-        // ✅ FIX: Ignoriere Nachrichten auf dem globalen Channel - diese sollten nur auf spezifischen Channels kommen
+        console.log('🎯 ADMIN DASHBOARD: Message received on all.active.chats channel:', data);
+        
+        // ✅ FIX: Prüfe ob dieser Chat bereits in activeChats existiert
+        const sessionId = data.message?.session_id;
+        if (sessionId) {
+          const existingChat = this.activeChats.find(chat => chat.id === sessionId);
+          
+          if (!existingChat) {
+            // ✅ NEUER CHAT: Lade die Chats neu, um den neuen Chat zu bekommen
+            console.log('🆕 New website chat detected, reloading chats...');
+            
+            // ✅ Verhindere zu häufige Reloads mit einem kleinen Delay
+            if (!this.isReloadingChats) {
+              this.isReloadingChats = true;
+              setTimeout(() => {
+                this.loadActiveChats();
+                this.isReloadingChats = false;
+              }, 100);
+            }
+          } else {
+            // ✅ BEKANNTER CHAT: Ignoriere, da er bereits über spezifischen Channel behandelt wird
+            console.log('ℹ️ Known chat message on global channel, ignoring (handled by specific channel)');
+          }
+        }
       },
     );
 
