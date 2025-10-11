@@ -1894,3 +1894,215 @@
     flex-wrap: wrap;
   }
 }
+
+/* ========================================
+   Audio/Voice Message Player Styles
+   ======================================== */
+
+.audio-player-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  max-width: 320px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.25s ease;
+  margin-top: 8px;
+}
+
+.audio-player-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.audio-player-card .play-button {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+}
+
+.audio-player-card .play-button:hover {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.4);
+  transform: scale(1.05);
+}
+
+.audio-player-card .play-button mat-icon {
+  color: white !important;
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.audio-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.audio-waveform {
+  flex: 1;
+  position: relative;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  background: rgba(25, 118, 210, 0.05);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.audio-waveform:hover {
+  background: rgba(25, 118, 210, 0.1);
+  transform: scaleY(1.05);
+}
+
+.audio-waveform:active {
+  transform: scaleY(0.98);
+}
+
+.waveform-bars {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  width: 100%;
+  height: 100%;
+  padding: 0 8px;
+  gap: 3px;
+  position: relative;
+  z-index: 1;
+}
+
+.waveform-bars .bar {
+  flex: 1;
+  background: rgba(25, 118, 210, 0.3);
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.waveform-bars .bar:nth-child(1) { height: 30%; }
+.waveform-bars .bar:nth-child(2) { height: 60%; }
+.waveform-bars .bar:nth-child(3) { height: 45%; }
+.waveform-bars .bar:nth-child(4) { height: 75%; }
+.waveform-bars .bar:nth-child(5) { height: 50%; }
+.waveform-bars .bar:nth-child(6) { height: 85%; }
+.waveform-bars .bar:nth-child(7) { height: 40%; }
+.waveform-bars .bar:nth-child(8) { height: 70%; }
+.waveform-bars .bar:nth-child(9) { height: 55%; }
+.waveform-bars .bar:nth-child(10) { height: 65%; }
+.waveform-bars .bar:nth-child(11) { height: 50%; }
+.waveform-bars .bar:nth-child(12) { height: 35%; }
+
+.audio-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(25, 118, 210, 0.2), rgba(25, 118, 210, 0.15));
+  border-radius: 14px;
+  transition: width 0.1s linear;
+  z-index: 0;
+}
+
+.audio-duration {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1976d2;
+  min-width: 70px;
+  text-align: right;
+  font-family: 'Roboto Mono', monospace;
+  white-space: nowrap;
+}
+
+.audio-player-card .download-button {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  color: #64748b !important;
+  transition: all 0.2s ease;
+}
+
+.audio-player-card .download-button:hover {
+  background: rgba(25, 118, 210, 0.1);
+  color: #1976d2 !important;
+  transform: scale(1.1);
+}
+
+.audio-player-card .download-button mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+/* Agent message audio player styling */
+.message.agent .audio-player-card {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.message.agent .audio-player-card:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.message.agent .audio-waveform {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.message.agent .waveform-bars .bar {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.message.agent .audio-progress {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.3));
+}
+
+.message.agent .audio-duration {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.message.agent .audio-player-card .play-button {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.message.agent .audio-player-card .play-button:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.message.agent .audio-player-card .download-button {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.message.agent .audio-player-card .download-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white !important;
+}
+
+/* Responsive audio player */
+@media (max-width: 768px) {
+  .audio-player-card {
+    max-width: 280px;
+  }
+
+  .audio-info {
+    gap: 8px;
+  }
+
+  .audio-duration {
+    font-size: 12px;
+    min-width: 35px;
+  }
+}

@@ -139,6 +139,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   // ✅ Cooldown Timer für Live-Update
   private cooldownUpdateInterval: any;
 
+  // ✅ Audio Player Management
+  private audioElements = new Map<string, HTMLAudioElement>();
+  private currentPlayingAudio: string | null = null;
+  private audioProgress = new Map<string, number>();
+  private audioDurations = new Map<string, string>();
+  private audioCurrentTimes = new Map<string, string>();
+
 // Neue Properties für Filter
   searchQuery = '';
   filterStatus = 'all';
@@ -2112,6 +2119,130 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
 
+  // ✅ Audio Player Functions
+  toggleAudioPlay(attachment: any): void {
+    const audioKey = attachment.id || attachment.file_path;
+
+    // Stop currently playing audio if different
+    if (this.currentPlayingAudio && this.currentPlayingAudio !== audioKey) {
+      const currentAudio = this.audioElements.get(this.currentPlayingAudio);
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+    }
+
+    let audio = this.audioElements.get(audioKey);
+
+    if (!audio) {
+      audio = new Audio(attachment.download_url);
+      this.audioElements.set(audioKey, audio);
+
+      // Update progress and current time
+      audio.addEventListener('timeupdate', () => {
+        const progress = (audio!.currentTime / audio!.duration) * 100;
+        this.audioProgress.set(audioKey, progress);
+        const currentTime = this.formatDuration(audio!.currentTime);
+        this.audioCurrentTimes.set(audioKey, currentTime);
+        this.cdRef.detectChanges();
+      });
+
+      // Load metadata for duration
+      audio.addEventListener('loadedmetadata', () => {
+        const duration = this.formatDuration(audio!.duration);
+        this.audioDurations.set(audioKey, duration);
+        this.audioCurrentTimes.set(audioKey, '0:00');
+        this.cdRef.detectChanges();
+      });
+
+      // Reset on end
+      audio.addEventListener('ended', () => {
+        this.currentPlayingAudio = null;
+        this.audioProgress.set(audioKey, 0);
+        this.audioCurrentTimes.set(audioKey, '0:00');
+        this.cdRef.detectChanges();
+      });
+    }
+
+    if (this.currentPlayingAudio === audioKey) {
+      audio.pause();
+      this.currentPlayingAudio = null;
+    } else {
+      audio.play();
+      this.currentPlayingAudio = audioKey;
+    }
+  }
+
+  seekAudio(attachment: any, event: MouseEvent): void {
+    const audioKey = attachment.id || attachment.file_path;
+    const audio = this.audioElements.get(audioKey);
+
+    if (!audio) {
+      // If audio hasn't been loaded yet, load it first
+      this.toggleAudioPlay(attachment);
+      // Wait a bit for metadata to load, then seek
+      setTimeout(() => {
+        this.performSeek(attachment, event);
+      }, 100);
+      return;
+    }
+
+    this.performSeek(attachment, event);
+  }
+
+  private performSeek(attachment: any, event: MouseEvent): void {
+    const audioKey = attachment.id || attachment.file_path;
+    const audio = this.audioElements.get(audioKey);
+
+    if (!audio || !audio.duration) return;
+
+    const waveformElement = event.currentTarget as HTMLElement;
+    const rect = waveformElement.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const newTime = percentage * audio.duration;
+
+    audio.currentTime = newTime;
+
+    // Update UI immediately
+    this.audioProgress.set(audioKey, percentage * 100);
+    this.audioCurrentTimes.set(audioKey, this.formatDuration(newTime));
+    this.cdRef.detectChanges();
+
+    // Auto-play if not already playing
+    if (this.currentPlayingAudio !== audioKey) {
+      audio.play();
+      this.currentPlayingAudio = audioKey;
+    }
+  }
+
+  isAudioPlaying(attachment: any): boolean {
+    const audioKey = attachment.id || attachment.file_path;
+    return this.currentPlayingAudio === audioKey;
+  }
+
+  getAudioProgress(attachment: any): number {
+    const audioKey = attachment.id || attachment.file_path;
+    return this.audioProgress.get(audioKey) || 0;
+  }
+
+  getAudioDuration(attachment: any): string {
+    const audioKey = attachment.id || attachment.file_path;
+    return this.audioDurations.get(audioKey) || '0:00';
+  }
+
+  getAudioCurrentTime(attachment: any): string {
+    const audioKey = attachment.id || attachment.file_path;
+    return this.audioCurrentTimes.get(audioKey) || '0:00';
+  }
+
+  private formatDuration(seconds: number): string {
+    if (!isFinite(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
   ngOnDestroy() {
     this.cleanupPusherSubscriptions();
 
@@ -2127,6 +2258,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (this.cooldownUpdateInterval) {
       clearInterval(this.cooldownUpdateInterval);
     }
+
+    // ✅ Audio cleanup
+    this.audioElements.forEach(audio => {
+      audio.pause();
+      audio.src = '';
+    });
+    this.audioElements.clear();
   }
 
   private markMessagesAsRead(chatId: string, sessionId: string): void {

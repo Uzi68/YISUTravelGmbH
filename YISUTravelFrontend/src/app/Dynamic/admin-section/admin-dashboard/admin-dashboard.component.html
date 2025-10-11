@@ -419,8 +419,30 @@
               </div>
             </div>
 
+            <!-- Audio/Voice Player -->
+            <div *ngIf="message.attachment.file_type === 'audio' || message.attachment.file_type === 'voice'" class="audio-player-card">
+              <button mat-icon-button class="play-button" (click)="toggleAudioPlay(message.attachment)">
+                <mat-icon>{{isAudioPlaying(message.attachment) ? 'pause' : 'play_arrow'}}</mat-icon>
+              </button>
+              <div class="audio-info">
+                <div class="audio-waveform"
+                     (click)="seekAudio(message.attachment, $event)"
+                     [style.cursor]="'pointer'"
+                     matTooltip="Klicken um zu springen">
+                  <div class="waveform-bars">
+                    <span class="bar" *ngFor="let bar of [1,2,3,4,5,6,7,8,9,10,11,12]"></span>
+                  </div>
+                  <div class="audio-progress" [style.width.%]="getAudioProgress(message.attachment)"></div>
+                </div>
+                <div class="audio-duration">{{getAudioCurrentTime(message.attachment)}} / {{getAudioDuration(message.attachment)}}</div>
+              </div>
+              <button mat-icon-button class="download-button" (click)="downloadFile(message.attachment)" matTooltip="Download">
+                <mat-icon>download</mat-icon>
+              </button>
+            </div>
+
             <!-- Other Files -->
-            <div *ngIf="message.attachment.file_type !== 'image'" class="attachment-card" (click)="downloadFile(message.attachment)">
+            <div *ngIf="message.attachment.file_type !== 'image' && message.attachment.file_type !== 'audio' && message.attachment.file_type !== 'voice'" class="attachment-card" (click)="downloadFile(message.attachment)">
               <div class="attachment-icon-wrapper">
                 <mat-icon class="attachment-icon">{{getFileIcon(message.attachment.file_type)}}</mat-icon>
               </div>
