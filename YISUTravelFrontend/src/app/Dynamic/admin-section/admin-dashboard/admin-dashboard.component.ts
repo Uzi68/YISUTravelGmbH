@@ -566,22 +566,35 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private setupPusherListeners(): void {
     this.cleanupPusherSubscriptions();
 
-    // 1. Globaler Message Listener mit erweiterten Notifications
+    // ✅ FIX: Höre auf spezifische Chat-Channels für jeden aktiven Chat
+    this.activeChats.forEach(chat => {
+      const chatSub = this.pusherService.listenToChannel(
+        `chat.${chat.id}`,
+        'message.received',
+        (data: any) => {
+          console.log(`🎯 ADMIN DASHBOARD: Message received on chat.${chat.id} channel:`, data);
+          this.ngZone.run(() => {
+            console.log('🎯 Inside ngZone.run - about to call handleIncomingMessageGlobal');
+            try {
+              // Erweiterte Notification-Logik bereits in handleIncomingMessageGlobal implementiert
+              this.handleIncomingMessageGlobal(data);
+              console.log('✅ handleIncomingMessageGlobal completed successfully');
+            } catch (error) {
+              console.error('❌ Error in handleIncomingMessageGlobal:', error);
+            }
+          });
+        },
+      );
+      this.pusherSubscriptions.push({ channel: `chat.${chat.id}`, subscription: chatSub });
+    });
+
+    // 1. Globaler Message Listener für Chat-Updates (nicht für Nachrichten)
     const globalSub = this.pusherService.listenToChannel(
       'all.active.chats',
       'message.received',
       (data: any) => {
-        console.log('🎯 ADMIN DASHBOARD: Message received on all.active.chats channel:', data);
-        this.ngZone.run(() => {
-          console.log('🎯 Inside ngZone.run - about to call handleIncomingMessageGlobal');
-          try {
-            // Erweiterte Notification-Logik bereits in handleIncomingMessageGlobal implementiert
-            this.handleIncomingMessageGlobal(data);
-            console.log('✅ handleIncomingMessageGlobal completed successfully');
-          } catch (error) {
-            console.error('❌ Error in handleIncomingMessageGlobal:', error);
-          }
-        });
+        console.log('🎯 ADMIN DASHBOARD: Message received on all.active.chats channel (should not happen for messages):', data);
+        // ✅ FIX: Ignoriere Nachrichten auf dem globalen Channel - diese sollten nur auf spezifischen Channels kommen
       },
     );
 
@@ -1311,7 +1324,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
 
     const payload = {
-      session_id: this.chatToClose.id,
+      session_id: this.chatToClose.id.toString(),
       reason: closeReasonValue?.trim() || null  // ✅ Explizit null wenn leer
     };
 
@@ -2139,8 +2152,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           }
         }
 
-        // Nur Visitor-Daten abrufen, wenn immer noch kein Name vorhanden ist
-        if (customerName === 'Anonymer Benutzer' && !chat.customer_first_name && !chat.customer_last_name) {
+        // Nur Visitor-Daten abrufen, wenn immer noch kein Name vorhanden ist (nur für Website-Chats)
+        if (customerName === 'Anonymer Benutzer' && !chat.customer_first_name && !chat.customer_last_name && chat.channel !== 'whatsapp') {
           try {
             const visitor = await firstValueFrom(
               this.chatbotService.getVisitorDetails(chat.session_id).pipe(
@@ -2432,21 +2445,32 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       // Scroll nach unten
       setTimeout(() => this.scrollToBottom(), 100);
-      this.loadAssignmentStatus(chat.id);
+      this.loadAssignmentStatus(chat.id.toString());
 
       // Speichere im localStorage
-      localStorage.setItem('assigned_chat_session_id', chat.id);
+      localStorage.setItem('assigned_chat_session_id', chat.id.toString());
 
       // Backend-Call: als gelesen markieren
       if (chat.chatId && chat.id) {
-        this.markMessagesAsRead(chat.chatId, chat.id);
+        this.markMessagesAsRead(chat.chatId, chat.id.toString());
       }
 
-      // Besucher laden
-      this.chatbotService.getVisitorDetails(chat.id).subscribe({
-        next: (visitor) => (this.visitor = visitor),
-        error: (err) => console.error('Error fetching visitor details:', err)
-      });
+      // Besucher laden (nur für Website-Chats, nicht für WhatsApp)
+      if (!this.isWhatsAppChat(chat)) {
+        this.chatbotService.getVisitorDetails(chat.id.toString()).subscribe({
+          next: (visitor) => (this.visitor = visitor),
+          error: (err) => console.error('Error fetching visitor details:', err)
+        });
+      } else {
+        // Für WhatsApp-Chats: Visitor-Info aus Chat-Daten erstellen
+        this.visitor = {
+          first_name: chat.customerFirstName || 'WhatsApp',
+          last_name: chat.customerLastName || 'Kunde',
+          phone: chat.customerPhone || '',
+          email: '',
+          agb_accepted: false
+        };
+      }
 
       // ✅ NEU: Tab-Titel aktualisieren nach Chat-Auswahl
       this.updateTabTitle();
@@ -2499,7 +2523,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    * Transfer History für Chat anzeigen
    */
   showTransferHistory(chat: Chat): void {
-    this.chatbotService.getTransferHistory(chat.id).subscribe({
+    this.chatbotService.getTransferHistory(chat.id.toString()).subscribe({
       next: (response) => {
         if (response.success && response.transfers.length > 0) {
           // Dialog oder Tooltip mit Transfer History anzeigen
@@ -2560,7 +2584,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     // ✅ NEU: Cooldown-Mechanismus statt permanenter Deaktivierung
-    const lastPrompt = this.escalationPrompts.get(chat.id);
+    const lastPrompt = this.escalationPrompts.get(chat.id.toString());
     if (!lastPrompt) {
       return true; // Noch nie gesendet
     }
@@ -2575,7 +2599,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    * Berechnet den Cooldown-Text für die Escalation
    */
   getEscalationCooldownText(chat: Chat): string | null {
-    const lastPrompt = this.escalationPrompts.get(chat.id);
+    const lastPrompt = this.escalationPrompts.get(chat.id.toString());
     if (!lastPrompt) {
       return null;
     }
@@ -2635,7 +2659,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     const originalChat = { ...chat };
 
-    this.chatbotService.assignChatToAgent(chat.id).subscribe({
+    this.chatbotService.assignChatToAgent(chat.id.toString()).subscribe({
       next: (response) => {
         console.log('Chat assignment successful:', response);
 
@@ -2665,7 +2689,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             };
           }
 
-          this.assignmentStatuses.set(chat.id, {
+          this.assignmentStatuses.set(chat.id.toString(), {
             is_assigned: true,
             assigned_to: this.currentAgent.id,
             can_user_write: true,
@@ -2808,7 +2832,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
 
     this.chatbotService.transferChatToAgent(
-      this.selectedChatForTransfer.id,
+      this.selectedChatForTransfer.id.toString(),
       toAgentId,
       finalReason
     ).subscribe({
@@ -2878,14 +2902,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   unassignChat(chat: Chat): void {
     if (!chat.assigned_to || !this.isAdmin) return;
 
-    this.chatbotService.unassignChat(chat.id).subscribe({
+    this.chatbotService.unassignChat(chat.id.toString()).subscribe({
       next: (response) => {
         if (response.success) {
           chat.assigned_to = null;
           chat.assigned_agent = '';
           chat.status = 'human';
 
-          this.assignmentStatuses.set(chat.id, {
+          this.assignmentStatuses.set(chat.id.toString(), {
             is_assigned: false,
             assigned_to: null,
             can_user_write: false
@@ -2914,7 +2938,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       session_id: chat.id,
     };
 
-    this.chatbotService.sendEscalationPrompt(chat.id, payload).subscribe({
+    this.chatbotService.sendEscalationPrompt(chat.id.toString(), payload).subscribe({
       next: (response) => {
         if (response.success) {
           this.showToast(`✅ Escalation-Anfrage erfolgreich an ${chat.customerName} gesendet`, 'success');
@@ -2936,7 +2960,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           }
 
           // Escalation-Prompts Map aktualisieren
-          this.escalationPrompts.set(chat.id, {
+          this.escalationPrompts.set(chat.id.toString(), {
             prompt_id: response.prompt_id,
             sent_at: new Date(),
             sent_by: response.sent_by || this.currentAgent.name
@@ -3018,7 +3042,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  trackByChatId(index: number, chat: Chat): string {
+  trackByChatId(index: number, chat: Chat): string | number {
     return chat.id;
   }
 
@@ -3055,7 +3079,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     this.showToast(`Datei wird hochgeladen: ${file.name}`, 'info');
 
-    this.chatbotService.uploadAttachment(file, chatId, sessionId, 'agent').subscribe({
+    this.chatbotService.uploadAttachment(file, chatId, sessionId.toString(), 'agent').subscribe({
       next: (response) => {
         console.log('File uploaded successfully:', response);
         this.showToast('Datei erfolgreich gesendet', 'success');
@@ -3229,8 +3253,37 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           // Merge WhatsApp Chats mit Website Chats
           const websiteChats = this.activeChats.filter(c => c.channel !== 'whatsapp');
           const whatsappChatsConverted = this.whatsappChats.map(wc => ({
-            ...wc,
-            channel: 'whatsapp' as const
+            id: wc.session_id,  // ✅ FIX: Use session_id as id for frontend identification
+            chatId: wc.id,      // ✅ FIX: Use numeric id as chatId for backend API calls
+            customerName: wc.visitor ? `${wc.visitor.first_name || ''} ${wc.visitor.last_name || ''}`.trim() : 'WhatsApp Kunde',
+            customerFirstName: wc.visitor?.first_name || 'WhatsApp',
+            customerLastName: wc.visitor?.last_name || 'Kunde',
+            customerPhone: wc.whatsapp_number,
+            customerAvatar: 'assets/whatsapp-avatar.png',
+            lastMessage: wc.messages?.[wc.messages.length - 1]?.text || '',
+            lastMessageTime: wc.messages?.[wc.messages.length - 1]?.created_at ? new Date(wc.messages[wc.messages.length - 1].created_at) : new Date(wc.created_at),
+            unreadCount: 0,
+            isOnline: false,
+            last_activity: wc.updated_at,
+            messages: wc.messages?.map(msg => ({
+              id: msg.id.toString(),
+              content: msg.text,
+              timestamp: new Date(msg.created_at),
+              isAgent: msg.from === 'agent',
+              isBot: msg.from === 'bot',
+              read: true,
+              from: msg.from,
+              message_type: msg.message_type,
+              metadata: msg.metadata,
+              attachment: msg.attachments?.[0]
+            })) || [],
+            assigned_to: wc.assigned_to,
+            status: wc.status,
+            assigned_agent: wc.assigned_to ? `Agent ${wc.assigned_to}` : undefined,
+            isNew: false,
+            channel: 'whatsapp' as const,
+            whatsapp_number: wc.whatsapp_number,
+            visitor: wc.visitor
           }));
 
           this.activeChats = [...websiteChats, ...whatsappChatsConverted as any];
@@ -3258,7 +3311,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   sendWhatsAppMessage(message: string, textarea: HTMLTextAreaElement): void {
     if (!this.selectedChat) return;
 
-    this.whatsappService.sendTextMessage(Number(this.selectedChat.id), message).subscribe({
+    // ✅ FIX: Verwende chatId für WhatsApp API Calls, nicht id (session_id)
+    const chatId = this.isWhatsAppChat(this.selectedChat) ? Number(this.selectedChat.chatId) : Number(this.selectedChat.id);
+    this.whatsappService.sendTextMessage(chatId, message).subscribe({
       next: (response) => {
         if (response.success) {
           this.snackBar.open('✅ WhatsApp-Nachricht gesendet', 'OK', { duration: 3000 });
@@ -3301,7 +3356,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     // ✅ Sende basierend auf automatisch erkanntem Typ
     if (isImage) {
-      this.whatsappService.sendImage(Number(this.selectedChat.id), file, caption || undefined).subscribe({
+      // ✅ FIX: Verwende chatId für WhatsApp API Calls, nicht id (session_id)
+      const chatId = this.isWhatsAppChat(this.selectedChat) ? Number(this.selectedChat.chatId) : Number(this.selectedChat.id);
+      
+      // ✅ DEBUG: Log die Werte um das Problem zu identifizieren
+      console.log('🔍 DEBUG WhatsApp Image Send:', {
+        selectedChat: this.selectedChat,
+        isWhatsAppChat: this.isWhatsAppChat(this.selectedChat),
+        selectedChatId: this.selectedChat.id,
+        selectedChatChatId: this.selectedChat.chatId,
+        finalChatId: chatId,
+        chatIdType: typeof chatId,
+        isNaN: isNaN(chatId)
+      });
+      
+      this.whatsappService.sendImage(chatId, file, caption || undefined).subscribe({
         next: (response) => {
           if (response.success) {
             this.snackBar.open('✅ Bild erfolgreich gesendet', 'OK', { duration: 3000 });
@@ -3314,7 +3383,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       });
     } else if (isVideo) {
       // Video-Support (falls WhatsApp-Service sendVideo hat, ansonsten als Dokument)
-      this.whatsappService.sendDocument(Number(this.selectedChat.id), file, caption || undefined).subscribe({
+      // ✅ FIX: Verwende chatId für WhatsApp API Calls, nicht id (session_id)
+      const chatId = this.isWhatsAppChat(this.selectedChat) ? Number(this.selectedChat.chatId) : Number(this.selectedChat.id);
+      this.whatsappService.sendDocument(chatId, file, caption || undefined).subscribe({
         next: (response) => {
           if (response.success) {
             this.snackBar.open('✅ Video erfolgreich gesendet', 'OK', { duration: 3000 });
@@ -3327,7 +3398,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       });
     } else {
       // Dokument
-      this.whatsappService.sendDocument(Number(this.selectedChat.id), file, caption || undefined).subscribe({
+      // ✅ FIX: Verwende chatId für WhatsApp API Calls, nicht id (session_id)
+      const chatId = this.isWhatsAppChat(this.selectedChat) ? Number(this.selectedChat.chatId) : Number(this.selectedChat.id);
+      this.whatsappService.sendDocument(chatId, file, caption || undefined).subscribe({
         next: (response) => {
           if (response.success) {
             this.snackBar.open('✅ Dokument erfolgreich gesendet', 'OK', { duration: 3000 });
@@ -3454,7 +3527,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 }
 
 interface Chat {
-  id: string;
+  id: string | number;  // ✅ Allow both string (session_id) and number (WhatsApp chat id)
   chatId: string;
   customerName: string;
   customerFirstName: string;

@@ -9,6 +9,7 @@ export interface WhatsAppChat {
   whatsapp_number: string;
   channel: 'whatsapp';
   status: string;
+  assigned_to?: number | null;
   visitor?: any;
   messages?: any[];
   created_at: string;

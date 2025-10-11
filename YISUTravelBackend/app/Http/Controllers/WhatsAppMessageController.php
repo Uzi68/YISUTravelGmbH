@@ -29,7 +29,7 @@ class WhatsAppMessageController extends Controller
     public function sendTextMessage(Request $request): JsonResponse
     {
         $request->validate([
-            'chat_id' => 'required|exists:chats,id',
+            'chat_id' => 'required', // ✅ Allows both Integer and UUID/String
             'message' => 'required|string|max:4096'
         ]);
 
@@ -97,11 +97,28 @@ class WhatsAppMessageController extends Controller
      */
     public function sendImage(Request $request): JsonResponse
     {
-        $request->validate([
-            'chat_id' => 'required|exists:chats,id',
-            'image' => 'required|file|mimes:jpeg,jpg,png,gif,webp|max:5120', // Max 5MB
-            'caption' => 'nullable|string|max:1024'
-        ]);
+        try {
+            $validated = $request->validate([
+                'chat_id' => 'required', // ✅ Erlaubt sowohl Integer als auch UUID/String
+                'image' => 'required|file|mimes:jpeg,jpg,png,gif,webp|max:5120', // Max 5MB
+                'caption' => 'nullable|string|max:1024'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('WhatsApp image validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => [
+                    'chat_id' => $request->chat_id,
+                    'has_image' => $request->hasFile('image'),
+                    'image_size' => $request->file('image') ? $request->file('image')->getSize() : null,
+                    'caption' => $request->caption
+                ]
+            ]);
+
+            return response()->json([
+                'error' => 'Validierungsfehler',
+                'details' => $e->errors()
+            ], 422);
+        }
 
         try {
             $chat = Chat::findOrFail($request->chat_id);
@@ -196,7 +213,7 @@ class WhatsAppMessageController extends Controller
     public function sendDocument(Request $request): JsonResponse
     {
         $request->validate([
-            'chat_id' => 'required|exists:chats,id',
+            'chat_id' => 'required', // ✅ Allows both Integer and UUID/String
             'document' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt|max:102400', // Max 100MB
             'caption' => 'nullable|string|max:1024'
         ]);
@@ -291,7 +308,7 @@ class WhatsAppMessageController extends Controller
     public function sendTemplate(Request $request): JsonResponse
     {
         $request->validate([
-            'chat_id' => 'required|exists:chats,id',
+            'chat_id' => 'required', // ✅ Allows both Integer and UUID/String
             'template_name' => 'required|string',
             'language_code' => 'nullable|string',
             'components' => 'nullable|array'
