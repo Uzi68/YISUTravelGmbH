@@ -274,6 +274,7 @@
                       #inputField
                       [ngModel]="inputMessage()"
                       (ngModelChange)="inputMessage.set($event)"
+                      (input)="onTextareaInput($event)"
                       name="message"
                       [placeholder]="chatStatus() === 'human' ?
                         (assignedAgentName() ? 'Nachricht an ' + assignedAgentName() + '...' : 'Nachricht an Mitarbeiter...') :

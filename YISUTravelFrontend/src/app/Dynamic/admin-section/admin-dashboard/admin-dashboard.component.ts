@@ -1980,6 +1980,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
             // ✅ FIX: Setze shouldScrollToBottom=true für garantiertes Auto-Scroll
             this.shouldScrollToBottom = true;
+
+            // ✅ FIX: Trigger Change Detection BEVOR Scroll
+            this.cdRef.detectChanges();
+
+            // ✅ Scroll nach Change Detection
             this.scrollToBottom(false);
 
             // ✅ NEU: Backend-Call um Nachrichten als gelesen zu markieren wenn Chat aktiv betrachtet wird
@@ -2492,7 +2497,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       // Dies stellt sicher, dass neue Nachrichten (auch System-Nachrichten) immer scrollen
       this.shouldScrollToBottom = true;
 
-      // ✅ Scroll mit smooth behavior
+      // ✅ FIX: Trigger Change Detection BEVOR Scroll
+      this.cdRef.detectChanges();
+
+      // ✅ Scroll mit smooth behavior (nach Change Detection!)
       this.scrollToBottom(false);
 
       // SOFORT als gelesen markieren im Backend
@@ -2525,19 +2533,25 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     // ✅ Wenn immediate=true, scrolle SOFORT ohne Animation (für Chat-Wechsel)
     // ✅ Wenn immediate=false, nur scrollen wenn User bereits unten war
     if (immediate) {
+      // Doppeltes requestAnimationFrame für sicheres Rendering
       requestAnimationFrame(() => {
-        container.scrollTop = container.scrollHeight;
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight;
+        });
       });
     } else if (this.shouldScrollToBottom) {
+      // ✅ FIX: Warte 2 Frames bis DOM vollständig gerendert ist
       requestAnimationFrame(() => {
-        try {
-          container.scroll({
-            top: container.scrollHeight,
-            behavior: 'smooth'
-          });
-        } catch (e) {
-          container.scrollTop = container.scrollHeight;
-        }
+        requestAnimationFrame(() => {
+          try {
+            container.scroll({
+              top: container.scrollHeight,
+              behavior: 'smooth'
+            });
+          } catch (e) {
+            container.scrollTop = container.scrollHeight;
+          }
+        });
       });
     }
   }
