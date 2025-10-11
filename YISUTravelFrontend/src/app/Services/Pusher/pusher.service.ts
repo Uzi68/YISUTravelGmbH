@@ -2,6 +2,7 @@ import {Injectable, NgZone} from '@angular/core';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import {NotificationSoundService} from "../notification-service/notification-sound.service";
+import {environment} from '../../../environments/environment';
 
 declare global {
   interface Window {
@@ -48,8 +49,8 @@ export class PusherService {
         cluster: 'eu',
         forceTLS: true,
         encrypted: true,
-        // ✅ Auth-Endpoint für Private Channels
-        authEndpoint: 'http://localhost:8000/broadcasting/auth',
+        // ✅ Auth-Endpoint für Private Channels (verwendet environment Variable)
+        authEndpoint: `${environment.backendUrl}/broadcasting/auth`,
         auth: {
           headers: {
             'Accept': 'application/json',
@@ -60,7 +61,7 @@ export class PusherService {
         authorizer: (channel: any, options: any) => {
           return {
             authorize: (socketId: string, callback: Function) => {
-              fetch('http://localhost:8000/broadcasting/auth', {
+              fetch(`${environment.backendUrl}/broadcasting/auth`, {
                 method: 'POST',
                 credentials: 'include', // ✅ WICHTIG: Sendet Cookies mit!
                 headers: {
