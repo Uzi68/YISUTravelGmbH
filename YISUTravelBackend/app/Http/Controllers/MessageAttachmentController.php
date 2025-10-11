@@ -104,8 +104,8 @@ class MessageAttachmentController extends Controller
                 'chat_id' => $chatId,
                 'from' => $from,
                 'text' => $messageText,
-                'metadata' => json_encode($metadata),
-                'message_type' => $chat->channel === 'whatsapp' ? "whatsapp_{$fileType}" : null
+                'metadata' => $metadata, // ✅ FIX: Direkt als Array übergeben (Laravel castet automatisch zu JSON)
+                'message_type' => $chat->channel === 'whatsapp' ? "whatsapp_{$fileType}" : 'file_upload' // ✅ FIX: Setze 'file_upload' statt null
             ]);
 
             // Create attachment record

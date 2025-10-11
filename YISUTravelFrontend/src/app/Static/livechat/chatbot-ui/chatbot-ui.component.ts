@@ -2008,23 +2008,30 @@ export class ChatUiComponent implements AfterViewInit {
     }
 
     // ✅ VERBESSERT: Zeige Typing-Indikator während Upload statt temporäre Nachricht
-    this.isTyping.set(true);
+    // ⚠️ FIX: NgZone.run() verwenden um Signal-Update außerhalb von Effect zu machen
+    this.ngZone.run(() => {
+      this.isTyping.set(true);
+    });
 
     this.chatbotService.uploadAttachment(file, chatId, sessionId, 'user').subscribe({
       next: (response) => {
         console.log('File uploaded successfully:', response);
-        this.isTyping.set(false);
+        this.ngZone.run(() => {
+          this.isTyping.set(false);
+        });
         // ✅ File message will be received via Pusher with full attachment preview
       },
       error: (err) => {
         console.error('File upload error:', err);
-        this.isTyping.set(false);
-        this.messages.update(m => [...m, {
-          from: 'system',
-          text: 'Fehler beim Hochladen der Datei',
-          timestamp: new Date(),
-          isSystemMessage: true
-        }]);
+        this.ngZone.run(() => {
+          this.isTyping.set(false);
+          this.messages.update(m => [...m, {
+            from: 'system',
+            text: 'Fehler beim Hochladen der Datei',
+            timestamp: new Date(),
+            isSystemMessage: true
+          }]);
+        });
       }
     });
   }
