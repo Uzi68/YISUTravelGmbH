@@ -38,7 +38,9 @@ export class WhatsappService {
    * Hole alle WhatsApp Chats
    */
   getWhatsAppChats(): Observable<{ success: boolean; chats: WhatsAppChat[] }> {
-    return this.http.get<{ success: boolean; chats: WhatsAppChat[] }>(`${this.apiUrl}/chats`);
+    return this.http.get<{ success: boolean; chats: WhatsAppChat[] }>(`${this.apiUrl}/chats`, {
+      withCredentials: true // ✅ Session-Cookies mitschicken
+    });
   }
 
   /**
@@ -48,6 +50,8 @@ export class WhatsappService {
     return this.http.post(`${this.apiUrl}/send-text`, {
       chat_id: chatId,
       message: message
+    }, {
+      withCredentials: true // ✅ Session-Cookies mitschicken
     });
   }
 
@@ -62,7 +66,9 @@ export class WhatsappService {
       formData.append('caption', caption);
     }
 
-    return this.http.post(`${this.apiUrl}/send-image`, formData);
+    return this.http.post(`${this.apiUrl}/send-image`, formData, {
+      withCredentials: true // ✅ Session-Cookies mitschicken
+    });
   }
 
   /**
@@ -76,7 +82,9 @@ export class WhatsappService {
       formData.append('caption', caption);
     }
 
-    return this.http.post(`${this.apiUrl}/send-document`, formData);
+    return this.http.post(`${this.apiUrl}/send-document`, formData, {
+      withCredentials: true // ✅ Session-Cookies mitschicken
+    });
   }
 
   /**
@@ -88,6 +96,8 @@ export class WhatsappService {
       template_name: templateName,
       language_code: languageCode,
       components: components
+    }, {
+      withCredentials: true // ✅ Session-Cookies mitschicken
     });
   }
 

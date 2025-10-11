@@ -35,7 +35,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/escalation-prompt/response',
             'api/broadcasting/auth/visitor',
             'api/whatsapp/webhook',
-            'whatsapp/webhook'
+            'whatsapp/webhook',
+            'api/whatsapp/send-text',      // ✅ WhatsApp Text senden
+            'api/whatsapp/send-image',     // ✅ WhatsApp Bild senden
+            'api/whatsapp/send-video',     // ✅ WhatsApp Video senden
+            'api/whatsapp/send-document',  // ✅ WhatsApp Dokument senden
+            'api/whatsapp/send-audio',     // ✅ WhatsApp Audio senden
         ]
         );
         /*

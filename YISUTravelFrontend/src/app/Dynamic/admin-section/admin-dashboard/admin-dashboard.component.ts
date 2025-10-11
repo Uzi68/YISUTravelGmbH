@@ -2462,30 +2462,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const isAssigned = chat.assigned_to !== null && chat.assigned_to !== undefined;
     const isAssignedToMe = isAssigned && chat.assigned_to === this.currentAgent.id;
 
-    // ✅ DEBUG: Log canWrite Evaluation
-    const canWriteResult = (() => {
-      if (chat.status === 'human') {
-        return isAssignedToMe;
-      }
-      if (chat.status === 'in_progress') {
-        return isAssignedToMe;
-      }
-      return false;
-    })();
-
-    console.log('🔍 canWrite() evaluation:', {
-      chatId: chat.id,
-      status: chat.status,
-      assigned_to: chat.assigned_to,
-      assigned_agent: chat.assigned_agent,
-      currentAgentId: this.currentAgent.id,
-      currentAgentName: this.currentAgent.name,
-      isAssigned,
-      isAssignedToMe,
-      canWrite: canWriteResult
-    });
-
-    return canWriteResult;
+    if (chat.status === 'human') {
+      return isAssignedToMe;
+    }
+    if (chat.status === 'in_progress') {
+      return isAssignedToMe;
+    }
+    return false;
   }
   /**
    * Assignment Status für Chat laden
@@ -2558,22 +2541,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    */
   canTransferChat(chat: Chat): boolean {
     if (!chat || !chat.assigned_to) {
-      console.log('Cannot transfer: Chat not assigned');
       return false;
     }
 
     const isMyChat = chat.assigned_to === this.currentAgent.id;
     const isInProgress = chat.status === 'in_progress';
-
-    console.log('Transfer check:', {
-      chatId: chat.id,
-      assigned_to: chat.assigned_to,
-      currentAgentId: this.currentAgent.id,
-      isMyChat: isMyChat,
-      isAdmin: this.isAdmin,
-      status: chat.status,
-      isInProgress: isInProgress
-    });
 
     return (isMyChat || this.isAdmin) && isInProgress;
   }
@@ -3322,16 +3294,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const isVideo = fileType.startsWith('video/');
     const isDocument = !isImage && !isVideo; // Alles andere ist ein Dokument
 
-    // Bestimme Caption-Prompt basierend auf Dateityp
-    let captionPrompt = 'Optional: Beschreibung eingeben';
-    if (isImage) {
-      captionPrompt = 'Optional: Bildunterschrift eingeben';
-    } else if (isVideo) {
-      captionPrompt = 'Optional: Video-Beschreibung eingeben';
-    }
-
-    // Frage nach Caption
-    const caption = prompt(captionPrompt);
+    // ✅ Keine Caption-Abfrage - verwende einfach den Dateinamen
+    const caption = file.name;
 
     this.snackBar.open('📤 Wird hochgeladen...', '', { duration: 2000 });
 
