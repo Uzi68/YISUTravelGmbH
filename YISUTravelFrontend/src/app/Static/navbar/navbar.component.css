@@ -1,21 +1,32 @@
+/* ====================================
+   YISU Travel - Navbar Design
+   ==================================== */
+
 .main-toolbar {
   display: flex;
   align-items: center;
-  padding: 0 0; /* Optional padding adjustment */
-  font-size: 18px; /* Increase base font size */
-  max-width: 1400px;
+  padding: 0.75rem 2rem;
+  font-size: 16px;
+  max-width: 1600px;
   margin: 0 auto;
   background: transparent;
+  height: 65px;
+  gap: 1.5rem;
+  
   @media (max-width: 768px) {
-    padding: 0 20px;
+    padding: 0.5rem 1rem;
+    height: 60px;
+    gap: 1rem;
   }
 }
 
 .toolbarbackground {
-  background: var(--toolbarkit-color);
-  @media (max-width: 768px) {
-    background: var(--toolbarkit-mobile-color)!important;
-  }
+  background: var(--yisu-navbar-bg);
+  box-shadow: var(--yisu-shadow-md);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  transition: all 0.3s ease;
 }
 ::ng-deep .mat-mdc-menu-content {
   padding: 0px !important;
@@ -53,13 +64,23 @@
 }
 
 .logo-img {
-  height: 100px;
-  margin-bottom: -25px;
-  margin-top: -25px;
+  height: 70px;
   cursor: pointer;
-  @media (min-width: 1200px) {
-    margin-right: auto; /* Push the menu to the right */
-    padding-left: 10%; /* Add right padding for a better layout */
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  background: rgba(255, 255, 255, 0.95);
+  padding: 6px;
+  border-radius: 8px;
+  
+  &:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
+  }
+  
+  @media (max-width: 768px) {
+    height: 60px;
+    padding: 4px;
   }
 }
 
@@ -82,8 +103,14 @@
 }
 
 .logo-imgMobile {
-  height: 80px;
+  height: 60px;
   cursor: pointer;
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+  
   @media (min-width: 769px) {
     display: none;
   }
@@ -92,6 +119,47 @@
 
 .spacer {
   flex: 1;
+}
+
+.nav-spacer {
+  width: 3rem;
+  flex-shrink: 0;
+  
+  @media (max-width: 1300px) {
+    width: 2.5rem;
+  }
+
+  @media (max-width: 1200px) {
+    width: 2rem;
+  }
+
+  @media (max-width: 1080px) {
+    width: 1.5rem;
+  }
+
+  @media (max-width: 1000px) {
+    width: 1rem;
+  }
+
+  @media (max-width: 970px) {
+    width: 0.8rem;
+  }
+
+  @media (max-width: 900px) {
+    width: 0.5rem;
+  }
+
+  @media (max-width: 876px) {
+    width: 0.3rem;
+  }
+
+  @media (max-width: 800px) {
+    width: 0.2rem;
+  }
+  
+  @media (max-width: 768px) {
+    display: none;
+  }
 }
 
 /*checked*/
@@ -131,95 +199,338 @@ mat-slide-toggle {
 
 .desktop-menu {
   display: flex;
-  justify-content: center; /* Center the items horizontally */
-  /* Style the links */
+  align-items: center;
+  gap: 1.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+  
   a {
-    font-size: 18px; /* Larger font size for the links */
-    padding: 20px 15px; /* Increased padding for a larger clickable area */
-    text-transform: uppercase; /* Optional: Make text uppercase */
-    position: relative; /* For the hover effect */
-    color: white; /* Link color */
-    border-radius: 0px; /* Rounded corners for buttons */
-    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
+    font-size: 16px;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    color: var(--yisu-navbar-text);
+    text-decoration: none;
+    border-radius: 8px;
+    position: relative;
+    transition: all 0.3s ease;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 3px;
+      background: var(--yisu-navbar-hover);
+      transition: width 0.3s ease;
+      border-radius: 2px;
+    }
+    
+    &:hover {
+      color: var(--yisu-navbar-hover);
+      background: rgba(243, 156, 18, 0.1);
+      
+      &::after {
+        width: 70%;
+      }
+    }
+    
+    &.active-list-item {
+      background: var(--yisu-secondary);
+      color: var(--yisu-text-dark);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+      
+      &::after {
+        background: var(--yisu-text-dark);
+        width: 80%;
+      }
+      
+      &:hover {
+        background: var(--yisu-primary);
+        color: var(--yisu-white);
+        box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
+        
+        &::after {
+          background: var(--yisu-white);
+          width: 90%;
+        }
+      }
+    }
   }
 
-  /* Hover effect */
-  a:hover {
-    background-color: #f3f3f3; /* Light background on hover */
-    color: rgb(3, 56, 94); /* Change link color on hover */
+  @media (max-width: 1300px) {
+    gap: 1.2rem;
+    
+    a {
+      font-size: 15px;
+      padding: 0.6rem 1.2rem;
+    }
   }
 
-  /* On larger screens (like desktop), slightly move the menu to the right */
-  @media (min-width: 1200px) {
-    margin-left: auto; /* Push the menu to the right */
-    padding-right: 8%; /* Add right padding for a better layout */
+  @media (max-width: 1200px) {
+    gap: 1rem;
+    
+    a {
+      font-size: 14px;
+      padding: 0.5rem 1rem;
+    }
   }
 
-
-  /* Hide desktop menu on tablet/mobile screens */
-  @media (max-width: 768px) {
-    display: none;
-  }
-}
-
-
-/*Linke Seite der Navigation bar*/
-.desktop-menu2 {
-  display: flex;
-  justify-content: center; /* Center the items horizontally */
-
-  /* Style the links */
-  a {
-    font-size: 14px; /* Larger font size for the links */
-    margin: 0 5px; /* Reduced space between the links */
-    padding: 10px 13px; /* Increased padding for a larger clickable area */
-    position: relative; /* For the hover effect */
-    border-radius: 5px; /* Rounded corners for buttons */
-    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
-    box-shadow: 3px 3px 7px rgba(0, 97, 124, 1); /* Add specific color to shadow */
+  @media (max-width: 1080px) {
+    gap: 0.9rem;
+    
+    a {
+      font-size: 13px;
+      padding: 0.45rem 0.9rem;
+    }
   }
 
-  a:hover {
-    background-color: rgb(16, 138, 189); /* Light background on hover */
-    box-shadow: 3px 3px 7px rgba(0, 97, 124, 1); /* Maintain consistent shadow color */
-    color: #ffffff; /* Change link color on hover */
+  @media (max-width: 1000px) {
+    gap: 0.8rem;
+    
+    a {
+      font-size: 13px;
+      padding: 0.4rem 0.8rem;
+    }
   }
 
-
-  /* On larger screens (like desktop), slightly move the menu to the right */
-  @media (min-width: 1200px) {
-    margin-left: auto; /* Push the menu to the right */
-    padding-right: 5%; /* Add right padding for a better layout */
+  @media (max-width: 970px) {
+    gap: 0.7rem;
+    
+    a {
+      font-size: 12px;
+      padding: 0.35rem 0.7rem;
+    }
   }
 
   @media (max-width: 900px) {
-    margin-left: 0;
-    padding-right: 0!important;
+    gap: 0.6rem;
+    
+    a {
+      font-size: 12px;
+      padding: 0.3rem 0.6rem;
+    }
   }
 
-
-  @media (max-width: 1200px) {
-    margin-right: auto; /* Push the menu to the right */
-    padding-right: 5%;
+  @media (max-width: 876px) {
+    gap: 0.5rem;
+    
+    a {
+      font-size: 11px;
+      padding: 0.25rem 0.5rem;
+    }
   }
 
-  /* Hide desktop menu on tablet/mobile screens */
+  @media (max-width: 800px) {
+    gap: 0.4rem;
+    
+    a {
+      font-size: 10px;
+      padding: 0.2rem 0.4rem;
+    }
+  }
+
   @media (max-width: 768px) {
     display: none;
   }
 }
 
-.desktop-menu2 a {
-  @media (max-width: 1070px) {
-    font-size: 9px;
-    padding: 3px 4px;
+/* Dark Mode Navigation Styles */
+body.dark-mode .desktop-menu a {
+  &.active-list-item {
+    background: var(--yisu-secondary);
+    color: var(--yisu-text-dark);
+    
+    &:hover {
+      background: var(--yisu-accent);
+      color: var(--yisu-white);
+    }
   }
 }
 
-.desktop-menu a {
-  @media (max-width: 950px) {
-    font-size: 14px;
-    margin: -5px;
+/* Dark Mode Quick Access Buttons */
+body.dark-mode .desktop-menu2 a {
+  color: var(--yisu-white) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: var(--yisu-accent) !important;
+  
+  i {
+    color: var(--yisu-accent) !important;
+  }
+  
+  &:hover {
+    background: var(--yisu-secondary) !important;
+    color: var(--yisu-text-dark) !important;
+    border-color: var(--yisu-secondary) !important;
+    
+    i {
+      color: var(--yisu-text-dark) !important;
+    }
+  }
+}
+
+/* Quick Access Buttons - Linke Seite */
+.desktop-menu2 {
+  display: flex;
+  gap: 0.75rem;
+  flex-shrink: 0;
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0.6rem 1rem;
+    color: var(--yisu-text-dark);
+    background: var(--yisu-white);
+    border: 2px solid var(--yisu-accent);
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: var(--yisu-shadow-sm);
+    white-space: nowrap;
+    
+    i {
+      font-size: 16px;
+      color: var(--yisu-accent);
+      transition: transform 0.3s ease;
+    }
+    
+    &:hover {
+      background: var(--yisu-secondary);
+      color: var(--yisu-white);
+      transform: translateY(-1px);
+      box-shadow: var(--yisu-shadow-md);
+      border-color: var(--yisu-secondary);
+      
+      i {
+        color: var(--yisu-white);
+        transform: scale(1.05);
+      }
+    }
+    
+    &:active, &:focus {
+      background: var(--yisu-primary);
+      color: var(--yisu-white);
+      border-color: var(--yisu-primary);
+      
+      i {
+        color: var(--yisu-white);
+      }
+    }
+  }
+
+  @media (max-width: 1300px) {
+    gap: 0.6rem;
+    
+    a {
+      font-size: 12px;
+      padding: 0.5rem 0.8rem;
+      
+      i {
+        font-size: 14px;
+      }
+    }
+  }
+
+  @media (max-width: 1200px) {
+    gap: 0.5rem;
+    
+    a {
+      font-size: 11px;
+      padding: 0.4rem 0.7rem;
+      
+      i {
+        font-size: 13px;
+      }
+    }
+  }
+
+  @media (max-width: 1080px) {
+    gap: 0.45rem;
+    
+    a {
+      font-size: 10px;
+      padding: 0.35rem 0.65rem;
+      
+      i {
+        font-size: 12px;
+      }
+    }
+  }
+
+  @media (max-width: 1000px) {
+    gap: 0.4rem;
+    
+    a {
+      font-size: 10px;
+      padding: 0.3rem 0.6rem;
+      
+      i {
+        font-size: 12px;
+      }
+    }
+  }
+
+  @media (max-width: 970px) {
+    gap: 0.35rem;
+    
+    a {
+      font-size: 9px;
+      padding: 0.28rem 0.55rem;
+      
+      i {
+        font-size: 11px;
+      }
+    }
+  }
+
+  @media (max-width: 900px) {
+    gap: 0.3rem;
+    
+    a {
+      font-size: 9px;
+      padding: 0.25rem 0.5rem;
+      
+      i {
+        font-size: 11px;
+      }
+    }
+  }
+
+  @media (max-width: 876px) {
+    gap: 0.25rem;
+    
+    a {
+      font-size: 8px;
+      padding: 0.2rem 0.4rem;
+      
+      i {
+        font-size: 10px;
+      }
+    }
+  }
+
+  @media (max-width: 800px) {
+    gap: 0.2rem;
+    
+    a {
+      font-size: 7px;
+      padding: 0.15rem 0.3rem;
+      
+      i {
+        font-size: 9px;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    display: none;
   }
 }
 
@@ -296,54 +607,67 @@ mat-sidenav {
 }
 
 
+/* Social Media Icons */
 .social-icons {
-  display: flex; /* Display icons in a row */
-  margin-right: 40px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  
+  a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: var(--yisu-white);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: var(--yisu-shadow-sm);
+    
+    i {
+      font-size: 20px;
+    }
+    
+    &:hover {
+      transform: translateY(-3px) scale(1.1);
+      box-shadow: var(--yisu-shadow-md);
+    }
+  }
 }
-
 
 svg {
-  font-size: 30px;
+  font-size: 26px;
 }
 
-.social-icons a {
-  margin: 0 8px; /* Space between social icons */
-  color: white; /* Color for social icons */
-  font-size: 20px; /* Size for social icons */
-  transition: color 0.3s; /* Transition for hover effect */
-}
-
-.social-icons a:hover {
-  color: #ffffff; /* Color change on hover */
-}
-
-.social-icons mat-icon {
-  color: white; /* Icon color */
-  font-size: 24px; /* Icon size */
-}
-
-/* Additional info styles */
+/* Additional Info Bar unter Navbar */
 .additional-info {
-  background-color: var(--additional-info-color); /* Light background color */
-  text-align: center; /* Center text */
-  padding: 10px 0; /* Vertical padding */
-  font-size: 14px; /* Font size */
-  color: #333; /* Darker text color */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  background: var(--yisu-bg-section);
+  text-align: center;
+  padding: 0.75rem 0;
+  font-size: 14px;
+  color: var(--yisu-text-medium);
+  border-bottom: 1px solid var(--yisu-border-light);
+  
+  span {
+    display: inline-block;
+    margin: 0 2.5rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    cursor: default;
+    
+    &:hover {
+      color: var(--yisu-accent);
+    }
+  }
+  
   @media (max-width: 768px) {
     display: none;
   }
-
-}
-
-.additional-info span {
-  display: inline-block; /* Allow spacing between items */
-  margin: 0 70px; /* Increased margin for more horizontal spacing */
-  color: var(--text-color);
 }
 
 #additiona-info-left {
-  margin-left: 0px;
+  margin-left: 0;
 }
 
 .mobile-menu-btn {
@@ -371,27 +695,28 @@ svg {
 }
 
 
+/* Top Info Bar mit Logo und Social Media */
 .additional-info-top {
-  background-color: #ffffff; /* Change color as needed */
-  color: black; /* Text color */
-  text-align: center; /* Center text */
-  padding: 10px 0; /* Vertical padding */
-  font-size: 18px; /* Font size */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+  background: var(--yisu-navbar-top);
+  padding: 0.5rem 0;
+  border-bottom: 2px solid var(--yisu-border-medium);
+  position: relative;
+  
   @media (max-width: 768px) {
     display: none;
   }
 }
 
-
-
 .logo-social-container {
-  display: flex; /* Align items in a row */
-  justify-content: space-between; /* Space out logo and social icons */
-  align-items: center; /* Center vertically */
-  padding: 0 30px; /* Horizontal padding to add space from the edges */
-  max-width: 1400px; /* Maximal Breite für den Container */
-  margin: 0 auto; /* Zentriert den Container horizontal */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  gap: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 
@@ -400,35 +725,31 @@ svg {
 
 
 .btn-social {
-  display: inline-flex; /* Flexbox für zentriertes Layout */
-  align-items: center; /* Vertikale Zentrierung */
-  justify-content: center; /* Horizontale Zentrierung */
-  width: 40px; /* Breite der Schaltfläche */
-  height: 40px; /* Höhe der Schaltfläche */
-  border-radius: 50%; /* Runde Schaltflächen */
-  color: white; /* Schriftfarbe */
-  text-decoration: none; /* Unterstreichung entfernen */
-  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Schatten für Tiefe */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--yisu-white);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: var(--yisu-shadow-sm);
+  
+  i {
+    font-size: 20px;
+  }
+  
+  &:hover {
+    transform: translateY(-3px) scale(1.1);
+    box-shadow: var(--yisu-shadow-md);
+  }
 }
 
-.btn-social:hover {
-  transform: scale(1.1); /* Schaltfläche bei Hover vergrößern */
-}
-
-/* Icon-Stile */
-.btn-social i {
-  font-size: 20px; /* Größe der Icons */
-}
-
-#btntransition1 {
-  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
-}
-#btntransition2 {
-  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
-}
+#btntransition1,
+#btntransition2,
 #btntransition3 {
-  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
+  transition: all 0.3s ease;
 }
 
 
@@ -467,29 +788,49 @@ svg {
   .icon-button {
     padding: 8px 10px; /* Adjust padding for mobile */
   }
+
 }
 
 
 
+/* Mobile Sidenav Styles */
 .sidenav-icon {
-  margin-right: 10px; /* Adjust this value to increase or decrease the space */
-  font-size: 20px; /* Adjust icon size if needed */
-  color: var(--header-color); /* You can change the color of the icons if desired */
+  margin-right: 12px;
+  font-size: 20px;
+  color: var(--yisu-accent);
+  transition: transform 0.3s ease;
 }
 
 .sidenav-header {
-  font-size: 1.2rem; /* Increase font size for headers */
-  color: var(--header-color); /* Header color */
-  margin: 10px 0; /* Space above and below headers */
-  padding: 0 16px; /* Align with nav items */
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--yisu-primary);
+  margin: 1.25rem 0 0.75rem;
+  padding: 0 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--yisu-border-medium);
+  padding-bottom: 0.5rem;
 }
 
 .mat-nav-list a {
-  padding: 10px 16px; /* Add padding to nav items */
+  padding: 0.875rem 1rem;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  margin: 0.25rem 0.5rem;
+  
+  &:hover {
+    background: var(--yisu-bg-section);
+    
+    .sidenav-icon {
+      transform: scale(1.15);
+    }
+  }
 }
 
 .sidenav-text {
   color: var(--text-color);
+  font-weight: 500;
 }
 
 

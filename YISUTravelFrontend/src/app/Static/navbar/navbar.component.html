@@ -37,6 +37,8 @@
     <!-- Spacer -->
     <span class="spacer"></span>
 
+    <!-- Spacer zwischen Navigation Seiten -->
+    <div class="nav-spacer"></div>
 
     <div class="desktop-menu2">
       <a routerLink="/in-bearbeitung" class="icon-button">
@@ -59,10 +61,10 @@
 
     <!-- Desktop Links -->
     <div class="desktop-menu">
-      <a mat-button routerLink="/" routerLinkActive="active-list-item">Startseite</a>
-      <a mat-button routerLink="/ueber-uns">Über Uns</a>
-      <a mat-button routerLink="/dienstleistung">Dienstleistungen</a>
-      <a mat-button routerLink="/kontakt">Kontakt</a>
+      <a mat-button routerLink="/" routerLinkActive="active-list-item" [routerLinkActiveOptions]="{exact: true}">Startseite</a>
+      <a mat-button routerLink="/ueber-uns" routerLinkActive="active-list-item">Über Uns</a>
+      <a mat-button routerLink="/dienstleistung" routerLinkActive="active-list-item">Dienstleistungen</a>
+      <a mat-button routerLink="/kontakt" routerLinkActive="active-list-item">Kontakt</a>
 
 
       <a mat-button [matMenuTriggerFor]="menu" class="adminicon">
