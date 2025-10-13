@@ -300,13 +300,13 @@
                 <mat-icon class="detail-icon">phone</mat-icon>
                 <a href="tel:{{visitor.phone}}" class="phone-link">{{visitor.phone}}</a>
               </div>
-            }
 
-            <!-- ✅ Email nur anzeigen wenn visitor existiert -->
-            <div class="detail-item" *ngIf="visitor?.email">
-              <mat-icon class="detail-icon">email</mat-icon>
-              <a href="mailto:{{visitor.email}}" class="email-link">{{visitor.email}}</a>
-            </div>
+              <!-- ✅ Email nur für Admin anzeigen, wenn visitor existiert -->
+              <div class="detail-item" *ngIf="visitor?.email">
+                <mat-icon class="detail-icon">email</mat-icon>
+                <a href="mailto:{{visitor.email}}" class="email-link">{{visitor.email}}</a>
+              </div>
+            }
           </div>
         </div>
       </div>
