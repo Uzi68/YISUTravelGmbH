@@ -34,3 +34,12 @@ git clean -fd
 #Nach pull request
 git branch -d <feature-branch>
 git push origin --delete <feature-branch>
+
+
+#----------
+#Building
+#Development Build (automatisch localhost):
+ng serve
+
+#Production Build (automatisch production URL):
+npm run build

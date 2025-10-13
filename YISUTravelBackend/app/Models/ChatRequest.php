@@ -32,6 +32,11 @@ class ChatRequest extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function assignedTo()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
     public function isPending(): bool
     {
         return $this->status === 'pending';

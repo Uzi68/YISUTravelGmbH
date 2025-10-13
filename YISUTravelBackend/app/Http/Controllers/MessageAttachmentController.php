@@ -13,15 +13,16 @@ use Illuminate\Support\Str;
 class MessageAttachmentController extends Controller
 {
     /**
-     * Upload file attachment and send message
+     * Upload file attachment and send message (MIT WHATSAPP SUPPORT)
      */
     public function uploadAttachment(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|max:10240', // 10MB max
+            'file' => 'required|file|max:102400', // 100MB max (WhatsApp limit)
             'chat_id' => 'required|exists:chats,id',
             'session_id' => 'required',
-            'from' => 'required|in:agent,user,visitor'
+            'from' => 'required|in:agent,user,visitor',
+            'caption' => 'nullable|string|max:1024'
         ]);
 
         try {
@@ -29,19 +30,82 @@ class MessageAttachmentController extends Controller
             $chatId = $request->input('chat_id');
             $sessionId = $request->input('session_id');
             $from = $request->input('from');
+            $caption = $request->input('caption', '');
+
+            $chat = Chat::findOrFail($chatId);
 
             // Generate unique filename
             $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $mimeType = $file->getMimeType();
+            $fileType = $this->getFileType($mimeType);
 
             // Store file in storage/app/public/attachments
             $filePath = $file->storeAs('attachments', $fileName, 'public');
+
+            $metadata = ['has_attachment' => true];
+            $messageText = $caption ?: '[File: ' . $file->getClientOriginalName() . ']';
+
+            // ✅ NEU: WhatsApp Integration für Agent-Nachrichten
+            if ($chat->channel === 'whatsapp' && $chat->whatsapp_number && $from === 'agent') {
+                $whatsappService = app(\App\Services\WhatsAppService::class);
+
+                // Speichere Datei auch für WhatsApp
+                $whatsappFileName = time() . '_' . $file->getClientOriginalName();
+                $whatsappPath = $file->storeAs("whatsapp_uploads/{$fileType}s", $whatsappFileName, 'public');
+                $fullPath = Storage::disk('public')->path($whatsappPath);
+
+                \Log::info('Uploading attachment to WhatsApp', [
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_type' => $fileType,
+                    'mime_type' => $mimeType,
+                    'file_size' => $file->getSize(),
+                    'whatsapp_number' => $chat->whatsapp_number
+                ]);
+
+                // Upload zu WhatsApp
+                $uploadResult = $whatsappService->uploadMedia($fullPath, $mimeType);
+
+                if ($uploadResult['success']) {
+                    $mediaId = $uploadResult['media_id'];
+
+                    // Sende Media über WhatsApp
+                    $sendResult = $this->sendWhatsAppMedia(
+                        $whatsappService,
+                        $chat->whatsapp_number,
+                        $fileType,
+                        $mediaId,
+                        $caption,
+                        $file->getClientOriginalName()
+                    );
+
+                    if ($sendResult['success']) {
+                        $metadata['whatsapp_message_id'] = $sendResult['message_id'];
+                        $metadata['whatsapp_media_id'] = $mediaId;
+                        $metadata['sent_via_whatsapp'] = true;
+
+                        \Log::info('WhatsApp media sent successfully', [
+                            'message_id' => $sendResult['message_id'],
+                            'media_id' => $mediaId
+                        ]);
+                    } else {
+                        \Log::error('Failed to send WhatsApp media', [
+                            'error' => $sendResult['error'] ?? 'Unknown error'
+                        ]);
+                    }
+                } else {
+                    \Log::error('Failed to upload media to WhatsApp', [
+                        'error' => $uploadResult['error'] ?? 'Unknown error'
+                    ]);
+                }
+            }
 
             // Create message
             $message = Message::create([
                 'chat_id' => $chatId,
                 'from' => $from,
-                'text' => '[File: ' . $file->getClientOriginalName() . ']',
-                'metadata' => json_encode(['has_attachment' => true])
+                'text' => $messageText,
+                'metadata' => $metadata, // ✅ FIX: Direkt als Array übergeben (Laravel castet automatisch zu JSON)
+                'message_type' => $chat->channel === 'whatsapp' ? "whatsapp_{$fileType}" : 'file_upload' // ✅ FIX: Setze 'file_upload' statt null
             ]);
 
             // Create attachment record
@@ -49,9 +113,9 @@ class MessageAttachmentController extends Controller
                 'message_id' => $message->id,
                 'file_name' => $file->getClientOriginalName(),
                 'file_path' => $filePath,
-                'file_type' => $this->getFileType($file->getMimeType()),
+                'file_type' => $fileType,
                 'file_size' => $file->getSize(),
-                'mime_type' => $file->getMimeType()
+                'mime_type' => $mimeType
             ]);
 
             // Load attachment relationship
@@ -83,10 +147,38 @@ class MessageAttachmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Attachment upload failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to upload file: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * ✅ Helper: Sende Media über WhatsApp basierend auf Typ
+     */
+    private function sendWhatsAppMedia($whatsappService, string $phoneNumber, string $fileType, string $mediaId, ?string $caption, ?string $filename): array
+    {
+        switch ($fileType) {
+            case 'image':
+                return $whatsappService->sendImageById($phoneNumber, $mediaId, $caption);
+            case 'video':
+                return $whatsappService->sendVideoById($phoneNumber, $mediaId, $caption);
+            case 'pdf':
+            case 'document':
+            case 'spreadsheet':
+            case 'other':
+                return $whatsappService->sendDocumentById($phoneNumber, $mediaId, $caption, $filename);
+            case 'audio':
+                // WhatsApp hat keine sendAudioById, verwende Document als Fallback
+                return $whatsappService->sendDocumentById($phoneNumber, $mediaId, $caption, $filename);
+            default:
+                return ['success' => false, 'error' => 'Unsupported file type: ' . $fileType];
         }
     }
 

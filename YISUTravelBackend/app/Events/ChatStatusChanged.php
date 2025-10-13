@@ -29,7 +29,7 @@ class ChatStatusChanged implements ShouldBroadcast
     public function broadcastOn()
     {
         return [
-            new Channel('all.active.chats')
+            new PrivateChannel('all.active.chats')
         ];
     }
 

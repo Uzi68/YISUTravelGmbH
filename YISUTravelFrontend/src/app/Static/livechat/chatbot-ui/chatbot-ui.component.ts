@@ -873,6 +873,11 @@ export class ChatUiComponent implements AfterViewInit {
       this.unreadMessages.set(0);
       document.title = 'Chat - Yisu Travel';
       this.loadChatHistory();
+
+      // ✅ FIX: Scroll sofort nach unten ohne Animation
+      setTimeout(() => {
+        this.scrollToBottom(true); // immediate=true
+      }, 100);
     } else {
       // ✅ Chat schließen - Titel zurücksetzen
       if (this.unreadMessages() > 0) {
@@ -1707,6 +1712,18 @@ export class ChatUiComponent implements AfterViewInit {
     }
   }
 
+  // ✅ Textarea Auto-Resize für Mobile (WhatsApp-Style)
+  onTextareaInput(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+
+    // Reset height to auto to get proper scrollHeight
+    textarea.style.height = 'auto';
+
+    // Set new height based on content (max 120px on mobile)
+    const newHeight = Math.min(textarea.scrollHeight, 120);
+    textarea.style.height = newHeight + 'px';
+  }
+
   private getChatId(): string {
     // Zuerst versuchen, die ID vom Signal zu bekommen
     const chatId = this.currentChatId();
@@ -1896,20 +1913,32 @@ export class ChatUiComponent implements AfterViewInit {
 
 
 
-  public scrollToBottom() {
+  public scrollToBottom(immediate: boolean = false) {
     if (!this.isBrowser) return;
 
     const containerRef = this.messageContainer();
     if (!containerRef) return;
 
     const container = containerRef.nativeElement;
-    if (container) {
-      setTimeout(() => {
-        container.scrollTo({
-          top: container.scrollHeight,
-          behavior: 'smooth'
+    if (!container) return;
+
+    if (immediate) {
+      // ✅ Sofortiges Scrollen ohne Animation (für Chat öffnen/zu-toggeln)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight;
         });
-      }, 100);
+      });
+    } else {
+      // ✅ Smooth scroll (für neue Nachrichten)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          container.scrollTo({
+            top: container.scrollHeight,
+            behavior: 'smooth'
+          });
+        });
+      });
     }
   }
 
@@ -1979,23 +2008,30 @@ export class ChatUiComponent implements AfterViewInit {
     }
 
     // ✅ VERBESSERT: Zeige Typing-Indikator während Upload statt temporäre Nachricht
-    this.isTyping.set(true);
+    // ⚠️ FIX: NgZone.run() verwenden um Signal-Update außerhalb von Effect zu machen
+    this.ngZone.run(() => {
+      this.isTyping.set(true);
+    });
 
     this.chatbotService.uploadAttachment(file, chatId, sessionId, 'user').subscribe({
       next: (response) => {
         console.log('File uploaded successfully:', response);
-        this.isTyping.set(false);
+        this.ngZone.run(() => {
+          this.isTyping.set(false);
+        });
         // ✅ File message will be received via Pusher with full attachment preview
       },
       error: (err) => {
         console.error('File upload error:', err);
-        this.isTyping.set(false);
-        this.messages.update(m => [...m, {
-          from: 'system',
-          text: 'Fehler beim Hochladen der Datei',
-          timestamp: new Date(),
-          isSystemMessage: true
-        }]);
+        this.ngZone.run(() => {
+          this.isTyping.set(false);
+          this.messages.update(m => [...m, {
+            from: 'system',
+            text: 'Fehler beim Hochladen der Datei',
+            timestamp: new Date(),
+            isSystemMessage: true
+          }]);
+        });
       }
     });
   }

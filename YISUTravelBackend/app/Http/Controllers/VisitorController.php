@@ -38,8 +38,11 @@ class VisitorController extends Controller
                 return response()->json(['message' => 'Visitor not found'], 404);
             }
 
+            // Kombiniere first_name und last_name zu name für Anzeige
+            $fullName = trim(($visitor->first_name ?? '') . ' ' . ($visitor->last_name ?? ''));
+
             return response()->json([
-                'name' => $visitor->name,
+                'name' => $fullName ?: $visitor->name ?? 'Unbekannt',
                 'phone'=> $visitor->phone
             ]);
         }

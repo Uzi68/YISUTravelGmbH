@@ -1,19 +1,5 @@
 <div class="chat-app">
-  <!-- Notification Banner -->
-  <div class="notification-permission-banner" *ngIf="!notificationSound.hasPermission && notificationSound.isSupported">
-    <div class="banner-content">
-      <mat-icon class="banner-icon">notifications_off</mat-icon>
-      <div class="banner-text">
-        <strong>Benachrichtigungen deaktiviert</strong><br>
-        <small>Aktivieren Sie Benachrichtigungen um über neue Nachrichten informiert zu werden</small>
-      </div>
-    </div>
-    <div class="banner-actions">
-      <button class="banner-button" (click)="showNotificationPermissionDialog()">
-        Aktivieren
-      </button>
-    </div>
-  </div>
+  <!-- Notification Banner - ENTFERNT: Redundant mit Permission Dialog -->
 
   <!-- Sidebar -->
   <div class="chat-sidebar" [class.hidden]="selectedChat" @slideInOut>
@@ -50,6 +36,22 @@
 
       <!-- Filter-Controls (nur für Admin-Ansicht) -->
       <div class="filter-controls" *ngIf="isAdmin && showAllChats">
+        <!-- Channel Filter -->
+        <mat-button-toggle-group [(ngModel)]="selectedChannelFilter" (change)="filterByChannel($event.value)">
+          <mat-button-toggle value="all">
+            <mat-icon>all_inbox</mat-icon>
+            Alle
+          </mat-button-toggle>
+          <mat-button-toggle value="website">
+            <mat-icon>public</mat-icon>
+            Website
+          </mat-button-toggle>
+          <mat-button-toggle value="whatsapp">
+            <mat-icon>chat</mat-icon>
+            WhatsApp
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+
         <mat-button-toggle-group [(ngModel)]="filterStatus" (change)="changeStatusFilter($event.value)">
           <mat-button-toggle value="all">Alle</mat-button-toggle>
           <mat-button-toggle value="human">Offen</mat-button-toggle>
@@ -89,7 +91,14 @@
           </div>
 
           <div class="chat-info">
-            <div class="chat-name">{{chat.customerName || 'Anonymer Benutzer'}}</div>
+            <div class="chat-name-row">
+              <span class="chat-name">{{chat.customerName || 'Anonymer Benutzer'}}</span>
+              <!-- WhatsApp Channel Badge -->
+              <span class="channel-badge whatsapp" *ngIf="isWhatsAppChat(chat)" matTooltip="WhatsApp Chat">
+                <mat-icon>chat</mat-icon>
+              </span>
+            </div>
+
             <div class="chat-preview">{{chat.lastMessage | truncate:25}}</div>
 
             <div class="chat-status-container">
@@ -166,11 +175,18 @@
           </div>
 
           <div class="chat-info">
-            <div class="chat-name">
-              {{(chat.customer_first_name && chat.customer_last_name) ?
-              (chat.customer_first_name + ' ' + chat.customer_last_name) :
-              (chat.customer_name || 'Anonymer Benutzer')}}
+            <div class="chat-name-row">
+              <span class="chat-name">
+                {{(chat.customer_first_name && chat.customer_last_name) ?
+                (chat.customer_first_name + ' ' + chat.customer_last_name) :
+                (chat.customer_name || 'Anonymer Benutzer')}}
+              </span>
+              <!-- WhatsApp Channel Badge -->
+              <span class="channel-badge whatsapp" *ngIf="chat.channel === 'whatsapp'" matTooltip="WhatsApp Chat">
+                <mat-icon>chat</mat-icon>
+              </span>
             </div>
+
             <div class="chat-preview">{{chat.last_message | truncate:25}}</div>
 
             <div class="chat-status-container">
@@ -250,6 +266,11 @@
               {{(visitor?.first_name && visitor?.last_name) ?
               (visitor.first_name + ' ' + visitor.last_name) :
               (selectedChat.customerName || 'Anonymer Benutzer')}}
+              <!-- WhatsApp Channel Badge in Header -->
+              <span class="channel-badge whatsapp header-badge" *ngIf="isWhatsAppChat(selectedChat)" matTooltip="WhatsApp Chat">
+                <mat-icon>chat</mat-icon>
+                WhatsApp
+              </span>
             </h3>
             <div class="status-container">
               <div *ngIf="selectedChat.isOnline" class="user-status online">
@@ -263,18 +284,29 @@
             </div>
           </div>
 
-          <div class="visitor-details" *ngIf="visitor">
+          <!-- ✅ Visitor Details mit korrekter Telefonnummer-Anzeige -->
+          <div class="visitor-details">
             @if (isAdmin) {
-              <div class="detail-item" *ngIf="visitor.phone">
+              <!-- ✅ Für WhatsApp-Chats: Zeige WhatsApp-Nummer -->
+              <div class="detail-item" *ngIf="isWhatsAppChat(selectedChat) && selectedChat.whatsapp_number">
+                <mat-icon class="detail-icon">chat</mat-icon>
+                <a href="https://wa.me/{{selectedChat.whatsapp_number}}" target="_blank" class="whatsapp-link">
+                  {{formatWhatsAppNumber(selectedChat.whatsapp_number)}}
+                </a>
+              </div>
+
+              <!-- ✅ Für Website-Chats: Zeige normale Telefonnummer (nur wenn visitor existiert) -->
+              <div class="detail-item" *ngIf="!isWhatsAppChat(selectedChat) && visitor?.phone">
                 <mat-icon class="detail-icon">phone</mat-icon>
                 <a href="tel:{{visitor.phone}}" class="phone-link">{{visitor.phone}}</a>
               </div>
-            }
 
-            <div class="detail-item" *ngIf="visitor.email">
-              <mat-icon class="detail-icon">email</mat-icon>
-              <a href="mailto:{{visitor.email}}" class="email-link">{{visitor.email}}</a>
-            </div>
+              <!-- ✅ Email nur für Admin anzeigen, wenn visitor existiert -->
+              <div class="detail-item" *ngIf="visitor?.email">
+                <mat-icon class="detail-icon">email</mat-icon>
+                <a href="mailto:{{visitor.email}}" class="email-link">{{visitor.email}}</a>
+              </div>
+            }
           </div>
         </div>
       </div>
@@ -356,7 +388,10 @@
     </div>
 -->
     <!-- Nachrichtenbereich -->
-    <div class="message-area" #messagesContainer (scroll)="onScroll($event)">
+    <div class="message-area"
+         #messagesContainer
+         (scroll)="onScroll($event)"
+         [class.loading]="isLoadingChat">
       <div *ngFor="let message of selectedChat.messages; trackBy: trackByMessageId"
            class="message"
            [class.agent]="message.isAgent"
@@ -387,8 +422,30 @@
               </div>
             </div>
 
+            <!-- Audio/Voice Player -->
+            <div *ngIf="message.attachment.file_type === 'audio' || message.attachment.file_type === 'voice'" class="audio-player-card">
+              <button mat-icon-button class="play-button" (click)="toggleAudioPlay(message.attachment)">
+                <mat-icon>{{isAudioPlaying(message.attachment) ? 'pause' : 'play_arrow'}}</mat-icon>
+              </button>
+              <div class="audio-info">
+                <div class="audio-waveform"
+                     (click)="seekAudio(message.attachment, $event)"
+                     [style.cursor]="'pointer'"
+                     matTooltip="Klicken um zu springen">
+                  <div class="waveform-bars">
+                    <span class="bar" *ngFor="let bar of [1,2,3,4,5,6,7,8,9,10,11,12]"></span>
+                  </div>
+                  <div class="audio-progress" [style.width.%]="getAudioProgress(message.attachment)"></div>
+                </div>
+                <div class="audio-duration">{{getAudioCurrentTime(message.attachment)}} / {{getAudioDuration(message.attachment)}}</div>
+              </div>
+              <button mat-icon-button class="download-button" (click)="downloadFile(message.attachment)" matTooltip="Download">
+                <mat-icon>download</mat-icon>
+              </button>
+            </div>
+
             <!-- Other Files -->
-            <div *ngIf="message.attachment.file_type !== 'image'" class="attachment-card" (click)="downloadFile(message.attachment)">
+            <div *ngIf="message.attachment.file_type !== 'image' && message.attachment.file_type !== 'audio' && message.attachment.file_type !== 'voice'" class="attachment-card" (click)="downloadFile(message.attachment)">
               <div class="attachment-icon-wrapper">
                 <mat-icon class="attachment-icon">{{getFileIcon(message.attachment.file_type)}}</mat-icon>
               </div>
@@ -403,6 +460,12 @@
               </div>
               <mat-icon class="download-icon">download</mat-icon>
             </div>
+          </div>
+
+          <!-- WhatsApp Message Type Indicator -->
+          <div class="message-type-indicator" *ngIf="message.message_type?.startsWith('whatsapp_')">
+            <mat-icon class="type-icon">{{getMessageTypeIcon(message.message_type || '')}}</mat-icon>
+            <span class="type-label">{{message.message_type?.replace('whatsapp_', '') || ''}}</span>
           </div>
 
           <!-- Message Meta NUR für non-system Messages -->
@@ -481,21 +544,25 @@
 
       <!-- Input Container -->
       <div class="input-container" *ngIf="canWrite(selectedChat)">
+        <!-- ✅ Unified File Input for all chat types (Website & WhatsApp) -->
         <input
           type="file"
           #fileInput
-          (change)="onFileSelected($event)"
+          (change)="isWhatsAppChat(selectedChat) ? onWhatsAppFileSelected($event) : onFileSelected($event)"
           style="display: none"
-          accept="*/*"
+          [accept]="isWhatsAppChat(selectedChat) ? 'image/jpeg,image/png,image/gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,video/mp4,video/quicktime' : '*/*'"
         />
 
-        <button
-          mat-icon-button
-          class="attach-button"
-          (click)="fileInput.click()"
-          matTooltip="Datei anhängen">
-          <mat-icon>attach_file</mat-icon>
-        </button>
+        <!-- File Attachment Button - Universal for all chats -->
+        <div class="attachment-buttons">
+          <button
+            mat-icon-button
+            class="attach-button"
+            (click)="fileInput.click()"
+            [matTooltip]="isWhatsAppChat(selectedChat) ? 'Datei anhängen (Bilder, Dokumente, Videos)' : 'Datei anhängen'">
+            <mat-icon>attach_file</mat-icon>
+          </button>
+        </div>
 
         <div class="textarea-wrapper">
           <textarea
@@ -514,9 +581,9 @@
           mat-fab
           color="primary"
           class="send-button"
-          (click)="sendMessage(messageInput.value, messageInput)"
+          (click)="isWhatsAppChat(selectedChat) ? sendWhatsAppMessage(messageInput.value, messageInput) : sendMessage(messageInput.value, messageInput)"
           [disabled]="!messageInput.value?.trim()"
-          matTooltip="Nachricht senden">
+          [matTooltip]="isWhatsAppChat(selectedChat) ? 'WhatsApp Nachricht senden' : 'Nachricht senden'">
           <mat-icon>send</mat-icon>
         </button>
       </div>

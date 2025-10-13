@@ -30,7 +30,7 @@ class ChatAssignmentUpdated implements ShouldBroadcast
     public function broadcastOn()
     {
         return [
-            new Channel('all.active.chats'),
+            new PrivateChannel('all.active.chats'),
             new Channel('chat.' . $this->chat->session_id)
         ];
     }

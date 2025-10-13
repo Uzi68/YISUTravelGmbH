@@ -33,7 +33,7 @@ class ChatUnassigned implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('all.active.chats'), // ✅ Admin-Dashboard Channel
+            new PrivateChannel('all.active.chats'), // ✅ Admin-Dashboard Channel
         ];
     }
 

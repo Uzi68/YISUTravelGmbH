@@ -70,23 +70,25 @@ Broadcast::channel('private-agent.{agentId}', function ($user, $agentId) {
 });
 */
 
-// Für authentifizierte Admin/Agent Benutzer
+// ✅ WICHTIG: Channel-Namen OHNE 'private-' Prefix definieren!
+// Laravel Echo fügt das 'private-' Prefix automatisch hinzu bei echo.private()
+
 // 1. Admin/Agent Dashboard - nur für authentifizierte Admins/Agents
-Broadcast::channel('private-admin-dashboard', function ($user) {
+Broadcast::channel('admin-dashboard', function ($user) {
     return $user && $user->hasRole(['Admin', 'Agent']) ?
         ['id' => $user->id, 'name' => $user->name, 'type' => 'agent'] :
         false;
 });
 
 // 2. All Active Chats - nur für Admins/Agents
-Broadcast::channel('private-all-active-chats', function ($user) {
+Broadcast::channel('all.active.chats', function ($user) {
     return $user && $user->hasRole(['Admin', 'Agent']) ?
         ['id' => $user->id, 'name' => $user->name, 'type' => 'agent'] :
         false;
 });
 
 // 3. Individuelle Chat Sessions - Dual Auth (Visitor + Agent)
-Broadcast::channel('private-chat.{sessionId}', function ($user, $sessionId) {
+Broadcast::channel('chat.{sessionId}', function ($user, $sessionId) {
     // Für authentifizierte User (Agents/Admins)
     if ($user) {
         if ($user->hasRole(['Admin', 'Agent'])) {
@@ -133,14 +135,14 @@ Broadcast::channel('private-chat.{sessionId}', function ($user, $sessionId) {
 });
 
 // 4. Agent-spezifische Channels
-Broadcast::channel('private-agent.{agentId}', function ($user, $agentId) {
+Broadcast::channel('agent.{agentId}', function ($user, $agentId) {
     return $user && (int) $user->id === (int) $agentId ?
         ['id' => $user->id, 'name' => $user->name, 'type' => 'agent'] :
         false;
 });
 
 // 5. Visitor-spezifische Channels (für persönliche Benachrichtigungen)
-Broadcast::channel('private-visitor.{sessionId}', function ($user, $sessionId) {
+Broadcast::channel('visitor.{sessionId}', function ($user, $sessionId) {
     // Nur für nicht-authentifizierte Visitors
     if ($user) {
         return false; // Authentifizierte User haben keinen Zugang zu Visitor-Channels
@@ -165,14 +167,14 @@ Broadcast::channel('private-visitor.{sessionId}', function ($user, $sessionId) {
 });
 
 // 6. Escalation Channels - nur für Agents
-Broadcast::channel('private-escalations', function ($user) {
+Broadcast::channel('escalations', function ($user) {
     return $user && $user->hasRole(['Admin', 'Agent']) ?
         ['id' => $user->id, 'name' => $user->name, 'type' => 'agent'] :
         false;
 });
 
 // 7. Transfer Notifications - nur für betroffene Agents
-Broadcast::channel('private-transfer.{fromAgentId}.{toAgentId}', function ($user, $fromAgentId, $toAgentId) {
+Broadcast::channel('transfer.{fromAgentId}.{toAgentId}', function ($user, $fromAgentId, $toAgentId) {
     if (!$user || !$user->hasRole(['Admin', 'Agent'])) {
         return false;
     }

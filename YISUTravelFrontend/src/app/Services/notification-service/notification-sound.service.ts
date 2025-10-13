@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface NotificationOptions {
   title: string;
@@ -34,6 +35,11 @@ export class NotificationSoundService {
   });
   private mutedUntil: number | null = null;
 
+  // ✅ NEU: Deduplizierungs-Cache für Benachrichtigungen
+  // Verhindert doppelte Benachrichtigungen für dieselbe Nachricht innerhalb kurzer Zeit
+  private recentNotifications = new Map<string, number>();
+  private readonly NOTIFICATION_DEDUP_WINDOW_MS = 3000; // 3 Sekunden Fenster
+
   // Öffentliche Observable für Komponenten
   public permissionStatus = this.permissionStatus$.asObservable();
 
@@ -51,11 +57,11 @@ export class NotificationSoundService {
 
   private setupAudioSources(): void {
     try {
-      this.notificationSound = new Audio('http://localhost:8000/storage/sounds/notification.mp3');
+      this.notificationSound = new Audio(`${environment.backendUrl}/storage/sounds/notification.mp3`);
       this.notificationSound.preload = 'auto';
       this.notificationSound.volume = 0.7;
 
-      this.transferSound = new Audio('http://localhost:8000/storage/sounds/transfer.mp3');
+      this.transferSound = new Audio(`${environment.backendUrl}/storage/sounds/transfer.mp3`);
       this.transferSound.preload = 'auto';
       this.transferSound.volume = 0.8;
 
@@ -284,7 +290,45 @@ export class NotificationSoundService {
 
   // ✅ KORRIGIERTE spezifische Notify-Methoden
   async notifyNewMessage(senderName: string, message: string, sessionId?: string): Promise<void> {
+    console.log('🔔 notifyNewMessage called with:', {
+      senderName,
+      messagePreview: message.substring(0, 50),
+      sessionId,
+      callStack: new Error().stack?.split('\n')[2]?.trim()
+    });
+
     if (this.isCurrentlyMuted()) return;
+
+    // ✅ NEU: Deduplizierung - verhindert doppelte Benachrichtigungen für dieselbe Nachricht
+    const dedupKey = `msg-${sessionId}-${message.substring(0, 50)}`;
+    const now = Date.now();
+    const lastNotificationTime = this.recentNotifications.get(dedupKey);
+
+    if (lastNotificationTime && (now - lastNotificationTime) < this.NOTIFICATION_DEDUP_WINDOW_MS) {
+      console.warn('⚠️ Duplicate notification BLOCKED (same message within 3s):', {
+        sessionId,
+        senderName,
+        messagePreview: message.substring(0, 30),
+        timeSinceLastNotification: now - lastNotificationTime,
+        dedupWindow: this.NOTIFICATION_DEDUP_WINDOW_MS,
+        dedupKey
+      });
+      return; // Blockiere doppelte Benachrichtigung
+    }
+
+    // ✅ Merke diese Benachrichtigung
+    this.recentNotifications.set(dedupKey, now);
+
+    // ✅ Cleanup: Entferne alte Einträge aus dem Cache (älter als Dedup-Fenster)
+    this.cleanupNotificationCache();
+
+    console.log('✅ Sending notification (NOT blocked):', {
+      sessionId,
+      senderName,
+      messagePreview: message.substring(0, 30),
+      dedupKey,
+      cacheSize: this.recentNotifications.size
+    });
 
     // ✅ Sound nur wenn Tab inaktiv
     this.playNotificationSoundIfTabInactive();
@@ -388,6 +432,29 @@ export class NotificationSoundService {
 
   private isCurrentlyMuted(): boolean {
     return this.mutedUntil !== null && Date.now() < this.mutedUntil;
+  }
+
+  /**
+   * ✅ Cleanup-Methode: Entfernt alte Benachrichtigungs-Einträge aus dem Cache
+   * Wird bei jeder neuen Benachrichtigung aufgerufen um Memory-Leaks zu vermeiden
+   */
+  private cleanupNotificationCache(): void {
+    const now = Date.now();
+    const keysToDelete: string[] = [];
+
+    // Finde alle Einträge die älter sind als das Dedup-Fenster
+    this.recentNotifications.forEach((timestamp, key) => {
+      if (now - timestamp > this.NOTIFICATION_DEDUP_WINDOW_MS) {
+        keysToDelete.push(key);
+      }
+    });
+
+    // Entferne alte Einträge
+    keysToDelete.forEach(key => this.recentNotifications.delete(key));
+
+    if (keysToDelete.length > 0) {
+      console.log(`🧹 Cleaned up ${keysToDelete.length} old notification cache entries`);
+    }
   }
 
   // Getter-Methoden für externe Komponenten

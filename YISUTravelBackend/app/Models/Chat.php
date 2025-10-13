@@ -21,20 +21,24 @@ class Chat extends Model
         'visitor_id',
         'visitor_session_id',
         'status',
+        'channel',             // ✅ WhatsApp Channel Support
+        'whatsapp_number',     // ✅ WhatsApp Telefonnummer
         'assigned_to',
         'assigned_at',
         'closed_at',
-        'close_reason',        // ✅ Hinzufügen
-        'closed_by_agent',     // ✅ Hinzufügen
+        'close_reason',
+        'closed_by_agent',
         'state',
         'context',
         'transfer_count',
-        'last_agent_activity'
+        'last_agent_activity',
+        'last_activity'        // ✅ Zuletzt-Online-Status für Visitor
     ];
 
     protected $casts = [
         'assigned_at' => 'datetime',
         'closed_at' => 'datetime',
+        'last_activity' => 'datetime',
         'chat_id' => 'string'
     ];
 
@@ -174,5 +178,45 @@ class Chat extends Model
             'assigned_at' => null,
             'status' => 'human'
         ]);
+    }
+
+    /**
+     * Scope für WhatsApp Chats
+     */
+    public function scopeWhatsApp($query)
+    {
+        return $query->where('channel', 'whatsapp');
+    }
+
+    /**
+     * Scope für Website Chats
+     */
+    public function scopeWebsite($query)
+    {
+        return $query->where('channel', 'website');
+    }
+
+    /**
+     * Scope für nicht zugewiesene Chats
+     */
+    public function scopeUnassigned($query)
+    {
+        return $query->whereNull('assigned_to');
+    }
+
+    /**
+     * Prüfe ob Chat von WhatsApp kommt
+     */
+    public function isWhatsAppChat(): bool
+    {
+        return $this->channel === 'whatsapp';
+    }
+
+    /**
+     * Prüfe ob Chat von Website kommt
+     */
+    public function isWebsiteChat(): bool
+    {
+        return $this->channel === 'website';
     }
 }

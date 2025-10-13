@@ -31,7 +31,7 @@ class ChatTransferred implements ShouldBroadcast
     {
         return [
             new Channel('chat.' . $this->chat->session_id),
-            new Channel('all.active.chats'),
+            new PrivateChannel('all.active.chats'),
             new Channel('agent.' . $this->fromAgent->id),
             new Channel('agent.' . $this->toAgent->id)
         ];
@@ -44,6 +44,31 @@ class ChatTransferred implements ShouldBroadcast
 
     public function broadcastWith()
     {
+        // ✅ Lade Visitor-Daten für Kundennamen
+        $this->chat->load('visitor');
+
+        // ✅ Berechne Kundennamen (für WhatsApp-Namen)
+        $customerFirstName = 'Unbekannt';
+        $customerLastName = '';
+        $customerName = 'Unbekannter Kunde';
+
+        if ($this->chat->visitor) {
+            $customerFirstName = $this->chat->visitor->first_name;
+            $customerLastName = $this->chat->visitor->last_name ?? '';
+
+            if ($this->chat->channel === 'whatsapp') {
+                if ($customerFirstName && $customerFirstName !== 'WhatsApp') {
+                    $customerName = trim($customerFirstName . ' ' . $customerLastName);
+                } else {
+                    $customerName = $this->chat->whatsapp_number ? '+' . $this->chat->whatsapp_number : 'WhatsApp Kunde';
+                }
+            } else {
+                $customerName = trim($customerFirstName . ' ' . $customerLastName) ?: 'Unbekannter Kunde';
+            }
+        } elseif ($this->chat->channel === 'whatsapp') {
+            $customerName = $this->chat->whatsapp_number ? '+' . $this->chat->whatsapp_number : 'WhatsApp Kunde';
+        }
+
         return [
             'chat_id' => $this->chat->id,
             'session_id' => $this->chat->session_id,
@@ -51,7 +76,13 @@ class ChatTransferred implements ShouldBroadcast
             'from_agent_name' => $this->fromAgent->name,
             'to_agent_id' => $this->toAgent->id,
             'to_agent_name' => $this->toAgent->name,
-            'transferred_at' => now()
+            'transferred_at' => now(),
+            // ✅ NEU: Kundendaten für Notifications
+            'customer_first_name' => $customerFirstName,
+            'customer_last_name' => $customerLastName,
+            'customer_name' => $customerName,
+            'channel' => $this->chat->channel ?? 'website',
+            'whatsapp_number' => $this->chat->whatsapp_number ?? null
         ];
     }
 }

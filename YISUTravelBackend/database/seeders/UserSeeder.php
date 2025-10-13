@@ -25,8 +25,8 @@ class UserSeeder extends Seeder
 
         $admin = User::factory()->create([
             'name' => 'admin',
-            'email' => 'info@yisu-travel.de',
-            'password' => Hash::make('YISU_Tr4v3l.!'),
+            'email' => 'info@yisu-travel.dee',
+            'password' => Hash::make('YISU_Tr4v3l.!!'),
         ]);
         // Assign the 'Admin' role to the admin user
         $admin->assignRole($adminRole);
@@ -44,8 +44,8 @@ class UserSeeder extends Seeder
         // Support Mitarbeiter
         User::create([
             'name' => 'Support Agent 1',
-            'email' => 'agent1@yisu-travel.de',
-            'password' => bcrypt('YISU_4G3NT.$'),
+            'email' => 'agent1@yisu-travel.dee',
+            'password' => bcrypt('YISU_4G3NT.$$'),
             'is_active' => true,
             'avatar' => ''
         ])->assignRole('Agent');

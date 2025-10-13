@@ -2,6 +2,7 @@ import {Injectable, NgZone} from '@angular/core';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import {NotificationSoundService} from "../notification-service/notification-sound.service";
+import {environment} from '../../../environments/environment';
 
 declare global {
   interface Window {
@@ -48,8 +49,51 @@ export class PusherService {
         cluster: 'eu',
         forceTLS: true,
         encrypted: true,
-        authEndpoint: '/broadcasting/auth',
-        withCredentials: true,
+        // ✅ Auth-Endpoint für Private Channels (verwendet environment Variable)
+        authEndpoint: `${environment.backendUrl}/broadcasting/auth`,
+        auth: {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
+        },
+        // ✅ Custom Authorizer um sicherzustellen, dass Cookies UND XSRF-Token gesendet werden
+        authorizer: (channel: any, options: any) => {
+          return {
+            authorize: (socketId: string, callback: Function) => {
+              fetch(`${environment.backendUrl}/broadcasting/auth`, {
+                method: 'POST',
+                credentials: 'include', // ✅ WICHTIG: Sendet Cookies mit!
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  socket_id: socketId,
+                  channel_name: channel.name
+                })
+              })
+              .then(response => {
+                if (!response.ok) {
+                  console.error('❌ Auth failed with status:', response.status);
+                  callback(new Error(`Auth failed: ${response.status}`), null);
+                  return;
+                }
+                return response.json();
+              })
+              .then(data => {
+                if (data) {
+                  console.log('✅ Auth successful for channel:', channel.name);
+                  callback(null, data);
+                }
+              })
+              .catch(error => {
+                console.error('❌ Auth request error:', error);
+                callback(error, null);
+              });
+            }
+          };
+        }
       });
       // Verbindungsüberwachung
 
@@ -88,15 +132,29 @@ export class PusherService {
 
     const wrappedCallback = (data: T) => {
       this.ngZone.run(() => {
-        // Benachrichtigung bei neuem Tab und wenn gewünscht
-        if (options.notify && this.shouldNotify()) {
-          this.handleNotification(data);
-        }
+        // ✅ DEAKTIVIERT: Alte Notification-Logik (wird jetzt von NotificationSoundService übernommen)
+        // Die Benachrichtigungen werden jetzt zentral über den NotificationSoundService
+        // im admin-dashboard.component.ts handleIncomingMessageGlobal() verwaltet
+        // if (options.notify && this.shouldNotify()) {
+        //   this.handleNotification(data);
+        // }
         callback(data);
       });
     };
 
-    const channel = this.echo.channel(channelName);
+    // ✅ WICHTIG: Unterscheide zwischen Public und Private Channels
+    // Private Channels: all.active.chats, agent.{id}, admin-dashboard, escalations, transfer.*
+    // Public Channels: chat.{sessionId}, visitor.{sessionId}
+    const isPrivateChannel = channelName.includes('all.active.chats') ||
+                           channelName.includes('agent.') ||
+                           channelName.includes('admin-dashboard') ||
+                           channelName.includes('escalations') ||
+                           channelName.includes('transfer.');
+
+    // Laravel Echo fügt automatisch 'private-' Prefix hinzu bei echo.private()
+    const channel = isPrivateChannel
+      ? this.echo.private(channelName)  // ✅ Private Channel (Auth required)
+      : this.echo.channel(channelName); // ✅ Public Channel (für Visitors)
 
     // Event-Name mit Punkt prefixen für Laravel Echo
     const formattedEvent = event.startsWith('.') ? event : `.${event}`;

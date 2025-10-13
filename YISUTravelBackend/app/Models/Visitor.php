@@ -15,6 +15,8 @@ class Visitor extends Model
         'last_name',
         'email',
         'phone',
+        'whatsapp_number',
+        'channel',
         'agb_accepted',
         'agb_accepted_at',
         'agb_version'

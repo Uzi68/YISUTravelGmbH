@@ -20,6 +20,7 @@ import {firstValueFrom, of, Subscription} from "rxjs";
 import {ChatbotService} from "../../../Services/chatbot-service/chatbot.service";
 import {AuthService} from "../../../Services/AuthService/auth.service";
 import {PusherService} from "../../../Services/Pusher/pusher.service";
+import {WhatsappService, WhatsAppChat} from "../../../Services/whatsapp/whatsapp.service";
 import {User} from "../../../Models/User";
 import {Visitor} from "../../../Models/Visitor";
 import {catchError} from "rxjs/operators";
@@ -105,6 +106,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   };
   private sortDebounce: any;
   loadingAdminChats = false;
+  isReloadingChats = false; // ✅ Verhindert zu häufige Chat-Reloads
   // Neue Properties
   showAllChats = false;
   selectedAdminChat: any = null;
@@ -137,6 +139,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   // ✅ Cooldown Timer für Live-Update
   private cooldownUpdateInterval: any;
 
+  // ✅ Audio Player Management
+  private audioElements = new Map<string, HTMLAudioElement>();
+  private currentPlayingAudio: string | null = null;
+  private audioProgress = new Map<string, number>();
+  private audioDurations = new Map<string, string>();
+  private audioCurrentTimes = new Map<string, string>();
+
+  // ✅ Loading state für Chat-Wechsel
+  isLoadingChat = false;
+
 // Neue Properties für Filter
   searchQuery = '';
   filterStatus = 'all';
@@ -146,10 +158,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   //Alle Chats für den Admin anzeigen lassen
   allAdminChats: any[] = [];
   transferForm: FormGroup;
+
+  // ✅ WhatsApp Integration Properties
+  whatsappChats: WhatsAppChat[] = [];
+  selectedChannelFilter: 'all' | 'website' | 'whatsapp' = 'all';
+  showWhatsAppFileUpload = signal(false);
+  selectedFileType: 'image' | 'document' | null = null;
+  fileCaption = '';
   constructor(
     private chatbotService: ChatbotService,
     private authService: AuthService,
     private pusherService: PusherService,
+    private whatsappService: WhatsappService,
     private cdRef: ChangeDetectorRef,
     private ngZone: NgZone,
     public notificationSound: NotificationSoundService,
@@ -214,6 +234,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
     this.loadChatRequests();
+
+    // ✅ WhatsApp Chats laden
+    this.loadWhatsAppChats();
 
   }
 
@@ -359,13 +382,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     // Aktive Chats filtern (inklusive geschlossene)
     this.filteredActiveChats = this.activeChats.filter(chat => {
-      const matchesSearch = chat.customerName.toLowerCase().includes(searchTerm) ||
-        chat.lastMessage.toLowerCase().includes(searchTerm);
+      const matchesSearch = chat.customerName?.toLowerCase().includes(searchTerm) ||
+        chat.lastMessage?.toLowerCase().includes(searchTerm) ||
+        chat.whatsapp_number?.includes(searchTerm);
 
       // Filter basierend auf dem gewählten Status
       const matchesStatus = this.filterStatus === 'all' || chat.status === this.filterStatus;
 
-      return matchesSearch && matchesStatus;
+      // ✅ NEU: Channel Filter
+      let matchesChannel = true;
+      if (this.selectedChannelFilter !== 'all') {
+        if (this.selectedChannelFilter === 'whatsapp') {
+          matchesChannel = chat.channel === 'whatsapp';
+        } else {
+          matchesChannel = chat.channel !== 'whatsapp';
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesChannel;
     });
 
     // Admin-Chats filtern (unverändert)
@@ -543,22 +577,57 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private setupPusherListeners(): void {
     this.cleanupPusherSubscriptions();
 
-    // 1. Globaler Message Listener mit erweiterten Notifications
+    // ✅ FIX: Höre auf spezifische Chat-Channels für jeden aktiven Chat
+    this.activeChats.forEach(chat => {
+      const chatSub = this.pusherService.listenToChannel(
+        `chat.${chat.id}`,
+        'message.received',
+        (data: any) => {
+          console.log(`🎯 ADMIN DASHBOARD: Message received on chat.${chat.id} channel:`, data);
+          this.ngZone.run(() => {
+            console.log('🎯 Inside ngZone.run - about to call handleIncomingMessageGlobal');
+            try {
+              // Erweiterte Notification-Logik bereits in handleIncomingMessageGlobal implementiert
+              this.handleIncomingMessageGlobal(data);
+              console.log('✅ handleIncomingMessageGlobal completed successfully');
+            } catch (error) {
+              console.error('❌ Error in handleIncomingMessageGlobal:', error);
+            }
+          });
+        },
+      );
+      this.pusherSubscriptions.push({ channel: `chat.${chat.id}`, subscription: chatSub });
+    });
+
+    // 1. Globaler Message Listener für NEUE Website-Chats (die noch nicht in activeChats sind)
     const globalSub = this.pusherService.listenToChannel(
       'all.active.chats',
       'message.received',
       (data: any) => {
         console.log('🎯 ADMIN DASHBOARD: Message received on all.active.chats channel:', data);
-        this.ngZone.run(() => {
-          console.log('🎯 Inside ngZone.run - about to call handleIncomingMessageGlobal');
-          try {
-            // Erweiterte Notification-Logik bereits in handleIncomingMessageGlobal implementiert
-            this.handleIncomingMessageGlobal(data);
-            console.log('✅ handleIncomingMessageGlobal completed successfully');
-          } catch (error) {
-            console.error('❌ Error in handleIncomingMessageGlobal:', error);
+        
+        // ✅ FIX: Prüfe ob dieser Chat bereits in activeChats existiert
+        const sessionId = data.message?.session_id;
+        if (sessionId) {
+          const existingChat = this.activeChats.find(chat => chat.id === sessionId);
+          
+          if (!existingChat) {
+            // ✅ NEUER CHAT: Lade die Chats neu, um den neuen Chat zu bekommen
+            console.log('🆕 New website chat detected, reloading chats...');
+            
+            // ✅ Verhindere zu häufige Reloads mit einem kleinen Delay
+            if (!this.isReloadingChats) {
+              this.isReloadingChats = true;
+              setTimeout(() => {
+                this.loadActiveChats();
+                this.isReloadingChats = false;
+              }, 100);
+            }
+          } else {
+            // ✅ BEKANNTER CHAT: Ignoriere, da er bereits über spezifischen Channel behandelt wird
+            console.log('ℹ️ Known chat message on global channel, ignoring (handled by specific channel)');
           }
-        });
+        }
       },
     );
 
@@ -717,7 +786,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       if (isTransferredToMe) {
         // 🔔 WICHTIGE BENACHRICHTIGUNG: Chat wurde an mich übertragen
         const fromAgentName = chatData.from_agent_name || 'Ein Kollege';
-        const customerName = `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Ein Kunde';
+        // ✅ WICHTIG: Nutze customer_name vom Backend (für WhatsApp-Namen)
+        const customerName = chatData.customer_name ||
+                            `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() ||
+                            'Ein Kunde';
         const isCurrentlySelected = this.selectedChat?.id === sessionId;
 
         this.notificationSound.notifyTransfer(
@@ -933,7 +1005,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (data.type === 'chat_escalated' && data.chat) {
       const chatData = data.chat;
       const sessionId = chatData.session_id;
-      const customerName = `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Ein Kunde';
+      // ✅ WICHTIG: Nutze customer_name vom Backend (für WhatsApp-Namen)
+      const customerName = chatData.customer_name ||
+                          `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() ||
+                          'Ein Kunde';
 
       const existingIndex = this.activeChats.findIndex(c => c.id === sessionId);
 
@@ -983,8 +1058,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
       }
 
-      // 🔔 WICHTIGE NOTIFICATION: Neue Chat-Anfrage
-      this.notificationSound.notifyNewChatRequest(customerName, sessionId);
+      // 🔔 NOTIFICATION entfernt - wird bereits durch message.received Event gesendet
+      // Die message.received Benachrichtigung hat die korrekten Kundendaten und wird
+      // VOR diesem chat_escalated Event empfangen
+      // this.notificationSound.notifyNewChatRequest(customerName, sessionId);
       this.showToast(`🆕 Neue Chat-Anfrage von ${customerName}`, 'success');
 
       this.sortActiveChats();
@@ -1028,7 +1105,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         const newChat: Chat = {
           id: chatData.session_id,
           chatId: chatData.chat_id,
-          customerName: `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Anonymer Benutzer',
+          customerName: chatData.customer_name || `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Anonymer Benutzer',
           customerFirstName: chatData.customer_first_name || '',
           customerLastName: chatData.customer_last_name || '',
           customerAvatar: chatData.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
@@ -1280,7 +1357,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
 
     const payload = {
-      session_id: this.chatToClose.id,
+      session_id: this.chatToClose.id.toString(),
       reason: closeReasonValue?.trim() || null  // ✅ Explizit null wenn leer
     };
 
@@ -1674,7 +1751,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private handleChatUpdate(data: any): void {
     console.log('Chat Update empfangen (chats.updated):', data);
 
-    // ✅ NEU: Leite ALLE Event-Typen an handleAllChatsUpdate weiter
+    // ✅ Leite ALLE Event-Typen an handleAllChatsUpdate weiter
     // Dies ist der korrekte Handler für AllChatsUpdate Events vom Backend
     if (data.type) {
       console.log('🔄 Forwarding to handleAllChatsUpdate, type:', data.type);
@@ -1682,77 +1759,28 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // ✅ Legacy: Alte Chat-Escalation Logik (falls kein type vorhanden)
-
-    if (data.type === 'chat_escalated' && data.chat) {
-      const chatData = data.chat;
-
-      const existingIndex = this.activeChats.findIndex(c => c.id === chatData.session_id);
-
-      if (existingIndex === -1) {
-        const newChat: Chat = {
-          id: chatData.session_id,
-          chatId: chatData.chat_id,
-          customerName: `${chatData.customer_first_name || ''} ${chatData.customer_last_name || ''}`.trim() || 'Anonymer Benutzer',
-          customerFirstName: chatData.customer_first_name || '',
-          customerLastName: chatData.customer_last_name || '',
-          customerAvatar: 'https://randomuser.me/api/portraits/lego/1.jpg',
-          lastMessage: chatData.last_message,
-          lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: chatData.unread_count || 1,
-          isOnline: true,
-          messages: [],
-          status: chatData.status,
-          assigned_to: chatData.assigned_to,
-          assigned_agent: chatData.assigned_agent,
-          isNew: true
-        };
-
-        this.activeChats = [newChat, ...this.activeChats];
-        this.filteredActiveChats = [newChat, ...this.filteredActiveChats];
-      } else {
-        // ✅ WICHTIG: Behalte den höheren unreadCount (lokal vs. Backend)
-        const currentUnread = this.activeChats[existingIndex].unreadCount || 0;
-        const backendUnread = chatData.unread_count || 0;
-
-        const updatedChat = {
-          ...this.activeChats[existingIndex],
-          status: chatData.status,
-          lastMessage: chatData.last_message,
-          lastMessageTime: new Date(chatData.last_message_time),
-          unreadCount: Math.max(currentUnread, backendUnread), // ✅ Nehme den höheren Wert
-          assigned_to: chatData.assigned_to,
-          assigned_agent: chatData.assigned_agent,
-          isNew: true
-        };
-
-        this.activeChats[existingIndex] = updatedChat;
-
-        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chatData.session_id);
-        if (filteredIndex !== -1) {
-          this.filteredActiveChats[filteredIndex] = { ...updatedChat };
-        }
-      }
-
-      this.sortActiveChats();
-      this.cdRef.detectChanges();
-
-      // ✅ KORRIGIERT: Nur Sound wenn Tab inaktiv
-      this.notificationSound.playNotificationSoundIfTabInactive();
-
-      setTimeout(() => {
-        const newChatElement = document.querySelector('.chat-item.is-new');
-        if (newChatElement) {
-          newChatElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }, 100);
-    }
+    // ✅ Fallback für Events ohne type (sollte nicht vorkommen)
+    console.warn('⚠️ Chat update received without type:', data);
+    // Alle Events mit type werden durch handleAllChatsUpdate verarbeitet
   }
 
 
 
   private handleIncomingMessageGlobal(data: any): void {
     console.log('📥 handleIncomingMessageGlobal - Full data:', data);
+    console.log('📥 CALLED FROM STACK:', new Error().stack?.split('\n')[2]?.trim()); // Zeigt wo die Methode aufgerufen wurde
+
+    // ✅ DEBUG: WhatsApp-spezifisches Logging
+    if (data.channel === 'whatsapp') {
+      console.log('📱 WhatsApp Message Broadcast received:', {
+        customer_first_name: data.customer_first_name,
+        customer_last_name: data.customer_last_name,
+        customer_name: data.customer_name,
+        customer_phone: data.customer_phone,
+        whatsapp_number: data.whatsapp_number,
+        last_activity: data.last_activity
+      });
+    }
 
     const messageData = data.message;
     const sessionId = messageData.session_id;
@@ -1880,13 +1908,49 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         // System-Nachrichten (from === 'system') ändern den Counter NICHT
 
         // ✅ IMMUTABLE UPDATE: Neues Chat-Objekt erstellen statt zu mutieren
+        // ✅ WICHTIG: Aktualisiere Kundendaten aus Broadcast (WhatsApp-Namen!)
+        const newFirstName = data.customer_first_name || this.activeChats[activeChatIndex].customerFirstName;
+        const newLastName = data.customer_last_name || this.activeChats[activeChatIndex].customerLastName;
+
+        // ✅ KRITISCH: customerName MUSS aus den aktuellen Namen neu berechnet werden!
+        let newCustomerName = data.customer_name;
+        if (!newCustomerName || newCustomerName === 'Anonymer Benutzer') {
+          // Wenn kein customer_name gebroadcastet wurde oder es "Anonymer Benutzer" ist,
+          // berechne ihn aus first_name und last_name
+          if (newFirstName && newFirstName !== 'WhatsApp' && newFirstName !== 'Anonymous') {
+            newCustomerName = `${newFirstName} ${newLastName}`.trim();
+          } else if (data.whatsapp_number) {
+            // Fallback: Zeige WhatsApp-Nummer wenn kein Name vorhanden
+            newCustomerName = '+' + data.whatsapp_number;
+          } else {
+            // Letzter Fallback
+            newCustomerName = this.activeChats[activeChatIndex].customerName;
+          }
+        }
+
         const updatedChat = {
           ...this.activeChats[activeChatIndex],
           messages: [...this.activeChats[activeChatIndex].messages, newMessage],
           lastMessage: newMessage.content,
           lastMessageTime: newMessage.timestamp,
-          unreadCount: newUnreadCount
+          unreadCount: newUnreadCount,
+          customerFirstName: newFirstName,
+          customerLastName: newLastName,
+          customerName: newCustomerName,
+          customerPhone: data.customer_phone || this.activeChats[activeChatIndex].customerPhone,
+          // ✅ WhatsApp-spezifische Daten
+          channel: data.channel || this.activeChats[activeChatIndex].channel,
+          whatsapp_number: data.whatsapp_number || this.activeChats[activeChatIndex].whatsapp_number,
+          // ✅ Last Activity für Zuletzt-Online-Status
+          last_activity: data.last_activity || this.activeChats[activeChatIndex].last_activity
         };
+
+        console.log('✅ Chat updated with new customer data:', {
+          customerName: updatedChat.customerName,
+          customerFirstName: updatedChat.customerFirstName,
+          customerLastName: updatedChat.customerLastName,
+          whatsapp_number: updatedChat.whatsapp_number
+        });
 
         // ✅ Array immutable updaten
         this.activeChats = [
@@ -1913,7 +1977,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
               ...updatedChat,
               messages: updatedChat.messages.map(m => ({ ...m, read: true }))
             };
-            this.scrollToBottom();
+
+            // ✅ FIX: Setze shouldScrollToBottom=true für garantiertes Auto-Scroll
+            this.shouldScrollToBottom = true;
+
+            // ✅ FIX: Trigger Change Detection BEVOR Scroll
+            this.cdRef.detectChanges();
+
+            // ✅ Scroll nach Change Detection
+            this.scrollToBottom(false);
 
             // ✅ NEU: Backend-Call um Nachrichten als gelesen zu markieren wenn Chat aktiv betrachtet wird
             // Dies verhindert, dass beim Reload ungelesene Nachrichten angezeigt werden
@@ -2058,6 +2130,130 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
 
+  // ✅ Audio Player Functions
+  toggleAudioPlay(attachment: any): void {
+    const audioKey = attachment.id || attachment.file_path;
+
+    // Stop currently playing audio if different
+    if (this.currentPlayingAudio && this.currentPlayingAudio !== audioKey) {
+      const currentAudio = this.audioElements.get(this.currentPlayingAudio);
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+    }
+
+    let audio = this.audioElements.get(audioKey);
+
+    if (!audio) {
+      audio = new Audio(attachment.download_url);
+      this.audioElements.set(audioKey, audio);
+
+      // Update progress and current time
+      audio.addEventListener('timeupdate', () => {
+        const progress = (audio!.currentTime / audio!.duration) * 100;
+        this.audioProgress.set(audioKey, progress);
+        const currentTime = this.formatDuration(audio!.currentTime);
+        this.audioCurrentTimes.set(audioKey, currentTime);
+        this.cdRef.detectChanges();
+      });
+
+      // Load metadata for duration
+      audio.addEventListener('loadedmetadata', () => {
+        const duration = this.formatDuration(audio!.duration);
+        this.audioDurations.set(audioKey, duration);
+        this.audioCurrentTimes.set(audioKey, '0:00');
+        this.cdRef.detectChanges();
+      });
+
+      // Reset on end
+      audio.addEventListener('ended', () => {
+        this.currentPlayingAudio = null;
+        this.audioProgress.set(audioKey, 0);
+        this.audioCurrentTimes.set(audioKey, '0:00');
+        this.cdRef.detectChanges();
+      });
+    }
+
+    if (this.currentPlayingAudio === audioKey) {
+      audio.pause();
+      this.currentPlayingAudio = null;
+    } else {
+      audio.play();
+      this.currentPlayingAudio = audioKey;
+    }
+  }
+
+  seekAudio(attachment: any, event: MouseEvent): void {
+    const audioKey = attachment.id || attachment.file_path;
+    const audio = this.audioElements.get(audioKey);
+
+    if (!audio) {
+      // If audio hasn't been loaded yet, load it first
+      this.toggleAudioPlay(attachment);
+      // Wait a bit for metadata to load, then seek
+      setTimeout(() => {
+        this.performSeek(attachment, event);
+      }, 100);
+      return;
+    }
+
+    this.performSeek(attachment, event);
+  }
+
+  private performSeek(attachment: any, event: MouseEvent): void {
+    const audioKey = attachment.id || attachment.file_path;
+    const audio = this.audioElements.get(audioKey);
+
+    if (!audio || !audio.duration) return;
+
+    const waveformElement = event.currentTarget as HTMLElement;
+    const rect = waveformElement.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const newTime = percentage * audio.duration;
+
+    audio.currentTime = newTime;
+
+    // Update UI immediately
+    this.audioProgress.set(audioKey, percentage * 100);
+    this.audioCurrentTimes.set(audioKey, this.formatDuration(newTime));
+    this.cdRef.detectChanges();
+
+    // Auto-play if not already playing
+    if (this.currentPlayingAudio !== audioKey) {
+      audio.play();
+      this.currentPlayingAudio = audioKey;
+    }
+  }
+
+  isAudioPlaying(attachment: any): boolean {
+    const audioKey = attachment.id || attachment.file_path;
+    return this.currentPlayingAudio === audioKey;
+  }
+
+  getAudioProgress(attachment: any): number {
+    const audioKey = attachment.id || attachment.file_path;
+    return this.audioProgress.get(audioKey) || 0;
+  }
+
+  getAudioDuration(attachment: any): string {
+    const audioKey = attachment.id || attachment.file_path;
+    return this.audioDurations.get(audioKey) || '0:00';
+  }
+
+  getAudioCurrentTime(attachment: any): string {
+    const audioKey = attachment.id || attachment.file_path;
+    return this.audioCurrentTimes.get(audioKey) || '0:00';
+  }
+
+  private formatDuration(seconds: number): string {
+    if (!isFinite(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
   ngOnDestroy() {
     this.cleanupPusherSubscriptions();
 
@@ -2073,6 +2269,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (this.cooldownUpdateInterval) {
       clearInterval(this.cooldownUpdateInterval);
     }
+
+    // ✅ Audio cleanup
+    this.audioElements.forEach(audio => {
+      audio.pause();
+      audio.src = '';
+    });
+    this.audioElements.clear();
   }
 
   private markMessagesAsRead(chatId: string, sessionId: string): void {
@@ -2109,12 +2312,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         const isSelected = this.selectedChat?.id === chat.session_id;
         const isNew = chat.status === 'human' && !chat.assigned_agent;
 
-        let customerName = chat.customer_first_name && chat.customer_last_name
-          ? `${chat.customer_first_name} ${chat.customer_last_name}`
-          : 'Anonymer Benutzer';
+        // ✅ WICHTIG: Nutze customer_name vom Backend (wenn vorhanden)
+        let customerName = chat.customer_name;
 
-        // Nur Visitor-Daten abrufen, wenn keine Namen vorhanden sind
-        if (!chat.customer_first_name && !chat.customer_last_name) {
+        // ✅ Fallback: Berechne aus first_name und last_name (wenn customer_name fehlt)
+        if (!customerName || customerName === 'Anonymer Benutzer') {
+          if (chat.customer_first_name || chat.customer_last_name) {
+            customerName = `${chat.customer_first_name || ''} ${chat.customer_last_name || ''}`.trim();
+          } else {
+            customerName = 'Anonymer Benutzer';
+          }
+        }
+
+        // Nur Visitor-Daten abrufen, wenn immer noch kein Name vorhanden ist (nur für Website-Chats)
+        if (customerName === 'Anonymer Benutzer' && !chat.customer_first_name && !chat.customer_last_name && chat.channel !== 'whatsapp') {
           try {
             const visitor = await firstValueFrom(
               this.chatbotService.getVisitorDetails(chat.session_id).pipe(
@@ -2146,11 +2357,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           customerName: customerName,
           customerFirstName: chat.customer_first_name || '',
           customerLastName: chat.customer_last_name || '',
+          customerPhone: chat.customer_phone || '',
           customerAvatar: chat.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
           lastMessage: chat.last_message || '',
           lastMessageTime: new Date(chat.last_message_time || Date.now()),
           unreadCount: isSelected ? 0 : (chat.unread_count || 0),
           isOnline: chat.is_online || false,
+          last_activity: chat.last_activity || null,
           messages: Array.isArray(chat.messages)
             ? chat.messages.map((msg: any) => {
                 return {
@@ -2170,6 +2383,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           status: chat.status || '',
           assigned_agent: chat.assigned_agent || '',
           assigned_to: chat.assigned_to,
+          channel: chat.channel || 'website',
+          whatsapp_number: chat.whatsapp_number || null,
           isNew: isNew
         };
       }));
@@ -2277,7 +2492,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         ...updatedChat,
         messages: updatedChat.messages.map(m => ({ ...m, read: true }))
       };
-      this.scrollToBottom();
+
+      // ✅ FIX: Setze shouldScrollToBottom=true um Auto-Scroll zu garantieren
+      // Dies stellt sicher, dass neue Nachrichten (auch System-Nachrichten) immer scrollen
+      this.shouldScrollToBottom = true;
+
+      // ✅ FIX: Trigger Change Detection BEVOR Scroll
+      this.cdRef.detectChanges();
+
+      // ✅ Scroll mit smooth behavior (nach Change Detection!)
+      this.scrollToBottom(false);
 
       // SOFORT als gelesen markieren im Backend
       this.markMessagesAsRead(updatedChat.chatId, sessionId);
@@ -2302,20 +2526,34 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
 
-  scrollToBottom() {
+  scrollToBottom(immediate: boolean = false) {
     const container = this.messageContainer?.nativeElement;
-    if (!container || !this.shouldScrollToBottom) return;
+    if (!container) return;
 
-    requestAnimationFrame(() => {
-      try {
-        container.scroll({
-          top: container.scrollHeight,
-          behavior: 'smooth'
+    // ✅ Wenn immediate=true, scrolle SOFORT ohne Animation (für Chat-Wechsel)
+    // ✅ Wenn immediate=false, nur scrollen wenn User bereits unten war
+    if (immediate) {
+      // Doppeltes requestAnimationFrame für sicheres Rendering
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight;
         });
-      } catch (e) {
-        container.scrollTop = container.scrollHeight;
-      }
-    });
+      });
+    } else if (this.shouldScrollToBottom) {
+      // ✅ FIX: Warte 2 Frames bis DOM vollständig gerendert ist
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          try {
+            container.scroll({
+              top: container.scrollHeight,
+              behavior: 'smooth'
+            });
+          } catch (e) {
+            container.scrollTop = container.scrollHeight;
+          }
+        });
+      });
+    }
   }
 
   assignAdminChat(adminChat: any): void {
@@ -2381,6 +2619,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   selectChat(chat: Chat): void {
     this.ngZone.run(() => {
+      // ✅ FIX: Setze Loading-State um Flickern zu vermeiden
+      this.isLoadingChat = true;
+
       // Setze unreadCount = 0 und alle Nachrichten auf read = true
       this.activeChats = this.activeChats.map(c =>
         c.id === chat.id
@@ -2400,23 +2641,44 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         messages: chat.messages.map(m => ({ ...m, read: true }))
       };
 
-      // Scroll nach unten
-      setTimeout(() => this.scrollToBottom(), 100);
-      this.loadAssignmentStatus(chat.id);
+      // ✅ FIX: Setze shouldScrollToBottom=true damit Auto-Scroll funktioniert
+      this.shouldScrollToBottom = true;
+
+      // ✅ FIX: Warte auf nächsten Frame, dann scrolle UND zeige Chat
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.scrollToBottom(true);
+          this.isLoadingChat = false;
+          this.cdRef.detectChanges();
+        });
+      });
+
+      this.loadAssignmentStatus(chat.id.toString());
 
       // Speichere im localStorage
-      localStorage.setItem('assigned_chat_session_id', chat.id);
+      localStorage.setItem('assigned_chat_session_id', chat.id.toString());
 
       // Backend-Call: als gelesen markieren
       if (chat.chatId && chat.id) {
-        this.markMessagesAsRead(chat.chatId, chat.id);
+        this.markMessagesAsRead(chat.chatId, chat.id.toString());
       }
 
-      // Besucher laden
-      this.chatbotService.getVisitorDetails(chat.id).subscribe({
-        next: (visitor) => (this.visitor = visitor),
-        error: (err) => console.error('Error fetching visitor details:', err)
-      });
+      // Besucher laden (nur für Website-Chats, nicht für WhatsApp)
+      if (!this.isWhatsAppChat(chat)) {
+        this.chatbotService.getVisitorDetails(chat.id.toString()).subscribe({
+          next: (visitor) => (this.visitor = visitor),
+          error: (err) => console.error('Error fetching visitor details:', err)
+        });
+      } else {
+        // Für WhatsApp-Chats: Visitor-Info aus Chat-Daten erstellen
+        this.visitor = {
+          first_name: chat.customerFirstName || 'WhatsApp',
+          last_name: chat.customerLastName || 'Kunde',
+          phone: chat.customerPhone || '',
+          email: '',
+          agb_accepted: false
+        };
+      }
 
       // ✅ NEU: Tab-Titel aktualisieren nach Chat-Auswahl
       this.updateTabTitle();
@@ -2432,30 +2694,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const isAssigned = chat.assigned_to !== null && chat.assigned_to !== undefined;
     const isAssignedToMe = isAssigned && chat.assigned_to === this.currentAgent.id;
 
-    // ✅ DEBUG: Log canWrite Evaluation
-    const canWriteResult = (() => {
-      if (chat.status === 'human') {
-        return isAssignedToMe;
-      }
-      if (chat.status === 'in_progress') {
-        return isAssignedToMe;
-      }
-      return false;
-    })();
-
-    console.log('🔍 canWrite() evaluation:', {
-      chatId: chat.id,
-      status: chat.status,
-      assigned_to: chat.assigned_to,
-      assigned_agent: chat.assigned_agent,
-      currentAgentId: this.currentAgent.id,
-      currentAgentName: this.currentAgent.name,
-      isAssigned,
-      isAssignedToMe,
-      canWrite: canWriteResult
-    });
-
-    return canWriteResult;
+    if (chat.status === 'human') {
+      return isAssignedToMe;
+    }
+    if (chat.status === 'in_progress') {
+      return isAssignedToMe;
+    }
+    return false;
   }
   /**
    * Assignment Status für Chat laden
@@ -2486,7 +2731,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    * Transfer History für Chat anzeigen
    */
   showTransferHistory(chat: Chat): void {
-    this.chatbotService.getTransferHistory(chat.id).subscribe({
+    this.chatbotService.getTransferHistory(chat.id.toString()).subscribe({
       next: (response) => {
         if (response.success && response.transfers.length > 0) {
           // Dialog oder Tooltip mit Transfer History anzeigen
@@ -2528,22 +2773,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    */
   canTransferChat(chat: Chat): boolean {
     if (!chat || !chat.assigned_to) {
-      console.log('Cannot transfer: Chat not assigned');
       return false;
     }
 
     const isMyChat = chat.assigned_to === this.currentAgent.id;
     const isInProgress = chat.status === 'in_progress';
-
-    console.log('Transfer check:', {
-      chatId: chat.id,
-      assigned_to: chat.assigned_to,
-      currentAgentId: this.currentAgent.id,
-      isMyChat: isMyChat,
-      isAdmin: this.isAdmin,
-      status: chat.status,
-      isInProgress: isInProgress
-    });
 
     return (isMyChat || this.isAdmin) && isInProgress;
   }
@@ -2558,7 +2792,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     // ✅ NEU: Cooldown-Mechanismus statt permanenter Deaktivierung
-    const lastPrompt = this.escalationPrompts.get(chat.id);
+    const lastPrompt = this.escalationPrompts.get(chat.id.toString());
     if (!lastPrompt) {
       return true; // Noch nie gesendet
     }
@@ -2573,7 +2807,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    * Berechnet den Cooldown-Text für die Escalation
    */
   getEscalationCooldownText(chat: Chat): string | null {
-    const lastPrompt = this.escalationPrompts.get(chat.id);
+    const lastPrompt = this.escalationPrompts.get(chat.id.toString());
     if (!lastPrompt) {
       return null;
     }
@@ -2633,7 +2867,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     const originalChat = { ...chat };
 
-    this.chatbotService.assignChatToAgent(chat.id).subscribe({
+    this.chatbotService.assignChatToAgent(chat.id.toString()).subscribe({
       next: (response) => {
         console.log('Chat assignment successful:', response);
 
@@ -2663,7 +2897,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             };
           }
 
-          this.assignmentStatuses.set(chat.id, {
+          this.assignmentStatuses.set(chat.id.toString(), {
             is_assigned: true,
             assigned_to: this.currentAgent.id,
             can_user_write: true,
@@ -2806,7 +3040,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
 
     this.chatbotService.transferChatToAgent(
-      this.selectedChatForTransfer.id,
+      this.selectedChatForTransfer.id.toString(),
       toAgentId,
       finalReason
     ).subscribe({
@@ -2876,14 +3110,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   unassignChat(chat: Chat): void {
     if (!chat.assigned_to || !this.isAdmin) return;
 
-    this.chatbotService.unassignChat(chat.id).subscribe({
+    this.chatbotService.unassignChat(chat.id.toString()).subscribe({
       next: (response) => {
         if (response.success) {
           chat.assigned_to = null;
           chat.assigned_agent = '';
           chat.status = 'human';
 
-          this.assignmentStatuses.set(chat.id, {
+          this.assignmentStatuses.set(chat.id.toString(), {
             is_assigned: false,
             assigned_to: null,
             can_user_write: false
@@ -2912,7 +3146,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       session_id: chat.id,
     };
 
-    this.chatbotService.sendEscalationPrompt(chat.id, payload).subscribe({
+    this.chatbotService.sendEscalationPrompt(chat.id.toString(), payload).subscribe({
       next: (response) => {
         if (response.success) {
           this.showToast(`✅ Escalation-Anfrage erfolgreich an ${chat.customerName} gesendet`, 'success');
@@ -2934,7 +3168,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           }
 
           // Escalation-Prompts Map aktualisieren
-          this.escalationPrompts.set(chat.id, {
+          this.escalationPrompts.set(chat.id.toString(), {
             prompt_id: response.prompt_id,
             sent_at: new Date(),
             sent_by: response.sent_by || this.currentAgent.name
@@ -3016,7 +3250,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  trackByChatId(index: number, chat: Chat): string {
+  trackByChatId(index: number, chat: Chat): string | number {
     return chat.id;
   }
 
@@ -3053,7 +3287,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     this.showToast(`Datei wird hochgeladen: ${file.name}`, 'info');
 
-    this.chatbotService.uploadAttachment(file, chatId, sessionId, 'agent').subscribe({
+    this.chatbotService.uploadAttachment(file, chatId, sessionId.toString(), 'agent').subscribe({
       next: (response) => {
         console.log('File uploaded successfully:', response);
         this.showToast('Datei erfolgreich gesendet', 'success');
@@ -3210,25 +3444,325 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     console.log('Tab title updated:', document.title, '(unread:', this.totalUnreadCount, ')');
   }
+
+  // ========================================
+  // ✅ WHATSAPP INTEGRATION METHODS
+  // ========================================
+
+  /**
+   * Lade WhatsApp Chats und merge mit Website Chats
+   */
+  loadWhatsAppChats(): void {
+    this.whatsappService.getWhatsAppChats().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.whatsappChats = response.chats;
+
+          // Merge WhatsApp Chats mit Website Chats
+          const websiteChats = this.activeChats.filter(c => c.channel !== 'whatsapp');
+          const whatsappChatsConverted = this.whatsappChats.map(wc => ({
+            id: wc.session_id,  // ✅ FIX: Use session_id as id for frontend identification
+            chatId: wc.id,      // ✅ FIX: Use numeric id as chatId for backend API calls
+            customerName: wc.visitor ? `${wc.visitor.first_name || ''} ${wc.visitor.last_name || ''}`.trim() : 'WhatsApp Kunde',
+            customerFirstName: wc.visitor?.first_name || 'WhatsApp',
+            customerLastName: wc.visitor?.last_name || 'Kunde',
+            customerPhone: wc.whatsapp_number,
+            customerAvatar: 'assets/whatsapp-avatar.png',
+            lastMessage: wc.messages?.[wc.messages.length - 1]?.text || '',
+            lastMessageTime: wc.messages?.[wc.messages.length - 1]?.created_at ? new Date(wc.messages[wc.messages.length - 1].created_at) : new Date(wc.created_at),
+            unreadCount: 0,
+            isOnline: false,
+            last_activity: wc.updated_at,
+            messages: wc.messages?.map(msg => ({
+              id: msg.id.toString(),
+              content: msg.text,
+              timestamp: new Date(msg.created_at),
+              isAgent: msg.from === 'agent',
+              isBot: msg.from === 'bot',
+              read: true,
+              from: msg.from,
+              message_type: msg.message_type,
+              metadata: msg.metadata,
+              attachment: msg.attachments?.[0]
+            })) || [],
+            assigned_to: wc.assigned_to,
+            status: wc.status,
+            assigned_agent: wc.assigned_to ? `Agent ${wc.assigned_to}` : undefined,
+            isNew: false,
+            channel: 'whatsapp' as const,
+            whatsapp_number: wc.whatsapp_number,
+            visitor: wc.visitor
+          }));
+
+          this.activeChats = [...websiteChats, ...whatsappChatsConverted as any];
+
+          // Sortiere nach Datum
+          this.activeChats.sort((a, b) => {
+            const dateA = new Date(a.updated_at || a.created_at || new Date()).getTime();
+            const dateB = new Date(b.updated_at || b.created_at || new Date()).getTime();
+            return dateB - dateA;
+          });
+
+          this.filterChats();
+          this.cdRef.detectChanges();
+        }
+      },
+      error: (error) => {
+        console.error('Fehler beim Laden der WhatsApp-Chats:', error);
+      }
+    });
+  }
+
+  /**
+   * Sende WhatsApp Text-Nachricht
+   */
+  sendWhatsAppMessage(message: string, textarea: HTMLTextAreaElement): void {
+    if (!this.selectedChat) return;
+
+    // ✅ FIX: Verwende chatId für WhatsApp API Calls, nicht id (session_id)
+    const chatId = this.isWhatsAppChat(this.selectedChat) ? Number(this.selectedChat.chatId) : Number(this.selectedChat.id);
+    this.whatsappService.sendTextMessage(chatId, message).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.snackBar.open('✅ WhatsApp-Nachricht gesendet', 'OK', { duration: 3000 });
+          textarea.value = '';
+          // Message wird via Pusher aktualisiert
+        }
+      },
+      error: (error) => {
+        console.error('Fehler beim Senden der WhatsApp-Nachricht:', error);
+        this.snackBar.open('❌ Fehler beim Senden der Nachricht', 'OK', { duration: 5000 });
+      }
+    });
+  }
+
+  /**
+   * ✅ Unified File-Upload Handler für WhatsApp (automatische Typ-Erkennung)
+   */
+  onWhatsAppFileSelected(event: any): void {
+    const file: File = event.target.files[0];
+    if (!file || !this.selectedChat) return;
+
+    // Validiere Datei
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+      this.snackBar.open('❌ Datei ist zu groß (max. 100MB)', 'OK', { duration: 5000 });
+      event.target.value = '';
+      return;
+    }
+
+    // ✅ Automatische Typ-Erkennung basierend auf MIME-Type
+    const fileType = file.type;
+    const isImage = fileType.startsWith('image/');
+    const isVideo = fileType.startsWith('video/');
+    const isDocument = !isImage && !isVideo; // Alles andere ist ein Dokument
+
+    // ✅ Keine Caption-Abfrage - verwende einfach den Dateinamen
+    const caption = file.name;
+
+    this.snackBar.open('📤 Wird hochgeladen...', '', { duration: 2000 });
+
+    // ✅ Sende basierend auf automatisch erkanntem Typ
+    if (isImage) {
+      // ✅ FIX: Verwende chatId für WhatsApp API Calls, nicht id (session_id)
+      const chatId = this.isWhatsAppChat(this.selectedChat) ? Number(this.selectedChat.chatId) : Number(this.selectedChat.id);
+      
+      // ✅ DEBUG: Log die Werte um das Problem zu identifizieren
+      console.log('🔍 DEBUG WhatsApp Image Send:', {
+        selectedChat: this.selectedChat,
+        isWhatsAppChat: this.isWhatsAppChat(this.selectedChat),
+        selectedChatId: this.selectedChat.id,
+        selectedChatChatId: this.selectedChat.chatId,
+        finalChatId: chatId,
+        chatIdType: typeof chatId,
+        isNaN: isNaN(chatId)
+      });
+      
+      this.whatsappService.sendImage(chatId, file, caption || undefined).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.snackBar.open('✅ Bild erfolgreich gesendet', 'OK', { duration: 3000 });
+          }
+        },
+        error: (error) => {
+          console.error('Fehler beim Senden des Bildes:', error);
+          this.snackBar.open('❌ Fehler beim Senden des Bildes', 'OK', { duration: 5000 });
+        }
+      });
+    } else if (isVideo) {
+      // Video-Support (falls WhatsApp-Service sendVideo hat, ansonsten als Dokument)
+      // ✅ FIX: Verwende chatId für WhatsApp API Calls, nicht id (session_id)
+      const chatId = this.isWhatsAppChat(this.selectedChat) ? Number(this.selectedChat.chatId) : Number(this.selectedChat.id);
+      this.whatsappService.sendDocument(chatId, file, caption || undefined).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.snackBar.open('✅ Video erfolgreich gesendet', 'OK', { duration: 3000 });
+          }
+        },
+        error: (error) => {
+          console.error('Fehler beim Senden des Videos:', error);
+          this.snackBar.open('❌ Fehler beim Senden des Videos', 'OK', { duration: 5000 });
+        }
+      });
+    } else {
+      // Dokument
+      // ✅ FIX: Verwende chatId für WhatsApp API Calls, nicht id (session_id)
+      const chatId = this.isWhatsAppChat(this.selectedChat) ? Number(this.selectedChat.chatId) : Number(this.selectedChat.id);
+      this.whatsappService.sendDocument(chatId, file, caption || undefined).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.snackBar.open('✅ Dokument erfolgreich gesendet', 'OK', { duration: 3000 });
+          }
+        },
+        error: (error) => {
+          console.error('Fehler beim Senden des Dokuments:', error);
+          this.snackBar.open('❌ Fehler beim Senden des Dokuments', 'OK', { duration: 5000 });
+        }
+      });
+    }
+
+    // Reset file input
+    event.target.value = '';
+  }
+
+  /**
+   * Filter Chats nach Channel
+   */
+  filterByChannel(channel: 'all' | 'website' | 'whatsapp'): void {
+    this.selectedChannelFilter = channel;
+    this.applyAllFilters();
+  }
+
+  /**
+   * Erweiterte Filter-Methode mit Channel-Support
+   */
+  private applyAllFilters(): void {
+    let filtered = [...this.activeChats];
+
+    // Channel Filter
+    if (this.selectedChannelFilter !== 'all') {
+      filtered = filtered.filter(chat => {
+        if (this.selectedChannelFilter === 'whatsapp') {
+          return chat.channel === 'whatsapp';
+        } else {
+          return chat.channel !== 'whatsapp';
+        }
+      });
+    }
+
+    // Bestehende Filter anwenden (Status, Search, etc.)
+    if (this.filterStatus !== 'all') {
+      filtered = filtered.filter(c => c.status === this.filterStatus);
+    }
+
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.visitor?.first_name?.toLowerCase().includes(query) ||
+        c.visitor?.last_name?.toLowerCase().includes(query) ||
+        c.whatsapp_number?.includes(query)
+      );
+    }
+
+    this.filteredActiveChats = filtered;
+  }
+
+  /**
+   * Prüfe ob Chat WhatsApp ist
+   */
+  isWhatsAppChat(chat: any): boolean {
+    return chat?.channel === 'whatsapp';
+  }
+
+  /**
+   * Formatiere WhatsApp-Nummer
+   */
+  formatWhatsAppNumber(number: string): string {
+    if (!number) return '';
+    const cleaned = number.replace(/\D/g, '');
+    if (cleaned.length >= 10) {
+      const countryCode = cleaned.substring(0, cleaned.length - 10);
+      const rest = cleaned.substring(cleaned.length - 10);
+      const part1 = rest.substring(0, 3);
+      const part2 = rest.substring(3, 7);
+      const part3 = rest.substring(7);
+      return `+${countryCode} ${part1} ${part2} ${part3}`;
+    }
+    return `+${cleaned}`;
+  }
+
+  /**
+   * Hole Channel Icon
+   */
+  getChannelIcon(chat: any): string {
+    return this.isWhatsAppChat(chat) ? '💬' : '📱';
+  }
+
+  /**
+   * Hole Channel Name
+   */
+  getChannelName(chat: any): string {
+    return this.isWhatsAppChat(chat) ? 'WhatsApp' : 'Website';
+  }
+
+  /**
+   * Prüfe ob File-Upload erlaubt ist
+   */
+  canUploadFiles(chat: any): boolean {
+    return this.isWhatsAppChat(chat);
+  }
+
+  /**
+   * Hole Icon für WhatsApp Message Type
+   */
+  getMessageTypeIcon(messageType: string): string {
+    const typeMap: { [key: string]: string } = {
+      'whatsapp_text': 'message',
+      'whatsapp_image': 'image',
+      'whatsapp_document': 'description',
+      'whatsapp_video': 'videocam',
+      'whatsapp_audio': 'mic',
+      'whatsapp_voice': 'record_voice_over',
+      'whatsapp_location': 'location_on',
+      'whatsapp_contacts': 'contacts',
+      'whatsapp_sticker': 'emoji_emotions',
+      'whatsapp_button': 'smart_button',
+      'whatsapp_list': 'list',
+      'whatsapp_template': 'article'
+    };
+    return typeMap[messageType] || 'chat';
+  }
 }
 
 interface Chat {
-  id: string;
+  id: string | number;  // ✅ Allow both string (session_id) and number (WhatsApp chat id)
   chatId: string;
   customerName: string;
   customerFirstName: string;
   customerLastName: string;
+  customerPhone?: string;
   customerAvatar: string;
   lastMessage: string;
   lastMessageTime: Date;
   unreadCount: number;
   isOnline: boolean;
   lastOnline?: Date;
+  last_activity?: string;  // ✅ ISO 8601 Timestamp für Zuletzt-Online-Status
   messages: Message[];
   assigned_to?: number | null;
   status: string;
   assigned_agent?: string;
   isNew?: boolean;
+  channel?: string;
+  whatsapp_number?: string;
+  visitor?: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+  };
+  updated_at?: string;
+  created_at?: string;
 }
 
 interface Message {
