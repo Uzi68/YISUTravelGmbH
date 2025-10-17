@@ -36,7 +36,7 @@
 }
 
 .adminicon{
-  fill: var(--yisu-navbar-text);
+  fill: var(--yisu-nav-items);
   transition: all 0.3s ease;
   padding: 0.5rem;
   border-radius: 8px;
@@ -44,7 +44,7 @@
 }
 
 .adminicon:hover {
-  fill: var(--yisu-primary);
+  fill: var(--yisu-nav-items-hover);
   background: rgba(25, 118, 210, 0.1);
   transform: scale(1.05);
 }
@@ -59,7 +59,7 @@ body.dark-mode .adminicon {
 }
 
 .adminiconMobile {
-  fill: var(--header-color);
+  fill: var(--yisu-nav-items);
   margin-bottom: 2px;
 }
 
@@ -84,9 +84,7 @@ body.dark-mode .adminicon {
   transition: all 0.3s ease;
   flex-shrink: 0;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
-  background: rgba(255, 255, 255, 0.98);
-  padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: 60px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   
   &:hover {
@@ -128,14 +126,25 @@ body.dark-mode .logo-img {
 .instagram-btn i {
   margin-right: 0; /* Remove margin inside icon */
 }
-
+.logo-wrapper {
+  width: 50px;              /* gleiche Höhe wie dein Bild */
+  height: 50px;
+  border-radius: 60px;
+  overflow: hidden;          /* schneidet alles außerhalb ab */
+  display: inline-block;
+}
 .logo-imgMobile {
-  height: 60px;
-  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: none;
+  box-shadow: none;
+  transform: scale(1.05);
   transition: transform 0.3s ease;
-  
+  cursor: pointer;
+
   &:hover {
-    transform: scale(1.05);
+    transform: scale(1.1); /* optional stärkerer Zoom beim Hover */
   }
   
   @media (min-width: 941px) {
@@ -159,17 +168,23 @@ body.dark-mode .logo-img {
 
 /*checked*/
 ::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked:not(.mat-disabled) .mdc-switch__shadow {
-  background-color: rgb(255, 255, 255);
+  background-color: var(--yisu-nav-items);
 }
 
 ::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked:not(.mat-disabled) .mdc-switch__track::after {
   background-color: #333 !important;
 }
+/* Icon im aktivierten Zustand (wenn Toggle an ist) */
+::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked .mdc-switch__icon {
+  fill: #333 !important;      /* helleres Blau oder gewünschte Farbe */
+  stroke: #333 !important;
+  stroke-width: 1px !important;
+}
 
 /*unchecked*/
 /* Background Icon */
 ::ng-deep .mat-mdc-slide-toggle:not(.mat-mdc-slide-toggle-checked):not(.mat-disabled) .mdc-switch__shadow {
-  background-color: #9c9c9c /* White shadow color */
+  background-color: var(--yisu-nav-items); /* White shadow color */
 }
 
 /* Hintergrundfarbe Schieberegler nicht aktiviert ist */
@@ -179,7 +194,10 @@ body.dark-mode .logo-img {
 
 /* Icon Farbe */
 ::ng-deep .mat-mdc-slide-toggle:not(.mat-mdc-slide-toggle-checked) .mdc-switch__icon {
-  fill: #ffffff !important;  /* Ändere die Farbe des Icons auf rot */
+  fill: #fbbf24 !important;  /* Ändere die Farbe des Icons auf rot */
+  stroke: #fbbf24 !important;   /* Farbe des Icons */
+  stroke-width: 1px !important; /* Macht das Symbol dicker */
+
 }
 
 ::ng-deep .mat-mdc-slide-toggle .mdc-switch__track::before,
@@ -202,7 +220,7 @@ mat-slide-toggle {
     font-size: 17px;
     font-weight: 500;
     padding: 0.75rem 1.8rem;
-    color: var(--yisu-secondary);
+    color: var(--yisu-nav-items);
     text-decoration: none;
     border-radius: 10px;
     position: relative;
@@ -218,14 +236,14 @@ mat-slide-toggle {
       transform: translateX(-50%);
       width: 0;
       height: 3px;
-      background: var(--yisu-primary);
+      background: var(--yisu-nav-items-hover);
       transition: width 0.3s ease;
       border-radius: 2px;
     }
     
     &:hover {
-      color: var(--yisu-secondary);
-      background: rgba(25, 118, 210, 0.08);
+      color: var(--yisu-nav-items-hover);
+      background: var(--yisu-nav-items-hover-background);
       transform: translateY(-1px);
       
       &::after {
@@ -234,24 +252,24 @@ mat-slide-toggle {
     }
     
     &.active-list-item {
-      background: var(--yisu-primary);
-      color: var(--yisu-white);
+      background: var(--yisu-nav-items);
+      color: var(--yisu-nav-items-active);
       font-weight: 600;
       box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
       transform: translateY(-1px);
       
       &::after {
-        background: var(--yisu-white);
+        background: var(--yisu-nav-items-active);
         width: 80%;
       }
       
       &:hover {
-        background: #1565c0;
-        color: var(--yisu-white);
+        background: var(--yisu-nav-items-active-hover-background);
+        color: var(--yisu-nav-items-active-hover);
         box-shadow: 0 4px 12px rgba(21, 101, 192, 0.4);
         
         &::after {
-          background: var(--yisu-white);
+          background: var(--yisu-nav-items-active-hover);
           width: 90%;
         }
       }
@@ -316,6 +334,7 @@ body.dark-mode .desktop-menu2 a {
 /* Burger menu button for mobile */
 .mobile-menu-btn {
   display: none;
+  fill: var(--yisu-nav-items);
 
   /* Show burger button on tablet/mobile screens */
   @media (max-width: 940px) {
@@ -371,6 +390,7 @@ mat-sidenav {
 /* Sidenav animation when open */
 .mat-sidenav.open .mobile-menu-btn mat-icon {
   transform: rotate(90deg); /* Rotate the burger icon to X */
+  fill: var(--yisu-nav-items-hover);
 }
 
 .mobile-sidenav a {
@@ -577,19 +597,19 @@ svg {
 .sidenav-icon {
   margin-right: 12px;
   font-size: 20px;
-  color: var(--yisu-primary);
+  color: var(--yisu-nav-items);
   transition: transform 0.3s ease;
 }
 
 .sidenav-header {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--yisu-primary);
+  color: var(--yisu-nav-items);
   margin: 1.25rem 0 0.75rem;
   padding: 0 1rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid var(--yisu-border-medium);
+  border-bottom: 2px solid var(--yisu-nav-items);
   padding-bottom: 0.5rem;
 }
 

@@ -290,7 +290,7 @@ h2 {
 }
 /* Hintergrund und Textfarbe ändern, wenn aktiv */
 .dropdown.active {
-  background: #0076b5;
+  background: var(--yisu-nav-items);
   color: white;
   .titledropdownclass {
     color: white!important;

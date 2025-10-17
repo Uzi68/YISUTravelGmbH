@@ -107,6 +107,12 @@ body.dark-mode {
   /* === Flyer Travel Agency Farbschema === */
   --yisu-primary: #1976d2;          /* Modernes Blau - Logo/Text */
   --yisu-secondary: #fbbf24;        /* Sonniges Gelb - Banner/Akzente */
+  --yisu-nav-items: #1976d2;
+  --yisu-nav-items-hover: #1976d2;
+  --yisu-nav-items-hover-background: #ffffff;
+  --yisu-nav-items-active: #ffffff;
+  --yisu-nav-items-active-hover: #ffffff;
+  --yisu-nav-items-active-hover-background: #2196f3;
   --yisu-accent: #e3f2fd;           /* Helles Blau - Hintergrund/Akzent */
   --yisu-red: #dc2626;              /* Rot - Akzent aus Flyer */
   --yisu-light: #ffffff;            /* Main Background */
@@ -185,6 +191,12 @@ body.dark-mode {
   /* === Flyer-basiertes Travel Agency Dark Mode === */
   --yisu-primary: #60a5fa;          /* Helleres Blau - Dark Mode */
   --yisu-secondary: #fbbf24;        /* Sonniges Gelb - bleibt gleich */
+  --yisu-nav-items: #fbbf24;        /* Sonniges Gelb - bleibt gleich */
+  --yisu-nav-items-hover: #fbbf24;
+  --yisu-nav-items-hover-background: #fbbf240f;
+  --yisu-nav-items-active: #0f172a; /*#f59e0b*/
+  --yisu-nav-items-active-hover: #1e293b;
+  --yisu-nav-items-active-hover-background: #facc15;
   --yisu-accent: #7dd3fc;           /* Helleres Himmelblau - Dark Mode */
   --yisu-light: #0f172a;            /* Dunkler Hintergrund */
   --yisu-white: #ffffff;            /* Pure White */

@@ -2,7 +2,7 @@
 <div class="additional-info-top">
   <div class="logo-social-container">
     <!-- Logo -->
-    <img src="/logo.png" class="logo-img" routerLink="/" alt="YISU Travel Logo">
+    <img src="/logonav.png" class="logo-img" routerLink="/" alt="YISU Travel Logo">
 
     <!-- Social Media Icons -->
     <div class="social-icons">
@@ -20,7 +20,7 @@
         <i class="fab fa-instagram"></i>
       </a>
       <!-- WhatsApp -->
-      <a class="btn btn-social" id="btntransition3" style="background-color: #25D366;" href="https://wa.me/491773948537"
+      <a class="btn btn-social" id="btntransition3" style="background-color: #25D366;" href="https://wa.me/017696184913"
          target="_blank" role="button">
         <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
       </a>
@@ -32,8 +32,9 @@
 <div class="toolbarbackground">
   <mat-toolbar class="main-toolbar">
     <!-- Logo -->
-    <img src="/logo.png" class="logo-imgMobile" routerLink="/" alt="YISU Travel Logo Mobile">
-
+    <div class="logo-wrapper">
+      <img src="/logonav.png" class="logo-imgMobile" routerLink="/" alt="YISU Travel Logo Mobile">
+    </div>
     <!-- Spacer -->
     <span class="spacer"></span>
 
@@ -94,13 +95,13 @@
       class="mobile-menu-btn"
       [class.open]="isOpen">
       <ng-container *ngIf="!isOpen; else closeIcon">
-        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#e8eaed">
+        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px">
           <path
             d="M96.75-220.83v-89.42h766.66v89.42H96.75Zm0-214.97v-89.26h766.66v89.26H96.75Zm0-215.05v-89.42h766.66v89.42H96.75Z"/>
         </svg>
       </ng-container>
       <ng-template #closeIcon>
-        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#e8eaed">
+        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px">
           <path
             d="m249.14-185.88-62.17-63.26L417.49-480 186.97-711.71l62.17-63.51 231.62 231.71 230.1-231.71 62.17 63.51L543.17-480l229.86 230.86-62.17 63.26-230.1-231.71-231.62 231.71Z"/>
         </svg>
