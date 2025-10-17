@@ -105,23 +105,24 @@ body.dark-mode {
 /* Default (Light Mode) - Flyer-basiertes Travel Farbschema */
 :root {
   /* === Flyer Travel Agency Farbschema === */
-  --yisu-primary: #1e3a8a;          /* Dunkles Marine Blau - Logo/Text */
+  --yisu-primary: #1976d2;          /* Modernes Blau - Logo/Text */
   --yisu-secondary: #fbbf24;        /* Sonniges Gelb - Banner/Akzente */
-  --yisu-accent: #87ceeb;           /* Himmelblau - Hintergrund/Akzent */
+  --yisu-accent: #e3f2fd;           /* Helles Blau - Hintergrund/Akzent */
   --yisu-red: #dc2626;              /* Rot - Akzent aus Flyer */
   --yisu-light: #ffffff;            /* Main Background */
   --yisu-white: #ffffff;            /* Pure White */
   
   /* === Textfarben === */
-  --yisu-text-dark: #1e3a8a;        /* Dunkles Blau - Logo/Überschriften */
-  --yisu-text-medium: #475569;      /* Medium Text */
-  --yisu-text-light: #64748b;       /* Heller Text */
+  --yisu-text-dark: #333333;        /* Dunkles Grau - Haupttexte */
+  --yisu-text-medium: #555555;      /* Medium Text */
+  --yisu-text-light: #777777;       /* Heller Text */
   --yisu-text-white: #ffffff;       /* Weißer Text */
+  --yisu-text-black: #1a1a1a;       /* Schwarzer Text */
   
   /* === UI Elemente === */
-  --yisu-navbar-bg: #87ceeb;        /* Himmelblau - Navbar Background */
-  --yisu-navbar-text: #1e3a8a;      /* Dunkles Blau - Navbar Text */
-  --yisu-navbar-hover: #fbbf24;     /* Sonniges Gelb - Hover */
+  --yisu-navbar-bg: #ffffff;        /* Weiß - Navbar Background */
+  --yisu-navbar-text: #333333;      /* Dunkles Grau - Navbar Text */
+  --yisu-navbar-hover: #fbbf24;     /* Gelb - Hover */
   --yisu-navbar-top: #fbbf24;       /* Sonniges Gelb - Top Bar */
   
   /* === Buttons & Links === */
@@ -195,8 +196,8 @@ body.dark-mode {
   --yisu-text-white: #ffffff;       /* Weißer Text */
   
   /* === UI Elemente Dark Mode === */
-  --yisu-navbar-bg: #1e3a8a;        /* Dunkles Marine Blau - Navbar */
-  --yisu-navbar-text: #ffffff;      /* Weißer Text */
+  --yisu-navbar-bg: #87ceeb;        /* Himmelblau - Navbar Background */
+  --yisu-navbar-text: #1e3a8a;      /* Dunkles Blau - Navbar Text */
   --yisu-navbar-hover: #fbbf24;     /* Sonniges Gelb - Hover */
   --yisu-navbar-top: #fbbf24;       /* Sonniges Gelb - Top Bar */
   

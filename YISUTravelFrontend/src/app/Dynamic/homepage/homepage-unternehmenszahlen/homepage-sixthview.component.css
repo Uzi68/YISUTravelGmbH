@@ -33,11 +33,16 @@
 }
 
 .counterb {
-  color: var(--text-color);
+  color: var(--yisu-text-dark);
 }
 
 .svgs {
-  fill: white;
+  fill: var(--yisu-primary);
+}
+
+/* Dark Mode SVG Icons */
+body.dark-mode .svgs {
+  fill: var(--yisu-secondary);
 }
 
 
@@ -46,9 +51,9 @@
   font-family: Roboto, "Helvetica Neue";
   font-weight: 400;
   font-size: 16px;
-  color: var(--text-color);
+  color: var(--yisu-text-dark);
 }
 
 .title {
-  color: var(--text-color);
+  color: var(--yisu-text-dark);
 }

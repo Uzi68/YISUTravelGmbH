@@ -21,7 +21,7 @@ h2 {
 }
 
 .card {
-  background-color: var(--background-color);
+  background-color: var(--yisu-bg-main);
 }
 
 .carousel-control-prev-icon {
@@ -29,11 +29,11 @@ h2 {
 }
 
 p {
-  color: var(--text-color);
+  color: var(--yisu-text-dark);
 }
 
 h4 {
-  color: var(--text-color);
+  color: var(--yisu-text-dark);
 }
 
 .carousel-item {
@@ -42,7 +42,7 @@ h4 {
 
 
 .gradient-custom {
-  background: var(--customer-ratings-color);
+  background: var(--yisu-primary);
   color: white;
 }
 
@@ -75,4 +75,51 @@ h4 {
 
 .rounded-circle {
   border: 3px solid white; /* Weißer Rand um das Bild */
+}
+
+/* Gänsefüßchen sichtbar machen */
+.fa-quote-left {
+  color: var(--yisu-white) !important;
+}
+
+/* Desktop/Mobile Swiper Visibility */
+@media (min-width: 941px) {
+  .mobile-swiper {
+    display: none;
+  }
+}
+
+@media (max-width: 940px) {
+  .desktop-swiper {
+    display: none;
+  }
+}
+
+/* Mobile Swiper Styles */
+.mobile-swiper {
+  padding: 20px 0;
+}
+
+.mobile-review-card {
+  background: var(--yisu-bg-main);
+  border-radius: 15px;
+  padding: 30px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin: 10px;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mobile-review-card h5 {
+  color: var(--yisu-text-dark);
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.mobile-review-card p {
+  color: var(--yisu-text-dark);
+  line-height: 1.6;
+  font-size: 14px;
 }

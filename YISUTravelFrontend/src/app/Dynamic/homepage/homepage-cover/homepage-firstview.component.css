@@ -1,47 +1,68 @@
 /* ====================================
-   YISU Travel - Hero Section Design
+   YISU Travel - Hero Section Design (Swiper)
    ==================================== */
 
-.image-container {
+/* Swiper Container */
+.hero-slider {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.hero-swiper {
+  width: 100%;
+  height: 600px;
+}
+
+.slider-wrapper {
+  position: relative;
   width: 100%;
   height: 600px;
   overflow: hidden;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      135deg,
-      rgba(135, 206, 235, 0.4) 0%,
-      rgba(251, 191, 36, 0.2) 30%,
-      rgba(135, 206, 235, 0.3) 70%,
-      rgba(30, 58, 138, 0.3) 100%
-    );
-    pointer-events: none;
-    z-index: 1;
-  }
 }
 
-.cropped-image {
+.slider-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  animation: gentleZoom 15s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+.slider-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  animation: gentleZoom 15s ease-in-out infinite;
-  transform-origin: center center;
-  z-index: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(135, 206, 235, 0.4) 0%,
+    rgba(251, 191, 36, 0.2) 30%,
+    rgba(135, 206, 235, 0.3) 70%,
+    rgba(30, 58, 138, 0.3) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
 }
+
+.slider-content {
+  text-align: center;
+  color: var(--yisu-white);
+  max-width: 900px;
+  padding: 3rem 4rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  border: 2px solid rgba(251, 191, 36, 0.3);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(30, 58, 138, 0.2);
+  animation: fadeInUp 1.5s ease-out forwards;
+}
+
+/* Alte Carousel-Styles - nicht mehr benötigt */
 
 @keyframes gentleZoom {
   0% {
@@ -55,34 +76,15 @@
   }
 }
 
-.animated-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: var(--yisu-white);
-  text-align: center;
-  z-index: 2;
-  max-width: 900px;
-  padding: 3rem 4rem;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  border: 2px solid rgba(251, 191, 36, 0.3);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px rgba(30, 58, 138, 0.2);
-  animation: fadeInUp 1.5s ease-out forwards;
-  
-  h1, h2, h3 {
-    margin: 0;
-    line-height: 1.2;
-    position: relative;
-    z-index: 1;
-  }
+/* Text Styles für Slider Content */
+.slider-content h1, h2, h3 {
+  margin: 0;
+  line-height: 1.2;
+  position: relative;
+  z-index: 1;
 }
 
-/* Individual Text Styles */
-.animated-text h1 {
+.slider-content h1 {
   font-family: 'Playfair Display', serif;
   font-size: 4.2rem;
   font-weight: 700;
@@ -92,7 +94,7 @@
   animation: slideInDown 1s ease-out 0.3s both;
 }
 
-.animated-text h2 {
+.slider-content h2 {
   font-family: 'Poppins', sans-serif;
   font-size: 2.4rem;
   font-weight: 600;
@@ -102,7 +104,7 @@
   animation: slideInDown 1s ease-out 0.6s both;
 }
 
-.animated-text h3 {
+.slider-content h3 {
   font-family: 'Open Sans', sans-serif;
   font-size: 1.6rem;
   font-weight: 500;
@@ -154,15 +156,16 @@
 }
 
 .hero-btn-primary {
-  background: var(--yisu-secondary);
-  color: var(--yisu-text-dark);
+  background: var(--yisu-navbar-top);
+  color: #2c3e50;
   box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
+  font-weight: 500;
   
   &:hover {
-    background: var(--yisu-button-primary-hover);
-    color: var(--yisu-white);
-    transform: translateY(-3px);
-    box-shadow: 0 12px 30px rgba(251, 191, 36, 0.4);
+    background: #f59e0b;
+    color: #2c3e50;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
   }
 }
 
@@ -236,13 +239,51 @@
 /* Animations */
 @keyframes fadeInUp {
   0% {
-    transform: translate(-50%, -50%) translateY(30px);
+    transform: translateY(30px);
     opacity: 0;
   }
   100% {
-    transform: translate(-50%, -50%) translateY(0);
+    transform: translateY(0);
     opacity: 1;
   }
+}
+
+/* Swiper Navigation Styles */
+.hero-swiper::part(button-prev),
+.hero-swiper::part(button-next) {
+  background: transparent !important;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  color: #1976d2 !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: all 0.3s ease;
+}
+
+.hero-swiper::part(button-prev):hover,
+.hero-swiper::part(button-next):hover {
+  background: transparent !important;
+  transform: none;
+  color: #1976d2 !important;
+}
+
+/* Swiper Pagination */
+.hero-swiper::part(pagination) {
+  bottom: 20px;
+}
+
+.hero-swiper::part(bullet) {
+  background: rgba(255, 255, 255, 0.5);
+  width: 12px;
+  height: 12px;
+  opacity: 1;
+}
+
+.hero-swiper::part(bullet-active) {
+  background: #fbbf24;
+  width: 30px;
+  border-radius: 6px;
 }
 
 @keyframes slideInDown {
@@ -321,12 +362,33 @@
   }
 }
 
+/* Desktop/Tablet - Hide Mobile Swiper */
+@media (min-width: 769px) {
+  .mobile {
+    display: none;
+  }
+}
+
+/* Mobile - Hide Desktop Swiper */
 @media (max-width: 768px) {
-  .image-container {
+  .desktop {
+    display: none;
+  }
+  
+  .hero-swiper {
     height: 500px;
   }
   
-  .animated-text {
+  .hero-swiper::part(button-prev),
+  .hero-swiper::part(button-next) {
+    display: none !important;
+  }
+  
+  .slider-wrapper {
+    height: 500px;
+  }
+  
+  .slider-content {
     max-width: 90%;
     width: 90%;
     padding: 1.5rem 1rem;
@@ -374,19 +436,23 @@
 }
 
 @media (max-width: 500px) {
-  .image-container {
-    height: 350px;
+  .hero-swiper {
+    height: 400px;
   }
   
-  .animated-text {
-    padding: 1.5rem 2rem;
+  .slider-wrapper {
+    height: 400px;
+  }
+  
+  .slider-content {
+    padding: 1rem 1.5rem;
     
     h1 {
-      font-size: 2.2rem;
+      font-size: 1.5rem;
     }
 
     h2 {
-      font-size: 1.4rem;
+      font-size: 1rem;
     }
 
     h3 {

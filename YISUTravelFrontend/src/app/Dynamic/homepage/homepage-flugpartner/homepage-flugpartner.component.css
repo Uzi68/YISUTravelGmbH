@@ -48,7 +48,7 @@
   font-family: "Roboto",Sans-serif;
   font-size: 2.5rem;
   font-weight: 500;
-  color: var(--text-color); /* Ein schöner Blauton für die Überschrift */
+  color: var(--yisu-text-dark); /* Ein schöner Blauton für die Überschrift */
   margin-bottom: 20px;
   @media (max-width: 400px) {
     font-size: 2rem;
@@ -56,7 +56,7 @@
 }
 
 .descriptionflug {
-  color: var(--text-color);
+  color: var(--yisu-text-dark);
   font-weight: 400;
   font-size: 1.5em;
   font-family: "Roboto",Sans-serif;
@@ -65,5 +65,40 @@
 .lead {
   font-family: "Roboto",Sans-serif;
   font-size: 1.3em;
-  color: var(--text-color);
+  color: var(--yisu-text-dark);
+}
+
+/* Desktop/Mobile Swiper Visibility */
+@media (min-width: 941px) {
+  .mobile-swiper {
+    display: none;
+  }
+}
+
+@media (max-width: 940px) {
+  .desktop-swiper {
+    display: none;
+  }
+}
+
+/* Mobile Swiper Styles */
+.mobile-swiper {
+  padding: 20px 0;
+}
+
+.mobile-swiper .lc-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  background: var(--yisu-bg-main);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 5px;
+}
+
+.mobile-swiper .lc-block img {
+  max-height: 80px;
+  max-width: 120px;
+  object-fit: contain;
 }

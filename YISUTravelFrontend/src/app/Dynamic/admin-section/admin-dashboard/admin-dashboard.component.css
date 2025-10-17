@@ -1,9 +1,9 @@
-/* Modern Chat App Design mit blauem Farbschema */
+/* Modern Chat App Design mit YISU Travel Farbschema */
 .chat-app {
   display: flex;
   height: 90vh;
   max-height: 900px;
-  background: #fff;
+  background: var(--yisu-bg-main);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -38,7 +38,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(25, 118, 210, 0.03), rgba(25, 118, 210, 0.01));
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.03), rgba(245, 158, 11, 0.01));
   opacity: 0;
   transition: opacity 0.25s ease;
 }
@@ -47,7 +47,7 @@
   background: rgba(255, 255, 255, 1);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
-  border-color: rgba(25, 118, 210, 0.3);
+  border-color: rgba(251, 191, 36, 0.3);
 }
 
 .attachment-card:hover::before {
@@ -67,7 +67,7 @@
   height: 48px;
   border-radius: 10px;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  background: linear-gradient(135deg, var(--yisu-primary) 0%, var(--yisu-accent) 100%);
   box-shadow: 0 2px 8px rgba(25, 118, 210, 0.25);
   position: relative;
 }

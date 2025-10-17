@@ -1,4 +1,4 @@
-import {Component, ElementRef, Inject, PLATFORM_ID, QueryList, ViewChildren} from '@angular/core';
+import {Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, Inject, PLATFORM_ID, QueryList, ViewChildren} from '@angular/core';
 import {isPlatformBrowser, NgClass, NgForOf} from "@angular/common";
 import {RouterLink} from "@angular/router";
 import {TerminVereinbarenComponent} from "./termin-vereinbaren/termin-vereinbaren.component";
@@ -20,7 +20,8 @@ import {MatIcon} from "@angular/material/icon";
 
   ],
   templateUrl: './homepage-contact.component.html',
-  styleUrl: './homepage-contact.component.css'
+  styleUrl: './homepage-contact.component.css',
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class HomepageContactComponent {
   isOpen = false;

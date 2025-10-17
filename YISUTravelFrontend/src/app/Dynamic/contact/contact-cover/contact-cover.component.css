@@ -1,65 +1,130 @@
-/* Hero Section Styling */
-.hero-section {
-  background-image: url('/contact/contact-us.jpg');
-  background-size: cover;
-  background-position: center;
+/* ====================================
+   Contact Hero Section - Swiper Slider
+   ==================================== */
+
+/* Swiper Container */
+.contact-hero-slider {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.contact-swiper {
+  width: 100%;
   height: 60vh;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden; /* Versteckt Überlauf, um Animationen zu vermeiden */
+  min-height: 400px;
 }
 
-/* Hero Content */
-.hero-content {
+.slider-wrapper {
   position: relative;
-  z-index: 2; /* Text über Overlay */
-  padding: 2rem;
-  animation: fadeIn 1s ease-in; /* Fade-In-Animation */
+  width: 100%;
+  height: 60vh;
+  min-height: 400px;
+  overflow: hidden;
 }
 
-/* Overlay für dunklere Hintergründe */
-.hero-section::before {
-  content: '';
+.slider-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: gentleZoom 15s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+@keyframes gentleZoom {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.slider-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6); /* Dunkles Overlay */
-  z-index: 1; /* Overlay hinter dem Text */
-  transition: background 0.3s ease; /* Sanfter Übergang */
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
 }
 
-.hero-section:hover::before {
-  background: rgba(43, 43, 43, 0.8); /* Farbwechsel beim Hover */
+.slider-content {
+  text-align: center;
+  color: white;
+  max-width: 900px;
+  padding: 2rem 3rem;
+  animation: fadeIn 1.5s ease-out forwards;
 }
 
-/* Überschrift */
+/* Text Styles */
 .display-1 {
-  font-family: "Roboto", sans-serif; /* Schriftart */
-  font-size: 5rem; /* Schriftgröße */
+  font-family: "Roboto", sans-serif;
+  font-size: 5rem;
   font-weight: 700;
-  color: #fff; /* Helle Schriftfarbe */
-  text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8); /* Angepasste Schattierung für bessere Lesbarkeit */
-  animation: slideIn 1s ease-out; /* Slide-In-Animation */
+  color: #fff;
+  text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8);
+  margin-bottom: 1rem;
+  animation: slideIn 1s ease-out;
 }
 
-/* Beschreibung */
 .lead {
-  font-family: "Open Sans", sans-serif; /* Schriftart */
+  font-family: "Open Sans", sans-serif;
   font-size: 1.5rem;
-  color: #f8f9fa; /* Helle Schriftfarbe */
+  color: #f8f9fa;
   margin-bottom: 1.5rem;
-  text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8); /* Angepasste Schattierung für bessere Lesbarkeit */
-  opacity: 0; /* Start mit Unsichtbarkeit */
-  animation: fadeIn 1.5s ease forwards; /* Fade-In-Animation */
-  animation-delay: 0.5s; /* Verzögerung für mehr Dynamik */
+  text-shadow: 3px 3px 15px rgba(0, 0, 0, 0.8);
+  animation: fadeIn 1.5s ease forwards;
+  animation-delay: 0.5s;
+  opacity: 0;
 }
 
+/* Swiper Navigation Styles */
+.contact-swiper::part(button-prev),
+.contact-swiper::part(button-next) {
+  background: transparent !important;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  color: #1976d2 !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: all 0.3s ease;
+}
 
-/* Animationen */
+.contact-swiper::part(button-prev):hover,
+.contact-swiper::part(button-next):hover {
+  background: transparent !important;
+  transform: none;
+  color: #1976d2 !important;
+}
+
+/* Swiper Pagination */
+.contact-swiper::part(pagination) {
+  bottom: 20px;
+}
+
+.contact-swiper::part(bullet) {
+  background: rgba(255, 255, 255, 0.5);
+  width: 12px;
+  height: 12px;
+  opacity: 1;
+}
+
+.contact-swiper::part(bullet-active) {
+  background: #fbbf24;
+  width: 30px;
+  border-radius: 6px;
+}
+
+/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -70,17 +135,63 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* Desktop/Tablet - Hide Mobile Swiper */
+@media (min-width: 769px) {
+  .mobile {
+    display: none;
+  }
+}
+
 /* Responsive Anpassungen */
 @media (max-width: 768px) {
-  .hero-section {
-    height: 40vh; /* Reduzierte Höhe auf Mobilgeräten */
+  .desktop {
+    display: none;
+  }
+  
+  .contact-swiper {
+    height: 40vh;
+    min-height: 300px;
+  }
+  
+  .contact-swiper::part(button-prev),
+  .contact-swiper::part(button-next) {
+    display: none !important;
+  }
+  
+  .slider-wrapper {
+    height: 40vh;
+    min-height: 300px;
   }
 
   .display-1 {
-    font-size: 3rem; /* Kleinere Schriftgröße auf Mobilgeräten */
+    font-size: 3rem;
   }
 
   .lead {
-    font-size: 1.25rem; /* Kleinere Schriftgröße für die Beschreibung */
+    font-size: 1.25rem;
+  }
+  
+  .slider-content {
+    padding: 1.5rem 1rem;
+  }
+}
+
+@media (max-width: 500px) {
+  .contact-swiper {
+    height: 35vh;
+    min-height: 250px;
+  }
+  
+  .slider-wrapper {
+    height: 35vh;
+    min-height: 250px;
+  }
+
+  .display-1 {
+    font-size: 2rem;
+  }
+
+  .lead {
+    font-size: 1rem;
   }
 }
