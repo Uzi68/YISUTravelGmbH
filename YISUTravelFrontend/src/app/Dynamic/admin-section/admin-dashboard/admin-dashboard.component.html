@@ -6,24 +6,7 @@
     <div class="sidebar-header">
       <div class="header-content">
         <h2>Live Support</h2>
-        <div class="header-actions">
-          @if (isAdmin) {
-            <button mat-icon-button class="icon-btn" matTooltip="Buchungsliste"
-                    routerLink="/admin/buchungsliste">
-              <mat-icon>list_alt</mat-icon>
-            </button>
-
-            <button mat-icon-button class="icon-btn" matTooltip="Chatbot trainieren"
-                    routerLink="/admin/chatbot-trainieren">
-              <mat-icon>smart_toy</mat-icon>
-            </button>
-
-            <button mat-icon-button class="icon-btn" matTooltip="Alle Nachrichten"
-                    (click)="toggleAllChatsView()" [class.active]="showAllChats">
-              <mat-icon>forum</mat-icon>
-            </button>
-          }
-        </div>
+        <mat-slide-toggle #darkModeSwitch (click)="toggleDarkMode()" [checked]="darkMode" class="darkmode-button"></mat-slide-toggle>
       </div>
 
       <!-- Suchleiste -->
@@ -239,9 +222,30 @@
           Online
         </div>
       </div>
-      <button mat-icon-button class="icon-btn">
-        <mat-icon>more_vert</mat-icon>
-      </button>
+      <div class="profile-actions">
+        @if (isAdmin) {
+          <button mat-icon-button class="profile-action-btn" matTooltip="Buchungsliste"
+                  routerLink="/admin/buchungsliste">
+            <mat-icon>list_alt</mat-icon>
+          </button>
+          <button mat-icon-button class="profile-action-btn" matTooltip="Chatbot trainieren"
+                  routerLink="/admin/chatbot-trainieren">
+            <mat-icon>smart_toy</mat-icon>
+          </button>
+          <button mat-icon-button class="profile-action-btn" matTooltip="Alle Nachrichten"
+                  (click)="toggleAllChatsView()" [class.active]="showAllChats">
+            <mat-icon>forum</mat-icon>
+          </button>
+        }
+        <button mat-icon-button class="profile-action-btn" matTooltip="Zur Startseite"
+                routerLink="/">
+          <mat-icon>home</mat-icon>
+        </button>
+        <button mat-icon-button class="profile-action-btn" matTooltip="Ausloggen"
+                (click)="logout()">
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -570,8 +574,7 @@
             #messageInput
             rows="2"
             [maxLength]="1000"
-            (keydown)="onKeyDown($event, messageInput)">
-          </textarea>
+            (keydown)="onKeyDown($event, messageInput)"></textarea>
           <div class="char-counter">
             {{ messageInput.value?.length || 0 }}/1000
           </div>
