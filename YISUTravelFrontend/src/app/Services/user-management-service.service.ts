@@ -12,6 +12,7 @@ export interface StaffUser {
   phone: string;
   is_active: boolean;
   avatar: string;
+  profile_image_url: string;
   roles: string[];
   created_at: string;
   updated_at: string;
@@ -46,8 +47,10 @@ export interface UserProfile {
   user_type: string;
   is_active: boolean;
   avatar: string;
+  profile_image_url: string;
   roles: string[];
   created_at: string;
+  updated_at: string;
 }
 
 export interface UpdateProfileRequest {
@@ -122,5 +125,14 @@ export class UserManagementService {
 
   changePassword(request: ChangePasswordRequest): Observable<any> {
     return this.http.post(`${this.apiUrl}/password/change`, request, { withCredentials: true });
+  }
+
+  // Profile Image Methods
+  uploadProfileImage(formData: FormData): Observable<{ profile_image_url: string }> {
+    return this.http.post<{ profile_image_url: string }>(`${this.apiUrl}/profile/upload-image`, formData, { withCredentials: true });
+  }
+
+  removeProfileImage(): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/profile/remove-image`, { withCredentials: true });
   }
 }

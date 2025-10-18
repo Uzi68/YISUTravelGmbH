@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
@@ -30,6 +31,7 @@ class UserManagementController extends Controller
                     'phone' => $user->phone,
                     'is_active' => $user->is_active,
                     'avatar' => $user->avatar,
+                    'profile_image_url' => $user->profile_image_url,
                     'roles' => $user->getRoleNames(),
                     'created_at' => $user->created_at,
                     'updated_at' => $user->updated_at,
@@ -229,8 +231,73 @@ class UserManagementController extends Controller
             'user_type' => $user->user_type,
             'is_active' => $user->is_active,
             'avatar' => $user->avatar,
+            'profile_image_url' => $user->profile_image_url,
             'roles' => $user->getRoleNames(),
             'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+        ]);
+    }
+
+    /**
+     * Upload profile image
+     */
+    public function uploadProfileImage(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = auth()->user();
+
+        // Delete old profile image if exists
+        if ($user->profile_image_url) {
+            $oldImagePath = str_replace('/storage/', '', $user->profile_image_url);
+            if (Storage::disk('public')->exists($oldImagePath)) {
+                Storage::disk('public')->delete($oldImagePath);
+            }
+        }
+
+        // Store new image
+        $imagePath = $request->file('profile_image')->store('profile-images', 'public');
+        $imageUrl = Storage::url($imagePath);
+
+        // Update user profile
+        $user->update(['profile_image_url' => $imageUrl]);
+
+        return response()->json([
+            'message' => 'Profile image uploaded successfully',
+            'profile_image_url' => $imageUrl
+        ]);
+    }
+
+    /**
+     * Remove profile image
+     */
+    public function removeProfileImage(): JsonResponse
+    {
+        $user = auth()->user();
+
+        if ($user->profile_image_url) {
+            // Delete image from storage
+            $imagePath = str_replace('/storage/', '', $user->profile_image_url);
+            if (Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+            }
+
+            // Update user profile
+            $user->update(['profile_image_url' => null]);
+
+            return response()->json([
+                'message' => 'Profile image removed successfully'
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'No profile image to remove'
         ]);
     }
 }

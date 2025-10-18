@@ -273,6 +273,10 @@ body.dark-mode {
 }
 
 
+.mat-mdc-standard-chip:not(.mdc-evolution-chip--disabled) .mdc-evolution-chip__text-label {
+  color: var(--yisu-text) !important;
+}
+
 .foe {
   /* Default colors for all states */
   --mdc-outlined-text-field-outline-color: var(--text-color);
@@ -308,6 +312,201 @@ body.dark-mode {
   --mdc-outlined-text-field-error-hover-input-text-color: var(--formfield-error-color);
   --mdc-outlined-text-field-error-hover-caret-color: var(--formfield-error-color);
 
+}
+
+/* Global Material Form Field Dark Mode Overrides */
+body.dark-mode {
+  --mdc-outlined-text-field-container-shape: 12px;
+  --mdc-outlined-text-field-outline-color: var(--yisu-text-medium);
+  --mdc-outlined-text-field-label-text-color: var(--yisu-text-medium);
+  --mdc-outlined-text-field-input-text-color: var(--yisu-text-dark);
+  --mdc-outlined-text-field-caret-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-placeholder-text-color: var(--yisu-text-light);
+  --mdc-outlined-text-field-hover-outline-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-hover-label-text-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-hover-input-text-color: var(--yisu-text-dark);
+  --mdc-outlined-text-field-hover-caret-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-focus-outline-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-focus-label-text-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-focus-input-text-color: var(--yisu-text-dark);
+  --mdc-outlined-text-field-focus-caret-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-error-outline-color: #f87171;
+  --mdc-outlined-text-field-error-label-text-color: #f87171;
+  --mdc-outlined-text-field-error-hover-outline-color: #f87171;
+  --mdc-outlined-text-field-error-hover-label-text-color: #f87171;
+  --mdc-outlined-text-field-error-hover-input-text-color: var(--yisu-text-dark);
+  --mdc-outlined-text-field-error-hover-caret-color: #f87171;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper {
+  background-color: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-input-control {
+  background-color: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-input-element {
+  color: var(--yisu-text-dark) !important;
+  background-color: transparent !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-label {
+  color: var(--yisu-text-medium) !important;
+}
+
+body.dark-mode .mat-mdc-form-field.mat-focused .mat-mdc-form-field-label {
+  color: var(--yisu-secondary) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-outline {
+  color: var(--yisu-text-medium) !important;
+}
+
+body.dark-mode .mat-mdc-form-field.mat-focused .mat-mdc-form-field-outline {
+  color: var(--yisu-secondary) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-icon-suffix {
+  color: var(--yisu-secondary) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-hint-text {
+  color: var(--yisu-text-light) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-error {
+  color: #f87171 !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-focus-overlay {
+  background-color: rgba(251, 191, 36, 0.04) !important;
+}
+
+/* Additional Material Design Overrides */
+body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex {
+  background-color: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex .mat-mdc-form-field-infix {
+  background-color: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex .mat-mdc-form-field-infix input {
+  color: var(--yisu-text-dark) !important;
+  background-color: transparent !important;
+}
+
+/* Button Overrides */
+body.dark-mode .mat-mdc-raised-button {
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3) !important;
+}
+
+body.dark-mode .mat-mdc-raised-button:not(:disabled) {
+  border: none !important;
+  outline: none !important;
+}
+
+body.dark-mode .mat-mdc-raised-button:focus {
+  outline: none !important;
+  border: none !important;
+}
+
+/* Force Material Design Variable Overrides */
+body.dark-mode {
+  --mdc-filled-text-field-container-color: var(--yisu-bg-card);
+  --mdc-filled-text-field-input-text-color: var(--yisu-text-dark);
+  --mdc-filled-text-field-label-text-color: var(--yisu-text-medium);
+  --mdc-filled-text-field-active-indicator-color: var(--yisu-secondary);
+  --mdc-filled-text-field-hover-active-indicator-color: var(--yisu-secondary);
+  --mdc-filled-text-field-focus-active-indicator-color: var(--yisu-secondary);
+  --mdc-filled-text-field-error-active-indicator-color: #f87171;
+  --mdc-filled-text-field-error-hover-active-indicator-color: #f87171;
+  --mdc-filled-text-field-error-focus-active-indicator-color: #f87171;
+  --mdc-filled-text-field-error-label-text-color: #f87171;
+  --mdc-filled-text-field-error-hover-label-text-color: #f87171;
+  --mdc-filled-text-field-error-focus-label-text-color: #f87171;
+  --mdc-filled-text-field-error-input-text-color: var(--yisu-text-dark);
+  --mdc-filled-text-field-error-hover-input-text-color: var(--yisu-text-dark);
+  --mdc-filled-text-field-error-focus-input-text-color: var(--yisu-text-dark);
+  --mdc-filled-text-field-caret-color: var(--yisu-secondary);
+  --mdc-filled-text-field-error-caret-color: #f87171;
+  --mdc-filled-text-field-error-hover-caret-color: #f87171;
+  --mdc-filled-text-field-error-focus-caret-color: #f87171;
+}
+
+/* Additional Material Design Component Overrides */
+body.dark-mode .mat-mdc-select {
+  --mdc-select-focus-outline-color: var(--yisu-secondary);
+  --mdc-select-hover-outline-color: var(--yisu-secondary);
+  --mdc-select-outline-color: var(--yisu-text-medium);
+  --mdc-select-label-text-color: var(--yisu-text-medium);
+  --mdc-select-focus-label-text-color: var(--yisu-secondary);
+  --mdc-select-hover-label-text-color: var(--yisu-secondary);
+  --mdc-select-outline-width: 1px;
+  --mdc-select-outline-style: solid;
+  --mdc-select-outline-color: var(--yisu-text-medium);
+  --mdc-select-focus-outline-color: var(--yisu-secondary);
+  --mdc-select-hover-outline-color: var(--yisu-secondary);
+}
+
+body.dark-mode .mat-mdc-select .mat-mdc-select-value {
+  color: var(--yisu-text-dark) !important;
+}
+
+body.dark-mode .mat-mdc-select .mat-mdc-select-placeholder {
+  color: var(--yisu-text-light) !important;
+}
+
+body.dark-mode .mat-mdc-select .mat-mdc-select-arrow {
+  color: var(--yisu-secondary) !important;
+}
+
+/* Material Table Dark Mode Overrides */
+body.dark-mode .mat-mdc-table {
+  background: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-header-cell {
+  color: var(--yisu-text-dark) !important;
+  background: var(--yisu-primary) !important;
+}
+
+body.dark-mode .mat-mdc-cell {
+  color: var(--yisu-text-dark) !important;
+  background: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-row {
+  background: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-row:hover {
+  background: rgba(25, 118, 210, 0.05) !important;
+}
+
+body.dark-mode .mat-mdc-row:nth-child(even) {
+  background: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-row:nth-child(odd) {
+  background: var(--yisu-bg-card) !important;
+}
+
+/* Material Icon Dark Mode */
+body.dark-mode mat-icon {
+  color: var(--yisu-secondary) !important;
+}
+
+/* Material Button Dark Mode */
+body.dark-mode .mat-mdc-icon-button {
+  color: var(--yisu-secondary) !important;
+}
+
+body.dark-mode .mat-mdc-icon-button:hover {
+  background: rgba(251, 191, 36, 0.1) !important;
 }
 
 

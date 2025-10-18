@@ -135,6 +135,8 @@ Route::middleware(['auth'])->group(function () {
     // User profile management
     Route::get('/profile', [UserManagementController::class, 'getProfile']);
     Route::put('/profile', [UserManagementController::class, 'updateProfile']);
+    Route::post('/profile/upload-image', [UserManagementController::class, 'uploadProfileImage']);
+    Route::delete('/profile/remove-image', [UserManagementController::class, 'removeProfileImage']);
     Route::post('/password/change', [AuthController::class, 'changePassword']);
 
     // Customer routes

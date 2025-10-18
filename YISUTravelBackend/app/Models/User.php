@@ -28,7 +28,8 @@ class User extends Authenticatable
         'phone',
         'is_active',
         'avatar',
-        'user_type'
+        'user_type',
+        'profile_image_url'
     ];
 
     protected $casts = [

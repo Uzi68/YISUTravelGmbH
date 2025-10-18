@@ -22,6 +22,7 @@ import {ChatbotService} from "../../../Services/chatbot-service/chatbot.service"
 import {AuthService} from "../../../Services/AuthService/auth.service";
 import {PusherService} from "../../../Services/Pusher/pusher.service";
 import {WhatsappService, WhatsAppChat} from "../../../Services/whatsapp/whatsapp.service";
+import {UserManagementService} from "../../../Services/user-management-service.service";
 import {User} from "../../../Models/User";
 import {Visitor} from "../../../Models/Visitor";
 import {catchError} from "rxjs/operators";
@@ -113,6 +114,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     id: 1,
     name: 'Thomas Müller',
     avatar: '',
+    profile_image_url: '',
     status: 'online'
   };
   private sortDebounce: any;
@@ -187,6 +189,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private pusherService: PusherService,
     private whatsappService: WhatsappService,
+    private userManagementService: UserManagementService,
     private cdRef: ChangeDetectorRef,
     private ngZone: NgZone,
     public notificationSound: NotificationSoundService,
@@ -264,11 +267,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         id: Number(user.id), // falls deine andere Logik `string` erwartet
         name: user.name,
         avatar: user.avatar ?? '',
+        profile_image_url: '',
         status: 'online'
       };
 
       // ✅ Permission Dialog nach User-Load anzeigen
       this.checkAndShowPermissionDialog();
+      
+      // ✅ Profilbild laden
+      this.loadProfileImage();
     });
 
 
@@ -3813,6 +3820,37 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   goToProfile(): void {
     this.router.navigate(['/profile']);
+  }
+
+  getFullProfileImageUrl(imageUrl: string | null | undefined): string | null {
+    if (!imageUrl) {
+      return null;
+    }
+    
+    // If it's already a full URL, return as is
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    
+    // If it's a relative path or starts with /storage, prepend the backend URL
+    if (imageUrl.startsWith('/storage') || !imageUrl.startsWith('/')) {
+      return `http://localhost:8000${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+    }
+    
+    return imageUrl;
+  }
+
+  private loadProfileImage(): void {
+    this.userManagementService.getProfile().subscribe({
+      next: (profile) => {
+        this.currentAgent.profile_image_url = profile.profile_image_url || '';
+      },
+      error: (error) => {
+        console.warn('Could not load profile image:', error);
+        // Fallback to default avatar if profile loading fails
+        this.currentAgent.profile_image_url = '';
+      }
+    });
   }
 }
 

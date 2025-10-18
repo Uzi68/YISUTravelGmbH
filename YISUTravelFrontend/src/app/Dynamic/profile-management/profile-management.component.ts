@@ -14,6 +14,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { UserManagementService, UserProfile, UpdateProfileRequest, ChangePasswordRequest } from '../../Services/user-management-service.service';
 import { AuthService } from '../../Services/AuthService/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-profile-management',
@@ -40,6 +41,8 @@ export class ProfileManagementComponent implements OnInit {
   profile: UserProfile | null = null;
   loading = false;
   saving = false;
+  profileImageUrl: string | null = null;
+  selectedFile: File | null = null;
   
   profileForm: FormGroup;
   passwordForm: FormGroup;
@@ -48,7 +51,8 @@ export class ProfileManagementComponent implements OnInit {
     private userManagementService: UserManagementService,
     private authService: AuthService,
     private fb: FormBuilder,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {
     this.profileForm = this.fb.group({
       first_name: ['', Validators.required],
@@ -76,6 +80,7 @@ export class ProfileManagementComponent implements OnInit {
       next: (profile) => {
         console.log('Profile loaded successfully:', profile);
         this.profile = profile;
+        this.profileImageUrl = profile.profile_image_url;
         this.profileForm.patchValue({
           first_name: profile.first_name,
           last_name: profile.last_name,
@@ -219,5 +224,131 @@ export class ProfileManagementComponent implements OnInit {
       case 'customer': return 'Kunde';
       default: return userType;
     }
+  }
+
+  getRoleIcon(role: string): string {
+    switch (role) {
+      case 'Admin': return 'admin_panel_settings';
+      case 'Agent': return 'support_agent';
+      case 'User': return 'person';
+      default: return 'person';
+    }
+  }
+
+  getFullImageUrl(imageUrl: string): string {
+    if (!imageUrl) return '';
+    
+    // If it's already a full URL, return as is
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    
+    // If it starts with /storage, prepend the backend URL
+    if (imageUrl.startsWith('/storage')) {
+      return 'http://localhost:8000' + imageUrl;
+    }
+    
+    // Otherwise, assume it's a relative path and prepend backend URL
+    return 'http://localhost:8000/storage/' + imageUrl;
+  }
+
+  // Profile Image Methods
+  onImageSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.snackBar.open('Bitte wählen Sie eine gültige Bilddatei aus.', 'Schließen', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        this.snackBar.open('Die Bilddatei ist zu groß. Maximale Größe: 5MB', 'Schließen', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+        return;
+      }
+
+      this.selectedFile = file;
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.profileImageUrl = e.target.result;
+      };
+      reader.readAsDataURL(file);
+
+      // Upload image
+      this.uploadProfileImage(file);
+    }
+  }
+
+  uploadProfileImage(file: File): void {
+    this.loading = true;
+    
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('profile_image', file);
+
+    // Call backend API to upload the image
+    this.userManagementService.uploadProfileImage(formData).subscribe({
+      next: (response) => {
+        this.loading = false;
+        this.profileImageUrl = response.profile_image_url;
+        this.snackBar.open('Profilbild erfolgreich hochgeladen!', 'Schließen', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+      },
+      error: (error) => {
+        this.loading = false;
+        this.snackBar.open('Fehler beim Hochladen des Profilbildes', 'Schließen', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+        console.error('Upload error:', error);
+      }
+    });
+  }
+
+  removeProfileImage(): void {
+    this.loading = true;
+    
+    // Call backend API to remove the image
+    this.userManagementService.removeProfileImage().subscribe({
+      next: (response) => {
+        this.loading = false;
+        this.profileImageUrl = null;
+        this.selectedFile = null;
+        this.snackBar.open('Profilbild entfernt!', 'Schließen', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+      },
+      error: (error) => {
+        this.loading = false;
+        this.snackBar.open('Fehler beim Entfernen des Profilbildes', 'Schließen', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
+        console.error('Remove error:', error);
+      }
+    });
+  }
+
+  goToLivechatDashboard(): void {
+    // Navigate to the livechat dashboard
+    this.router.navigate(['/admin/livechat-dashboard']);
   }
 }
