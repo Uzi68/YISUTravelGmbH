@@ -94,8 +94,14 @@ export class NavbarComponent {
   }
 
   onLogout() {
-    //this.authenticated = false;
-    this.authService.logout(); // Call the logout method from the AuthService
+    this.authService.logout().subscribe({
+      next: () => {
+        // Navigation wird bereits im AuthService gehandhabt
+      },
+      error: (error: any) => {
+        console.error('Error logging out:', error);
+      }
+    });
   }
 
 

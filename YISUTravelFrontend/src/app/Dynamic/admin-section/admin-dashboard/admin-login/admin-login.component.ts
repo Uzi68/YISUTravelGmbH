@@ -72,4 +72,12 @@ export class AdminLoginComponent {
       });
     }
   }
+
+  goToPasswordReset(): void {
+    this.router.navigate(['/password-reset']);
+  }
+
+  goToCustomerRegistration(): void {
+    this.router.navigate(['/customer-registration']);
+  }
 }

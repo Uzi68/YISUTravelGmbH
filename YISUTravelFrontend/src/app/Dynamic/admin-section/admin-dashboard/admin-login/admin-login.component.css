@@ -73,4 +73,22 @@ button:hover:not([disabled]) {
   margin-top: 16px;
 }
 
+.login-links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  gap: 8px;
+}
+
+.login-links button {
+  width: auto;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.login-links button:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
 

@@ -17,11 +17,33 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VisitorController;
+use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\CustomerController;
 use Pusher\Pusher;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
+
+// Password reset routes (public)
+Route::post('/password/reset-link', [AuthController::class, 'sendPasswordResetLink']);
+Route::post('/password/reset', [AuthController::class, 'resetPassword']);
+
+// Test email route (remove in production)
+Route::post('/test-email', function(Request $request) {
+    $email = $request->input('email', 'test@example.com');
+    $token = 'test-token-123';
+    
+    try {
+        \Mail::to($email)->send(new \App\Mail\PasswordResetMail($token, $email));
+        return response()->json(['message' => 'Test email sent successfully']);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
+
+// Customer registration (public)
+Route::post('/customer/register', [CustomerController::class, 'register']);
 
 //Überprüfe ob der Nutzer Authentifiziert ist
 Route::get('/check-auth', function (Request $request) {
@@ -106,14 +128,33 @@ Route::post('/chatbot/end-by-user', [ChatbotController::class, 'endChatByUser'])
 //Route::post('/chatbot/end-by-agent', [ChatbotController::class, 'endChatByAgent']);
 
 Route::post('/human', [ChatbotController::class, 'requestHuman']);
-Route::get('/chat-history', [ChatbotController::class, 'getChatHistory']);
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/chat-history', [ChatbotController::class, 'getChatHistory']);
 
+    // User profile management
+    Route::get('/profile', [UserManagementController::class, 'getProfile']);
+    Route::put('/profile', [UserManagementController::class, 'updateProfile']);
+    Route::post('/password/change', [AuthController::class, 'changePassword']);
+
+    // Customer routes
+    Route::prefix('customer')->group(function () {
+        Route::get('/profile', [CustomerController::class, 'getProfile']);
+        Route::get('/chat-history', [CustomerController::class, 'getChatHistory']);
+        Route::get('/dashboard-stats', [CustomerController::class, 'getDashboardStats']);
+    })->middleware('role:User');
+
+    // Staff management routes (Admin only)
+    Route::prefix('admin')->middleware('role:Admin')->group(function () {
+        Route::get('/staff', [UserManagementController::class, 'getStaffUsers']);
+        Route::post('/staff', [UserManagementController::class, 'createStaffUser']);
+        Route::put('/staff/{id}', [UserManagementController::class, 'updateStaffUser']);
+        Route::delete('/staff/{id}', [UserManagementController::class, 'deleteStaffUser']);
+    });
 
     // Close chat
     Route::post('/chat/{chat}/close', [ChatbotController::class, 'closeChat'])
-        ->middleware('role:Admin|employee');
+        ->middleware('role:Admin|Agent');
 
     // Transfer chat
     Route::post('/chat/{chat}/transfer', [ChatbotController::class, 'transferChat'])

@@ -1,0 +1,135 @@
+<div class="customer-dashboard-container">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div class="welcome-section">
+        <h1>Willkommen, {{ profile?.first_name }}!</h1>
+        <p>Ihr persönliches Kunden-Dashboard</p>
+      </div>
+      <div class="header-actions">
+        <button mat-button (click)="goToProfile()">
+          <mat-icon>person</mat-icon>
+          Profil
+        </button>
+        <button mat-button (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          Abmelden
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <mat-progress-spinner *ngIf="loading" diameter="50"></mat-progress-spinner>
+
+  <div *ngIf="!loading">
+    <!-- Dashboard Stats -->
+    <div class="stats-grid" *ngIf="dashboardStats">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon color="primary">chat</mat-icon>
+            <div class="stat-info">
+              <h3>{{ dashboardStats.total_chats }}</h3>
+              <p>Gesamt Chats</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon color="accent">schedule</mat-icon>
+            <div class="stat-info">
+              <h3>{{ dashboardStats.active_chats }}</h3>
+              <p>Aktive Chats</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon color="primary">check_circle</mat-icon>
+            <div class="stat-info">
+              <h3>{{ dashboardStats.resolved_chats }}</h3>
+              <p>Gelöste Chats</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Quick Actions -->
+    <mat-card class="quick-actions">
+      <mat-card-header>
+        <mat-card-title>Schnellaktionen</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="action-buttons">
+          <button mat-raised-button color="primary" (click)="startNewChat()">
+            <mat-icon>chat</mat-icon>
+            Neuen Chat starten
+          </button>
+          <button mat-raised-button color="accent" (click)="goToProfile()">
+            <mat-icon>edit</mat-icon>
+            Profil bearbeiten
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Chat History -->
+    <mat-card class="chat-history">
+      <mat-card-header>
+        <mat-card-title>Chat-Historie</mat-card-title>
+        <mat-card-subtitle>Alle Ihre bisherigen Gespräche</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chat-list" *ngIf="chatHistory.length > 0; else noChats">
+          <div class="chat-item" *ngFor="let chat of chatHistory">
+            <div class="chat-header">
+              <div class="chat-info">
+                <div class="chat-channel">
+                  <mat-icon>{{ getChannelIcon(chat.channel) }}</mat-icon>
+                  <span>{{ getChannelLabel(chat.channel) }}</span>
+                </div>
+                <div class="chat-status">
+                  <mat-chip [color]="getStatusColor(chat.status)">
+                    {{ getStatusLabel(chat.status) }}
+                  </mat-chip>
+                </div>
+              </div>
+              <div class="chat-date">
+                {{ formatDate(chat.created_at) }}
+              </div>
+            </div>
+            
+            <div class="chat-messages" *ngIf="chat.messages.length > 0">
+              <div class="message-summary">
+                <strong>{{ chat.messages.length }} Nachrichten</strong>
+                <div class="last-message" *ngIf="chat.messages[chat.messages.length - 1]">
+                  <span class="sender">{{ chat.messages[chat.messages.length - 1].sender_type === 'visitor' ? 'Sie' : 'Support' }}:</span>
+                  <span class="content">{{ chat.messages[chat.messages.length - 1].content | slice:0:100 }}{{ chat.messages[chat.messages.length - 1].content.length > 100 ? '...' : '' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noChats>
+          <div class="no-chats">
+            <mat-icon>chat_bubble_outline</mat-icon>
+            <h3>Noch keine Chats</h3>
+            <p>Sie haben noch keine Gespräche geführt. Starten Sie Ihren ersten Chat!</p>
+            <button mat-raised-button color="primary" (click)="startNewChat()">
+              <mat-icon>chat</mat-icon>
+              Chat starten
+            </button>
+          </div>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

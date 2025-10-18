@@ -53,6 +53,18 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL is used for generating frontend links in emails and other
+    | communications.
+    |
+    */
+    
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:4200'),
 
     /*
     |--------------------------------------------------------------------------

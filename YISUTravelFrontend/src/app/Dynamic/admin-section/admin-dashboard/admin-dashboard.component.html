@@ -6,7 +6,15 @@
     <div class="sidebar-header">
       <div class="header-content">
         <h2>Live Support</h2>
-        <mat-slide-toggle #darkModeSwitch (click)="toggleDarkMode()" [checked]="darkMode" class="darkmode-button"></mat-slide-toggle>
+        <div class="header-actions">
+          <button mat-icon-button (click)="toggleStaffManagement()" *ngIf="isAdmin" matTooltip="Mitarbeiter verwalten">
+            <mat-icon>people</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToProfile()" matTooltip="Profil bearbeiten">
+            <mat-icon>person</mat-icon>
+          </button>
+          <mat-slide-toggle #darkModeSwitch (click)="toggleDarkMode()" [checked]="darkMode" class="darkmode-button"></mat-slide-toggle>
+        </div>
       </div>
 
       <!-- Suchleiste -->
@@ -749,4 +757,17 @@
       </div>
     </div>
   </ng-template>
+
+  <!-- Staff Management Overlay -->
+  <div class="staff-management-overlay" *ngIf="showStaffManagement" (click)="closeStaffManagement()">
+    <div class="staff-management-content" (click)="$event.stopPropagation()">
+      <div class="staff-management-header">
+        <h2>Mitarbeiter-Verwaltung</h2>
+        <button mat-icon-button (click)="closeStaffManagement()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <app-staff-management></app-staff-management>
+    </div>
+  </div>
 </div>

@@ -1,0 +1,200 @@
+<div class="profile-management-container">
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <mat-icon>account_circle</mat-icon>
+      </div>
+      <div class="header-text">
+        <h1>Profil-Verwaltung</h1>
+        <p>Verwalten Sie Ihre persönlichen Daten und Sicherheitseinstellungen</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <!-- Profile Information Card -->
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>person</mat-icon>
+          Profil-Informationen
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-progress-spinner *ngIf="loading" diameter="50"></mat-progress-spinner>
+
+        <!-- Error State -->
+        <div *ngIf="!loading && !profile" class="error-state">
+          <mat-icon color="warn" style="font-size: 48px; height: 48px; width: 48px;">error_outline</mat-icon>
+          <h3>Profil konnte nicht geladen werden</h3>
+          <p>Bitte versuchen Sie es erneut oder kontaktieren Sie den Administrator.</p>
+          <button mat-raised-button color="primary" (click)="loadProfile()">
+            <mat-icon>refresh</mat-icon>
+            Erneut versuchen
+          </button>
+        </div>
+
+        <div *ngIf="profile && !loading" class="profile-info">
+          <div class="info-grid">
+            <div class="info-item">
+              <mat-icon>badge</mat-icon>
+              <div class="info-content">
+                <label>Vollständiger Name</label>
+                <span>{{ profile.name }}</span>
+              </div>
+            </div>
+            <div class="info-item">
+              <mat-icon>work</mat-icon>
+              <div class="info-content">
+                <label>Benutzertyp</label>
+                <mat-chip [color]="profile.user_type === 'staff' ? 'primary' : 'accent'">
+                  {{ getUserTypeLabel(profile.user_type) }}
+                </mat-chip>
+              </div>
+            </div>
+            <div class="info-item">
+              <mat-icon>security</mat-icon>
+              <div class="info-content">
+                <label>Rollen</label>
+                <mat-chip-set>
+                  <mat-chip [color]="getRoleColor(role)" *ngFor="let role of profile.roles">
+                    {{ role }}
+                  </mat-chip>
+                </mat-chip-set>
+              </div>
+            </div>
+            <div class="info-item">
+              <mat-icon>calendar_today</mat-icon>
+              <div class="info-content">
+                <label>Mitglied seit</label>
+                <span>{{ formatDate(profile.created_at) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Profile Edit Card -->
+    <mat-card class="edit-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>edit</mat-icon>
+          Profil bearbeiten
+        </mat-card-title>
+        <mat-card-subtitle>Aktualisieren Sie Ihre persönlichen Informationen</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Vorname</mat-label>
+              <input matInput formControlName="first_name" required>
+              <mat-icon matSuffix>person</mat-icon>
+              <mat-error *ngIf="profileForm.get('first_name')?.hasError('required')">
+                Vorname ist erforderlich
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Nachname</mat-label>
+              <input matInput formControlName="last_name" required>
+              <mat-icon matSuffix>person</mat-icon>
+              <mat-error *ngIf="profileForm.get('last_name')?.hasError('required')">
+                Nachname ist erforderlich
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>E-Mail</mat-label>
+              <input matInput type="email" formControlName="email" required>
+              <mat-icon matSuffix>email</mat-icon>
+              <mat-error *ngIf="profileForm.get('email')?.hasError('required')">
+                E-Mail ist erforderlich
+              </mat-error>
+              <mat-error *ngIf="profileForm.get('email')?.hasError('email')">
+                Bitte geben Sie eine gültige E-Mail ein
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Telefon</mat-label>
+              <input matInput formControlName="phone">
+              <mat-icon matSuffix>phone</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <div class="form-actions">
+            <button mat-raised-button color="primary" type="submit" [disabled]="!profileForm.valid || saving">
+              <mat-icon *ngIf="saving">hourglass_empty</mat-icon>
+              <mat-icon *ngIf="!saving">save</mat-icon>
+              {{ saving ? 'Speichern...' : 'Profil aktualisieren' }}
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Password Change Card -->
+    <mat-card class="password-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>lock</mat-icon>
+          Passwort ändern
+        </mat-card-title>
+        <mat-card-subtitle>Sicherheit ist wichtig - ändern Sie regelmäßig Ihr Passwort</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Aktuelles Passwort</mat-label>
+              <input matInput type="password" formControlName="current_password" required>
+              <mat-icon matSuffix>lock</mat-icon>
+              <mat-error *ngIf="passwordForm.get('current_password')?.hasError('required')">
+                Aktuelles Passwort ist erforderlich
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Neues Passwort</mat-label>
+              <input matInput type="password" formControlName="password" required>
+              <mat-icon matSuffix>lock_reset</mat-icon>
+              <mat-error *ngIf="passwordForm.get('password')?.hasError('required')">
+                Neues Passwort ist erforderlich
+              </mat-error>
+              <mat-error *ngIf="passwordForm.get('password')?.hasError('minlength')">
+                Passwort muss mindestens 8 Zeichen lang sein
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Passwort bestätigen</mat-label>
+              <input matInput type="password" formControlName="password_confirmation" required>
+              <mat-icon matSuffix>verified</mat-icon>
+              <mat-error *ngIf="passwordForm.get('password_confirmation')?.hasError('required')">
+                Passwort-Bestätigung ist erforderlich
+              </mat-error>
+              <mat-error *ngIf="passwordForm.get('password_confirmation')?.hasError('passwordMismatch')">
+                Passwörter stimmen nicht überein
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="password-info">
+            <mat-icon>info</mat-icon>
+            <p>Nach der Passwort-Änderung werden Sie automatisch ausgeloggt und müssen sich neu anmelden.</p>
+          </div>
+
+          <div class="form-actions">
+            <button mat-raised-button color="accent" type="submit" [disabled]="!passwordForm.valid || saving">
+              <mat-icon *ngIf="saving">hourglass_empty</mat-icon>
+              <mat-icon *ngIf="!saving">lock</mat-icon>
+              {{ saving ? 'Speichern...' : 'Passwort ändern' }}
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

@@ -34,6 +34,8 @@ import {NotificationSoundService} from "../../../Services/notification-service/n
 import {MatOption, MatSelect} from "@angular/material/select";
 import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { StaffManagementComponent } from '../staff-management/staff-management.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -62,7 +64,8 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
     ReactiveFormsModule,
     MatInput,
     MatSnackBarModule,
-    MatSlideToggleModule
+    MatSlideToggleModule,
+    StaffManagementComponent
   ],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css',
@@ -124,6 +127,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   availableAgents: any[] = [];
   showTransferDialog = signal(false);
   selectedChatForTransfer: Chat | null = null;
+  
+  // Staff Management
+  showStaffManagement = false;
   transferReason = '';
   
   // Dark Mode - übernommen aus Navbar
@@ -186,6 +192,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     public notificationSound: NotificationSoundService,
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
+    private router: Router,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     // Dark Mode Flashbang Prevention - Set immediately in constructor
@@ -3766,7 +3773,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   logout() {
-    this.authService.logout();
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/admin-login']);
+      },
+      error: (error: any) => {
+        console.error('Error logging out:', error);
+      }
+    });
   }
 
   // Dark Mode Toggle - übernommen aus Navbar
@@ -3786,6 +3800,19 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('dark-mode', JSON.stringify(this.darkMode));
     }
+  }
+
+  // Staff Management Methods
+  toggleStaffManagement(): void {
+    this.showStaffManagement = !this.showStaffManagement;
+  }
+
+  closeStaffManagement(): void {
+    this.showStaffManagement = false;
+  }
+
+  goToProfile(): void {
+    this.router.navigate(['/profile']);
   }
 }
 
