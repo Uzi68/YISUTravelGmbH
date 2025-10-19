@@ -1,0 +1,92 @@
+<div class="offer-management-container">
+  <!-- Header mit Aktionen -->
+  <div class="offer-header">
+    <h3>Angebote-Verwaltung</h3>
+    <button mat-raised-button color="primary" (click)="createOffer()">
+      <mat-icon>add</mat-icon>
+      Neues Angebot
+    </button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Angebote werden geladen...</p>
+  </div>
+
+  <!-- Angebote Liste -->
+  <div *ngIf="!loading && offers.length > 0" class="offers-grid">
+    <div *ngFor="let offer of offers" class="offer-card" [class.featured]="offer.is_featured">
+      <!-- Angebot Bild -->
+      <div class="offer-image-container">
+        <img [src]="getImageUrl(offer.image_url)" [alt]="offer.title" class="offer-image">
+        <div class="offer-badges">
+          <span *ngIf="offer.badge" class="offer-badge">{{ offer.badge }}</span>
+          <span *ngIf="offer.is_featured" class="featured-badge">Hauptangebot</span>
+          <span *ngIf="!offer.is_active" class="inactive-badge">Inaktiv</span>
+        </div>
+      </div>
+
+      <!-- Angebot Inhalt -->
+      <div class="offer-content">
+        <div class="offer-header-info">
+          <h4 class="offer-title">{{ offer.title }}</h4>
+          <p class="offer-location">{{ offer.location }}</p>
+        </div>
+
+        <div class="offer-rating">
+          <span class="stars">{{ generateStarRating(offer.rating) }}</span>
+          <span class="rating-text">{{ offer.rating }}/5</span>
+        </div>
+
+        <div class="offer-price">
+          <span class="price-label">ab</span>
+          <span class="price-amount">{{ formatPrice(offer.price, offer.currency) }}</span>
+          <span class="price-unit">p. P.</span>
+        </div>
+
+        <p class="offer-description">{{ offer.description | slice:0:100 }}{{ offer.description.length > 100 ? '...' : '' }}</p>
+
+        <div class="offer-details">
+          <span *ngIf="offer.duration" class="detail-item">
+            <mat-icon>schedule</mat-icon>
+            {{ offer.duration }}
+          </span>
+          <span *ngIf="offer.inclusions" class="detail-item">
+            <mat-icon>check_circle</mat-icon>
+            {{ offer.inclusions }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Aktionen -->
+      <div class="offer-actions">
+        <button mat-icon-button 
+                [color]="offer.is_featured ? 'primary' : 'basic'"
+                (click)="toggleFeatured(offer)"
+                matTooltip="Als Hauptangebot setzen">
+          <mat-icon>{{ offer.is_featured ? 'star' : 'star_border' }}</mat-icon>
+        </button>
+        
+        <button mat-icon-button color="primary" (click)="editOffer(offer)" matTooltip="Bearbeiten">
+          <mat-icon>edit</mat-icon>
+        </button>
+        
+        <button mat-icon-button color="warn" (click)="deleteOffer(offer)" matTooltip="Löschen">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keine Angebote -->
+  <div *ngIf="!loading && offers.length === 0" class="no-offers">
+    <mat-icon class="no-offers-icon">local_offer</mat-icon>
+    <h3>Keine Angebote vorhanden</h3>
+    <p>Erstellen Sie Ihr erstes Angebot, um loszulegen.</p>
+    <button mat-raised-button color="primary" (click)="createOffer()">
+      <mat-icon>add</mat-icon>
+      Erstes Angebot erstellen
+    </button>
+  </div>
+</div>

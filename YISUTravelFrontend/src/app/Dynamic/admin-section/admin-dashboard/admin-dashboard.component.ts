@@ -23,6 +23,7 @@ import {AuthService} from "../../../Services/AuthService/auth.service";
 import {PusherService} from "../../../Services/Pusher/pusher.service";
 import {WhatsappService, WhatsAppChat} from "../../../Services/whatsapp/whatsapp.service";
 import {UserManagementService} from "../../../Services/user-management-service.service";
+import {OfferManagementComponent} from "../offer-management/offer-management.component";
 import {User} from "../../../Models/User";
 import {Visitor} from "../../../Models/Visitor";
 import {catchError} from "rxjs/operators";
@@ -66,7 +67,8 @@ import { Router } from '@angular/router';
     MatInput,
     MatSnackBarModule,
     MatSlideToggleModule,
-    StaffManagementComponent
+    StaffManagementComponent,
+    OfferManagementComponent
   ],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css',
@@ -132,6 +134,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   
   // Staff Management
   showStaffManagement = false;
+  
+  // Offer Management
+  showOfferManagement = false;
   transferReason = '';
   
   // Dark Mode - übernommen aus Navbar
@@ -3816,6 +3821,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   closeStaffManagement(): void {
     this.showStaffManagement = false;
+  }
+
+  toggleOfferManagement(): void {
+    this.showOfferManagement = !this.showOfferManagement;
+  }
+
+  closeOfferManagement(): void {
+    this.showOfferManagement = false;
   }
 
   goToProfile(): void {

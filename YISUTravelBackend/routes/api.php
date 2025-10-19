@@ -11,6 +11,7 @@ use App\Http\Controllers\MessagePusherController;
 use App\Http\Controllers\MessageAttachmentController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\WhatsAppMessageController;
+use App\Http\Controllers\OfferController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -331,4 +332,25 @@ Route::middleware(['auth'])->prefix('whatsapp')->group(function () {
 
     // WhatsApp Chats abrufen
     Route::get('/chats', [WhatsAppMessageController::class, 'getWhatsAppChats']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Offer Management Routes
+|--------------------------------------------------------------------------
+*/
+
+// Public routes (für Homepage)
+Route::get('/offers', [OfferController::class, 'index']);
+Route::get('/offers/featured', [OfferController::class, 'featured']);
+Route::get('/offers/active', [OfferController::class, 'active']);
+Route::get('/offers/{id}', [OfferController::class, 'show']);
+
+// Admin routes (nur für authentifizierte Admins)
+Route::middleware(['auth', 'role:Admin'])->prefix('admin/offers')->group(function () {
+    Route::get('/', [OfferController::class, 'index']); // Alle Angebote (auch inaktive)
+    Route::post('/', [OfferController::class, 'store']); // Neues Angebot erstellen
+    Route::put('/{id}', [OfferController::class, 'update']); // Angebot bearbeiten
+    Route::delete('/{id}', [OfferController::class, 'destroy']); // Angebot löschen
+    Route::post('/{id}/toggle-featured', [OfferController::class, 'toggleFeatured']); // Hauptangebot setzen
 });

@@ -1,37 +1,80 @@
-<section class="offer-section">
-  <!-- Angebot -->
+
+
+<!-- Loading State -->
+<div *ngIf="loading" class="loading-state">
+  <div class="loading-spinner"></div>
+  <p>Angebote werden geladen...</p>
+</div>
+
+<!-- Error State -->
+<div *ngIf="error" class="error-state">
+  <p>{{ error }}</p>
+</div>
+
+<!-- Empty State -->
+<div *ngIf="!loading && !hasOffers()" class="empty-state">
+  <p>Derzeit sind keine Angebote verfügbar.</p>
+</div>
+
+<!-- Featured Offer Section -->
+<section *ngIf="!loading && featuredOffer" class="offer-section">
   <div class="offer-card">
     <div class="offer-image-container">
-      <img src="/reiseziele/thailand.jpg" alt="Alanya Hotel" class="offer-image">
-      <span class="offer-badge">Top-Angebot</span>
+      <img [src]="getImageUrl(featuredOffer.image_url) || '/reiseziele/thailand.jpg'" 
+           [alt]="featuredOffer.title" 
+           class="offer-image">
+      <span *ngIf="featuredOffer.badge" class="offer-badge">{{ featuredOffer.badge }}</span>
     </div>
     <div class="offer-content">
-      <p class="offer-location">🌍 Alanya / Türkei</p>
-      <h3 class="offer-title">Yalihan Aspendos</h3>
+      <p class="offer-location">🌍 {{ featuredOffer.location }}</p>
+      <h3 class="offer-title">{{ featuredOffer.title }}</h3>
       <div class="offer-rating">
-        ★★★★☆
+        {{ generateStarRating(featuredOffer.rating) }}
       </div>
       <div class="offer-price-section">
-        <p class="offer-price">p. P. ab <strong>€ 437</strong></p>
-        <!--<button class="offer-button">Ansehen →</button> -->
+        <p class="offer-price">p. P. ab <strong>{{ formatPrice(featuredOffer.price, featuredOffer.currency) }}</strong></p>
         <button class="offer-button" routerLink="kontakt">Kontaktieren →</button>
       </div>
-      <p class="offer-description">7 Tage + Flug + Transfer, All Inclusive.</p>
     </div>
   </div>
 
-  <!-- Beschreibung -->
   <div class="offer-description-box">
-    <h2 class="description-title">Erleben Sie Alanya</h2>
+    <h2 class="description-title">Erleben Sie {{ featuredOffer.location }}</h2>
     <p class="description-text">
-      Entdecken Sie die Schönheit von Alanya, der Perle der Türkischen Riviera! Genießen Sie einen unvergesslichen Urlaub im Yalihan Aspendos, direkt am feinsandigen Strand. Perfekt für Familien und Paare, die Komfort und Entspannung suchen.
+      {{ featuredOffer.description }}
     </p>
-    <ul class="description-highlights">
-      <li>🌴 Wunderschöne Strandlage</li>
-      <li>🍹 All-Inclusive-Optionen</li>
-      <li>✈️ Flug & Transfer inklusive</li>
-      <li>⭐ Top-Bewertungen von Gästen</li>
-      <button class="offer-button" id="alloffers" routerLink="in-bearbeitung">Alle Angebote →</button>
+    <ul *ngIf="hasFeaturedHighlights()" class="description-highlights">
+      <li *ngFor="let highlight of getFeaturedHighlights()">
+        {{ highlight }}
+      </li>
     </ul>
+    <button class="offer-button" id="alloffers" routerLink="in-bearbeitung">Alle Angebote →</button>
   </div>
 </section>
+
+<!-- Other Offers Grid Section -->
+<div *ngIf="!loading && otherOffers.length > 0" class="other-offers-section">
+  <h2 class="other-offers-heading">Weitere Angebote</h2>
+  <div class="offers-grid">
+    <div *ngFor="let offer of otherOffers" class="offer-card-small">
+      <div class="offer-image-container">
+        <img [src]="getImageUrl(offer.image_url) || '/reiseziele/thailand.jpg'" 
+             [alt]="offer.title" 
+             class="offer-image">
+        <span *ngIf="offer.badge" class="offer-badge">{{ offer.badge }}</span>
+      </div>
+      <div class="offer-content">
+        <p class="offer-location">🌍 {{ offer.location }}</p>
+        <h3 class="offer-title">{{ offer.title }}</h3>
+        <div class="offer-rating">
+          {{ generateStarRating(offer.rating) }}
+        </div>
+        <div class="offer-price-section">
+          <p class="offer-price">p. P. ab <strong>{{ formatPrice(offer.price, offer.currency) }}</strong></p>
+          <button class="offer-button" routerLink="kontakt">Kontaktieren →</button>
+        </div>
+        <p class="offer-description">{{ offer.description }}</p>
+      </div>
+    </div>
+  </div>
+</div>
