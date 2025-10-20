@@ -108,6 +108,20 @@ export class OfferManagementComponent implements OnInit {
     return this.getFeaturedHighlights().length > 0;
   }
 
+  /**
+   * Prüft ob bereits ein Hauptangebot existiert
+   */
+  hasFeaturedOffer(): boolean {
+    return this.offers.some(offer => offer.is_featured);
+  }
+
+  /**
+   * Gibt das aktuelle Hauptangebot zurück
+   */
+  getCurrentFeaturedOffer(): Offer | null {
+    return this.offers.find(offer => offer.is_featured) || null;
+  }
+
   createOffer(): void {
     const dialogData: OfferDialogData = {
       offer: undefined,
@@ -152,22 +166,71 @@ export class OfferManagementComponent implements OnInit {
   }
 
   toggleFeatured(offer: Offer): void {
-    this.offerService.toggleFeatured(offer.id).subscribe({
-      next: (response) => {
-        if (response.success) {
-          // Update the offer in the local array
-          const index = this.offers.findIndex(o => o.id === offer.id);
-          if (index !== -1) {
-            this.offers[index] = response.data;
+    // Wenn das Angebot bereits das Hauptangebot ist, entferne den Status
+    if (offer.is_featured) {
+      this.offerService.toggleFeatured(offer.id).subscribe({
+        next: (response) => {
+          if (response.success) {
+            // Update the offer in the local array
+            const index = this.offers.findIndex(o => o.id === offer.id);
+            if (index !== -1) {
+              this.offers[index] = response.data;
+            }
+            console.log('Hauptangebot-Status entfernt');
           }
-          
-          // Show success message
-          console.log('Featured status updated successfully');
+        },
+        error: (error) => {
+          console.error('Error removing featured status:', error);
         }
-      },
-      error: (error) => {
-        console.error('Error updating featured status:', error);
+      });
+    } else {
+      // Prüfe ob bereits ein Hauptangebot existiert
+      const existingFeatured = this.offers.find(o => o.is_featured);
+      if (existingFeatured) {
+        // Bestätigung anfordern bevor das bestehende Hauptangebot ersetzt wird
+        const confirmMessage = `"${existingFeatured.title}" ist bereits das Hauptangebot. Möchten Sie "${offer.title}" stattdessen als Hauptangebot setzen?`;
+        
+        if (confirm(confirmMessage)) {
+          this.offerService.toggleFeatured(offer.id).subscribe({
+            next: (response) => {
+              if (response.success) {
+                // Update both offers in the local array
+                const currentIndex = this.offers.findIndex(o => o.id === offer.id);
+                const previousIndex = this.offers.findIndex(o => o.id === existingFeatured.id);
+                
+                if (currentIndex !== -1) {
+                  this.offers[currentIndex] = response.data;
+                }
+                if (previousIndex !== -1) {
+                  this.offers[previousIndex].is_featured = false;
+                }
+                
+                console.log('Neues Hauptangebot gesetzt');
+              }
+            },
+            error: (error) => {
+              console.error('Error setting featured status:', error);
+            }
+          });
+        }
+      } else {
+        // Kein bestehendes Hauptangebot, direkt setzen
+        this.offerService.toggleFeatured(offer.id).subscribe({
+          next: (response) => {
+            if (response.success) {
+              // Update the offer in the local array
+              const index = this.offers.findIndex(o => o.id === offer.id);
+              if (index !== -1) {
+                this.offers[index] = response.data;
+              }
+              console.log('Hauptangebot gesetzt');
+            }
+          },
+          error: (error) => {
+            console.error('Error setting featured status:', error);
+          }
+        });
       }
-    });
+    }
   }
 }

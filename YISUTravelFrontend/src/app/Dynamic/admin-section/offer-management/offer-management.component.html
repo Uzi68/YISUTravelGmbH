@@ -64,7 +64,7 @@
         <button mat-icon-button 
                 [color]="offer.is_featured ? 'primary' : 'basic'"
                 (click)="toggleFeatured(offer)"
-                matTooltip="Als Hauptangebot setzen">
+                [matTooltip]="offer.is_featured ? 'Hauptangebot-Status entfernen' : 'Als Hauptangebot setzen'">
           <mat-icon>{{ offer.is_featured ? 'star' : 'star_border' }}</mat-icon>
         </button>
         
