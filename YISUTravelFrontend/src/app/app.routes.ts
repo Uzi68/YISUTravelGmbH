@@ -26,6 +26,7 @@ import { ProfileManagementComponent } from "./Dynamic/profile-management/profile
 import { PasswordResetComponent } from "./Dynamic/password-reset/password-reset.component";
 import { CustomerRegistrationComponent } from "./Dynamic/customer-registration/customer-registration.component";
 import { CustomerDashboardComponent } from "./Dynamic/customer-dashboard/customer-dashboard.component";
+import { AppointmentBookingComponent } from "./Dynamic/homepage/homepage-contact/appointment-booking/appointment-booking.component";
 
 
 export const routes: Routes = [
@@ -177,6 +178,18 @@ export const routes: Routes = [
     path: 'customer-dashboard',
     component: CustomerDashboardComponent,
     canActivate: [authGuard]
+  },
+  {
+    path: 'termin-buchen',
+    component: AppointmentBookingComponent,
+    data: {
+      title: 'Termin buchen - YISU Travel GmbH',
+      description: 'Buchen Sie Ihren persönlichen Beratungstermin bei YISU Travel GmbH. Wir bieten Ihnen eine professionelle Reiseberatung in unserem Büro in Hanau oder online. Wählen Sie einen passenden Termin aus und lassen Sie sich von unseren Experten beraten.',
+      keywords: 'YISU Travel GmbH,termin buchen,reiseberatung,hanau,terminvereinbarung',
+      ogUrl: 'https://yisu-travel.de/termin-buchen',
+      author: 'YISU Travel GmbH',
+      canonical: 'https://yisu-travel.de/termin-buchen'
+    }
   },
   {
     path: '**', redirectTo: ''

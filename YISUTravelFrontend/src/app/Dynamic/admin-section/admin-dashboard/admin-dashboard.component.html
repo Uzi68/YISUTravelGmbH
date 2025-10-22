@@ -240,9 +240,9 @@
                   routerLink="/admin/buchungsliste">
             <mat-icon>list_alt</mat-icon>
           </button>
-          <button mat-icon-button class="profile-action-btn" matTooltip="Chatbot trainieren"
-                  routerLink="/admin/chatbot-trainieren">
-            <mat-icon>smart_toy</mat-icon>
+          <button mat-icon-button class="profile-action-btn" matTooltip="Terminverwaltung"
+                  (click)="toggleAppointmentManagement()">
+            <mat-icon>event</mat-icon>
           </button>
           <button mat-icon-button class="profile-action-btn" matTooltip="Alle Nachrichten"
                   (click)="toggleAllChatsView()" [class.active]="showAllChats">
@@ -775,16 +775,15 @@
     </div>
   </div>
 
-  <!-- Offer Management Overlay -->
-  <div class="staff-management-overlay" *ngIf="showOfferManagement" (click)="closeOfferManagement()">
+  <!-- Appointment Management Overlay -->
+  <div class="staff-management-overlay" *ngIf="showAppointmentManagement" (click)="closeAppointmentManagement()">
     <div class="staff-management-content" (click)="$event.stopPropagation()">
       <div class="staff-management-header">
-        <h2>Angebote-Verwaltung</h2>
-        <button mat-icon-button (click)="closeOfferManagement()">
+        <h2>Terminverwaltung</h2>
+        <button mat-icon-button (click)="closeAppointmentManagement()">
           <mat-icon>close</mat-icon>
         </button>
       </div>
-      <app-offer-management></app-offer-management>
+      <app-appointment-management></app-appointment-management>
     </div>
   </div>
-</div>

@@ -37,6 +37,7 @@ import {MatOption, MatSelect} from "@angular/material/select";
 import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { StaffManagementComponent } from '../staff-management/staff-management.component';
+import { AppointmentManagementComponent } from '../appointment-management/appointment-management.component';
 import { Router } from '@angular/router';
 
 @Component({
@@ -68,7 +69,8 @@ import { Router } from '@angular/router';
     MatSnackBarModule,
     MatSlideToggleModule,
     StaffManagementComponent,
-    OfferManagementComponent
+    OfferManagementComponent,
+    AppointmentManagementComponent
   ],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css',
@@ -137,6 +139,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   
   // Offer Management
   showOfferManagement = false;
+  
+  // Appointment Management
+  showAppointmentManagement = false;
   transferReason = '';
   
   // Dark Mode - übernommen aus Navbar
@@ -3829,6 +3834,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   closeOfferManagement(): void {
     this.showOfferManagement = false;
+  }
+
+  toggleAppointmentManagement(): void {
+    this.showAppointmentManagement = !this.showAppointmentManagement;
+  }
+
+  closeAppointmentManagement(): void {
+    this.showAppointmentManagement = false;
   }
 
   goToProfile(): void {

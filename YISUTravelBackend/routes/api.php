@@ -12,6 +12,7 @@ use App\Http\Controllers\MessageAttachmentController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\WhatsAppMessageController;
 use App\Http\Controllers\OfferController;
+use App\Http\Controllers\AppointmentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -353,4 +354,24 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin/offers')->group(functio
     Route::put('/{id}', [OfferController::class, 'update']); // Angebot bearbeiten
     Route::delete('/{id}', [OfferController::class, 'destroy']); // Angebot löschen
     Route::post('/{id}/toggle-featured', [OfferController::class, 'toggleFeatured']); // Hauptangebot setzen
+});
+
+/*
+||--------------------------------------------------------------------------
+|| Appointment Management Routes
+||--------------------------------------------------------------------------
+*/
+
+// Public appointment routes
+Route::prefix('appointments')->group(function () {
+    Route::post('/', [AppointmentController::class, 'store']);
+    Route::get('/available-slots', [AppointmentController::class, 'getAvailableSlots']);
+    
+    // Admin routes (authenticated users only)
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/', [AppointmentController::class, 'index']);
+        Route::post('/block', [AppointmentController::class, 'blockSlot']);
+        Route::delete('/unblock/{id}', [AppointmentController::class, 'unblockSlot']);
+        Route::patch('/{id}/status', [AppointmentController::class, 'updateStatus']);
+    });
 });

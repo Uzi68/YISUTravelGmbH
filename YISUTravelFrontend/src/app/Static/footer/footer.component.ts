@@ -1,9 +1,5 @@
 import { Component } from '@angular/core';
-import {RouterLink} from "@angular/router";
-import {MatDialog} from "@angular/material/dialog";
-import {
-  TerminVereinbarenComponent
-} from "../../Dynamic/homepage/homepage-contact/termin-vereinbaren/termin-vereinbaren.component";
+import {RouterLink, Router} from "@angular/router";
 
 
 @Component({
@@ -16,17 +12,9 @@ import {
   styleUrl: './footer.component.css'
 })
 export class FooterComponent {
-  constructor(private dialog: MatDialog) {}
+  constructor(private router: Router) {}
 
-  openDialog(): void {
-    const dialogRef = this.dialog.open(TerminVereinbarenComponent, {
-      width: '1000px',
-      autoFocus: false,
-      panelClass: 'custom-dialog-container'
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      console.log('Das Fenster wurde geschlossen. Ausgewähltes Datum:', result);
-    });
+  openAppointmentBooking(): void {
+    this.router.navigate(['/termin-buchen']);
   }
 }
