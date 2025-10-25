@@ -1,0 +1,242 @@
+.offer-dialog {
+  width: 100%;
+  max-width: 800px;
+}
+
+.dialog-content {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.full-width {
+  flex: 1;
+}
+
+.half-width {
+  flex: 0 0 calc(50% - 8px);
+}
+
+.highlights-section {
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--yisu-border);
+  border-radius: 8px;
+  background: var(--yisu-bg-light);
+}
+
+.highlights-section h3 {
+  margin: 0 0 16px 0;
+  color: var(--yisu-primary);
+  font-size: 1.1rem;
+}
+
+.highlights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.highlight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.highlight-input {
+  flex: 1;
+}
+
+.remove-highlight-btn {
+  color: #f44336;
+  margin-top: 8px;
+}
+
+.add-highlight-btn {
+  color: var(--yisu-primary);
+  border: 1px dashed var(--yisu-primary);
+}
+
+.toggle-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--yisu-border);
+  border-radius: 8px;
+  background: var(--yisu-bg-light);
+}
+
+.dialog-actions {
+  padding: 16px 20px;
+  border-top: 1px solid var(--yisu-border);
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Dark Mode */
+body.dark-mode .highlights-section {
+  background: var(--yisu-bg-dark);
+  border-color: var(--yisu-border-dark);
+}
+
+body.dark-mode .toggle-section {
+  background: var(--yisu-bg-dark);
+  border-color: var(--yisu-border-dark);
+}
+
+body.dark-mode .dialog-actions {
+  border-top-color: var(--yisu-border-dark);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .offer-dialog {
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .dialog-content {
+    padding: 16px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .half-width {
+    flex: 1;
+  }
+
+  .highlight-item {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .remove-highlight-btn {
+    align-self: flex-start;
+    margin-top: 0;
+  }
+}
+
+/* Bild-Upload-Styles */
+.image-upload-section h3 {
+  color: var(--yisu-primary);
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.image-upload-container {
+  border: 2px dashed var(--yisu-border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  background: var(--yisu-bg-light);
+  transition: all 0.3s ease;
+}
+
+.image-upload-container:hover {
+  border-color: var(--yisu-primary);
+  background: var(--yisu-bg-card);
+}
+
+.image-preview {
+  position: relative;
+  display: inline-block;
+}
+
+.preview-image {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--yisu-danger) !important;
+  color: white !important;
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+}
+
+.remove-image-btn mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-button {
+  background: var(--yisu-primary) !important;
+  color: white !important;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.upload-button:hover {
+  background: var(--yisu-primary-dark) !important;
+}
+
+.upload-hint {
+  color: var(--yisu-text-light);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.upload-progress {
+  width: 100%;
+  text-align: center;
+}
+
+.upload-progress p {
+  margin-top: 8px;
+  color: var(--yisu-primary);
+  font-size: 0.9rem;
+}
+
+/* Highlight-Hint */
+.highlights-hint {
+  color: var(--yisu-text-light);
+  font-size: 0.85rem;
+  margin-top: 8px;
+  font-style: italic;
+  text-align: center;
+}
+
+/* Dark Mode */
+body.dark-mode .image-upload-container {
+  background: var(--yisu-bg-card);
+  border-color: var(--yisu-border);
+}
+
+body.dark-mode .image-upload-container:hover {
+  background: var(--yisu-bg-light);
+  border-color: var(--yisu-primary);
+}
+
+body.dark-mode .upload-hint,
+body.dark-mode .highlights-hint {
+  color: var(--yisu-text-light);
+}
+

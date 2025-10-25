@@ -3,475 +3,286 @@
     <div class="row d-flex justify-content-center">
       <div class="col-md-12">
         <div class="text-center mb-4 pb-2">
-          <h2 class="text-white">Unsere Kundenrezensionen</h2> <!-- Überschrift hinzugefügt -->
+          <h2 class="text-white">Unsere Kundenrezensionen</h2>
           <i class="fas fa-quote-left fa-3x text-white"></i>
         </div>
 
-        <div class="card">
+        <!-- Desktop Swiper -->
+        <div class="card desktop-swiper">
           <div class="card-body px-4 py-5">
-            <!-- Bootstrap Carousel -->
-            <div id="carouselDarkVariant" class="carousel slide carousel-dark" data-bs-ride="carousel">
-              <!-- Indicators -->
-              <div class="carousel-indicators">
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="0" class="active"
-                        aria-current="true" aria-label="Slide 1"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="1"
-                        aria-label="Slide 2"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="2"
-                        aria-label="Slide 3"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="3"
-                        aria-label="Slide 4"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="4"
-                        aria-label="Slide 5"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="5"
-                        aria-label="Slide 6"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="6"
-                        aria-label="Slide 7"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="7"
-                        aria-label="Slide 8"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="8"
-                        aria-label="Slide 9"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="9"
-                        aria-label="Slide 10"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="10"
-                        aria-label="Slide 11"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="11"
-                        aria-label="Slide 12"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="12"
-                        aria-label="Slide 13"></button>
-                <button type="button" data-bs-target="#carouselDarkVariant" data-bs-slide-to="13"
-                        aria-label="Slide 14"></button>
-              </div>
-
-
-              <!-- Carousel Inner -->
-              <div class="carousel-inner pb-5">
-
-                <!-- Slide 1 -->
-                <div class="carousel-item active">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
+            <swiper-container
+              loop="true"
+              slides-per-view="1"
+              slides-per-group="1"
+              speed="500"
+              space-between="20"
+              autoplay-delay="4000"
+              autoplay-disable-on-interaction="false"
+              class="desktop-reviews-swiper"
+            >
+              <swiper-slide>
+                <div class="row d-flex justify-content-center">
+                  <div class="col-lg-10 col-xl-8">
+                    <div class="row">
+                      <div class="col-lg-4 d-flex justify-content-center">
+                        <img src="/customer-ratings/blankprofile.png"
+                             class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
+                      </div>
+                      <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
+                        <h4 class="mb-4">Zeynep Özer</h4>
+                        <div class="rating mb-2">
+                          <ul class="list-unstyled d-flex text-warning mb-0">
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                          </ul>
                         </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">Zeynep Özer</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Wir buchen seit Jahren bei diesem Reiseunternehmen und sind sehr zufrieden.
-                            Bei Komplikationen, wie Flugzeitänderungen oder Stornierungen konnte ich den Inhaber an einem Wochenende, nachts über die Notdienstnummer erreichen und er konnte direkt mein Problem beheben. Das nenne ich ein Service! Herzlichen Dank!
-                          </p>
-                        </div>
+                        <p class="mb-0 pb-3">
+                          Wir buchen seit Jahren bei diesem Reiseunternehmen und sind sehr zufrieden.
+                          Bei Komplikationen, wie Flugzeitänderungen oder Stornierungen konnte ich den Inhaber an einem Wochenende, nachts über die Notdienstnummer erreichen und er konnte direkt mein Problem beheben. Das nenne ich ein Service! Herzlichen Dank!
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
+              </swiper-slide>
 
-
-                <!-- Slide 2 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
+              <swiper-slide>
+                <div class="row d-flex justify-content-center">
+                  <div class="col-lg-10 col-xl-8">
+                    <div class="row">
+                      <div class="col-lg-4 d-flex justify-content-center">
+                        <img src="/customer-ratings/blankprofile.png"
+                             class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
+                      </div>
+                      <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
+                        <h4 class="mb-4">ey.hu.63</h4>
+                        <div class="rating mb-2">
+                          <ul class="list-unstyled d-flex text-warning mb-0">
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                          </ul>
                         </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">ey.hu.63</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Dieses Reisebüro hat meiner Frau und mir wundervolle Flitterwochen ermöglicht. Wir wurden top beraten und über jegliche Aktivitäten und Wissenwertes übers Reiseziel informiert. Hervorzuheben ist außerdem der nette und freundlicher Umgang des Reisebüros
-                          </p>
-                        </div>
+                        <p class="mb-0 pb-3">
+                          Dieses Reisebüro hat meiner Frau und mir wundervolle Flitterwochen ermöglicht. Wir wurden top beraten und über jegliche Aktivitäten und Wissenwertes übers Reiseziel informiert. Hervorzuheben ist außerdem der nette und freundlicher Umgang des Reisebüros
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
+              </swiper-slide>
 
-                <!-- Slide 3 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
+              <swiper-slide>
+                <div class="row d-flex justify-content-center">
+                  <div class="col-lg-10 col-xl-8">
+                    <div class="row">
+                      <div class="col-lg-4 d-flex justify-content-center">
+                        <img src="/customer-ratings/blankprofile.png"
+                             class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
+                      </div>
+                      <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
+                        <h4 class="mb-4">Nur</h4>
+                        <div class="rating mb-2">
+                          <ul class="list-unstyled d-flex text-warning mb-0">
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                          </ul>
                         </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">Nur</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Sehr zuverlässig, sie kümmern sich um den Kunden und nehmen sich Zeit. Sie sind auch durchgängig erreichbar. Ich empfehle es weiter!
-                          </p>
-                        </div>
+                        <p class="mb-0 pb-3">
+                          Sehr zuverlässig, sie kümmern sich um den Kunden und nehmen sich Zeit. Sie sind auch durchgängig erreichbar. Ich empfehle es weiter!
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
+              </swiper-slide>
 
-                <!-- Slide 4 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
+              <swiper-slide>
+                <div class="row d-flex justify-content-center">
+                  <div class="col-lg-10 col-xl-8">
+                    <div class="row">
+                      <div class="col-lg-4 d-flex justify-content-center">
+                        <img src="/customer-ratings/blankprofile.png"
+                             class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
+                      </div>
+                      <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
+                        <h4 class="mb-4">dersimoktay</h4>
+                        <div class="rating mb-2">
+                          <ul class="list-unstyled d-flex text-warning mb-0">
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                          </ul>
                         </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">KOCAK Muhammed</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Ich bewundere dieses Unternehmen sehr, mit einem anruf werden meine Sachen erledigt und als stammkunde wird man nicht mal nach der Rechnung gefragt.. respekt und weiterhin viel Erfolg.
-                          </p>
-                        </div>
+                        <p class="mb-0 pb-3">
+                          Seit Jahren buche ich all meine Reisen und Flüge immer nur bei YISU Travel. Sehr freundlich und kompetent, haben immer das passend für uns gefunden und die Preise waren immer TOP!
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
+              </swiper-slide>
 
-                <!-- Slide 5 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
+              <swiper-slide>
+                <div class="row d-flex justify-content-center">
+                  <div class="col-lg-10 col-xl-8">
+                    <div class="row">
+                      <div class="col-lg-4 d-flex justify-content-center">
+                        <img src="/customer-ratings/blankprofile.png"
+                             class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
+                      </div>
+                      <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
+                        <h4 class="mb-4">Adem Arslan</h4>
+                        <div class="rating mb-2">
+                          <ul class="list-unstyled d-flex text-warning mb-0">
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                            <li><i class="fa fa-star fa-sm"></i></li>
+                          </ul>
                         </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">dersimoktay dersimoktay</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Seit Jahren buche ich all meine Reisen und Flüge immer nur bei YISU Travel. Sehr freundlich und kompetent, haben immer das passend für uns gefunden und die Preise waren immer TOP!
-                            Ich kann YISU nur empfehlen, wer sein Urlaub genießen möchte bucht nur hier.
-                          </p>
-                        </div>
+                        <p class="mb-0 pb-3">
+                          Beratung einfach super. Man kann alles telefonisch erledigen ohne Probleme. Immer faire Preise. Kann ich nur weiter empfehlen.
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                <!-- Slide 6 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
-                        </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">Adem Arslan</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Beratung einfach super. Man kann alles telefonisch erledigen ohne Probleme. Immer faire Preise. Kann ich nur weiter empfehlen.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Slide 7 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
-                        </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">Zerrin Sevgi</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Ich bin mit dem Service und mit der Preisleistungsverhältnis sehr zufrieden. Wir bekommen immer online Preise.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Slide 8 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
-                        </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">Niculae Roxana</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Sehr gute Mann, freundliche Mitarbeiter, sehr nette Service und gute Rückmeldung.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Slide 9 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
-                        </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">tufan k</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Seit Jahren kaufe ich meine Tickets da.
-                            Bisher gab es keine Probleme.
-                            Alle sind nett, hilfsbereit und freundlich.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Slide 10 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
-                        </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">D. G</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Super Service, freundlich, nett und kompetent.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Slide 11 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
-                        </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">Ercan Özdemir</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Sehr freundlich und hilfsbereit, sehr gute preise, teilweisse günstiger als alle anderen reisebüros, mit flughafentransfer, beratung ist sehr professionell, man begrüsst sie mit einem türkischen tee.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Slide 12 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
-                        </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">Sebbo Fener</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Kaufe meine Tickets seit Jahren nur von dort bin Top zufrieden.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Slide 13 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
-                        </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">mustafa eksi</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Super Service und super nett.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Slide 14 -->
-                <div class="carousel-item">
-                  <div class="row d-flex justify-content-center">
-                    <div class="col-lg-10 col-xl-8">
-                      <div class="row">
-                        <div class="col-lg-4 d-flex justify-content-center">
-                          <img src="/customer-ratings/blankprofile.png"
-                               class="rounded-circle shadow-1 mb-4 mb-lg-0" width="150" height="150" />
-                        </div>
-                        <div class="col-9 col-md-9 col-lg-7 col-xl-8 text-center text-lg-start mx-auto mx-lg-0">
-                          <h4 class="mb-4">Savas Basak</h4>
-                          <div class="rating mb-2">
-                            <ul class="list-unstyled d-flex text-warning mb-0">
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                              <li><i class="fa fa-star fa-sm"></i></li>
-                            </ul>
-                          </div>
-                          <p class="mb-0 pb-3">
-                            Sehr Nettes Personal und Team. Note 1+
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- Controls -->
-              <button class="carousel-control-prev" type="button" data-bs-target="#carouselDarkVariant"
-                      data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Previous</span>
-              </button>
-              <button class="carousel-control-next" type="button" data-bs-target="#carouselDarkVariant"
-                      data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Next</span>
-              </button>
-            </div>
-            <!-- End of Carousel -->
+              </swiper-slide>
+            </swiper-container>
           </div>
+        </div>
+
+        <!-- Mobile Swiper -->
+        <div class="mobile-swiper">
+          <swiper-container
+            loop="true"
+            navigation="false"
+            slides-per-view="1"
+            slides-per-group="1"
+            speed="500"
+            space-between="20"
+            autoplay-delay="4000"
+            autoplay-disable-on-interaction="false"
+            class="mobile-reviews-swiper"
+          >
+            <swiper-slide>
+              <div class="mobile-review-card">
+                <div class="text-center mb-3">
+                  <img src="/customer-ratings/blankprofile.png" class="rounded-circle mb-3" width="80" height="80" />
+                  <h5 class="mb-2">Zeynep Özer</h5>
+                  <div class="rating mb-3">
+                    <ul class="list-unstyled d-flex text-warning justify-content-center mb-0">
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                    </ul>
+                  </div>
+                </div>
+                <p class="text-center">
+                  Wir buchen seit Jahren bei diesem Reiseunternehmen und sind sehr zufrieden.
+                  Bei Komplikationen, wie Flugzeitänderungen oder Stornierungen konnte ich den Inhaber an einem Wochenende, nachts über die Notdienstnummer erreichen und er konnte direkt mein Problem beheben. Das nenne ich ein Service! Herzlichen Dank!
+                </p>
+              </div>
+            </swiper-slide>
+
+            <swiper-slide>
+              <div class="mobile-review-card">
+                <div class="text-center mb-3">
+                  <img src="/customer-ratings/blankprofile.png" class="rounded-circle mb-3" width="80" height="80" />
+                  <h5 class="mb-2">ey.hu.63</h5>
+                  <div class="rating mb-3">
+                    <ul class="list-unstyled d-flex text-warning justify-content-center mb-0">
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                    </ul>
+                  </div>
+                </div>
+                <p class="text-center">
+                  Dieses Reisebüro hat meiner Frau und mir wundervolle Flitterwochen ermöglicht. Wir wurden top beraten und über jegliche Aktivitäten und Wissenwertes übers Reiseziel informiert. Hervorzuheben ist außerdem der nette und freundlicher Umgang des Reisebüros
+                </p>
+              </div>
+            </swiper-slide>
+
+            <swiper-slide>
+              <div class="mobile-review-card">
+                <div class="text-center mb-3">
+                  <img src="/customer-ratings/blankprofile.png" class="rounded-circle mb-3" width="80" height="80" />
+                  <h5 class="mb-2">Nur</h5>
+                  <div class="rating mb-3">
+                    <ul class="list-unstyled d-flex text-warning justify-content-center mb-0">
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                    </ul>
+                  </div>
+                </div>
+                <p class="text-center">
+                  Sehr zuverlässig, sie kümmern sich um den Kunden und nehmen sich Zeit. Sie sind auch durchgängig erreichbar. Ich empfehle es weiter!
+                </p>
+              </div>
+            </swiper-slide>
+
+            <swiper-slide>
+              <div class="mobile-review-card">
+                <div class="text-center mb-3">
+                  <img src="/customer-ratings/blankprofile.png" class="rounded-circle mb-3" width="80" height="80" />
+                  <h5 class="mb-2">dersimoktay</h5>
+                  <div class="rating mb-3">
+                    <ul class="list-unstyled d-flex text-warning justify-content-center mb-0">
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                    </ul>
+                  </div>
+                </div>
+                <p class="text-center">
+                  Seit Jahren buche ich all meine Reisen und Flüge immer nur bei YISU Travel. Sehr freundlich und kompetent, haben immer das passend für uns gefunden und die Preise waren immer TOP!
+                </p>
+              </div>
+            </swiper-slide>
+
+            <swiper-slide>
+              <div class="mobile-review-card">
+                <div class="text-center mb-3">
+                  <img src="/customer-ratings/blankprofile.png" class="rounded-circle mb-3" width="80" height="80" />
+                  <h5 class="mb-2">Adem Arslan</h5>
+                  <div class="rating mb-3">
+                    <ul class="list-unstyled d-flex text-warning justify-content-center mb-0">
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                      <li><i class="fa fa-star fa-sm"></i></li>
+                    </ul>
+                  </div>
+                </div>
+                <p class="text-center">
+                  Beratung einfach super. Man kann alles telefonisch erledigen ohne Probleme. Immer faire Preise. Kann ich nur weiter empfehlen.
+                </p>
+              </div>
+            </swiper-slide>
+          </swiper-container>
         </div>
 
         <div class="text-center mt-4 pt-2">

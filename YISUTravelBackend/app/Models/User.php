@@ -21,17 +21,25 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
         'phone',
         'is_active',
-        'avatar'
+        'avatar',
+        'user_type',
+        'profile_image_url'
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'is_active' => 'boolean'
     ];
+
+    // User types: 'staff' (Mitarbeiter) or 'customer' (Kunde)
+    const USER_TYPE_STAFF = 'staff';
+    const USER_TYPE_CUSTOMER = 'customer';
 
     public function assignedChats()
     {

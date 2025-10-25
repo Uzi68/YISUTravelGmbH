@@ -138,6 +138,20 @@ button[type="submit"] {
   padding: 10px 20px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
+  background: var(--yisu-navbar-top) !important;
+  color: #2c3e50 !important;
+  border: none !important;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
+  border-radius: 8px;
+}
+
+button[type="submit"]:hover {
+  background: #f59e0b !important;
+  color: #2c3e50 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
 }
 
 .kontaktinformationen {
@@ -251,12 +265,21 @@ button[type="submit"] {
   padding: 0 15px; /* Adjust horizontal padding */
   font-size: 16px; /* Set a consistent font size */
   line-height: 50px; /* Set line height to match height for vertical centering */
-  border-radius: 5px; /* Less rounded corners */
-  color: #fff; /* Text color */
+  border-radius: 8px; /* Rounded corners */
+  color: #2c3e50 !important; /* Text color */
   border: none; /* No border */
   cursor: pointer; /* Pointer cursor on hover */
-  transition: background-color 0.3s; /* Smooth color transition */
-  background-color: #0077b6; /* Button color */
+  transition: all 0.2s ease; /* Smooth transition */
+  background: var(--yisu-navbar-top) !important; /* Gelb */
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
+}
+
+.custom-button:hover {
+  background: #f59e0b !important;
+  color: #2c3e50 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
 }
 
 .example-button-row {

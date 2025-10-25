@@ -1,0 +1,408 @@
+<div class="appointment-booking-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="container">
+      <button mat-icon-button class="back-button" (click)="goBack()" matTooltip="Zurück zur Startseite">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1 class="page-title">Termin buchen</h1>
+      <p class="page-subtitle">Buchen Sie Ihren persönlichen Beratungstermin bei YISU Travel</p>
+    </div>
+  </div>
+
+  <!-- Page Content -->
+  <div class="page-content">
+    <div class="container">
+      <mat-vertical-stepper #stepper class="appointment-stepper">
+        
+        <!-- Step 1: Personal Data -->
+        <mat-step [stepControl]="personalDataForm" label="Persönliche Daten">
+          <ng-template matStepLabel>
+            <div class="step-label">
+              <mat-icon>person</mat-icon>
+              <span>Persönliche Daten</span>
+            </div>
+          </ng-template>
+          
+          <form [formGroup]="personalDataForm" class="step-form">
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Name *</mat-label>
+                <input matInput formControlName="customer_name" placeholder="Ihr vollständiger Name">
+                <mat-error *ngIf="personalDataForm.get('customer_name')?.hasError('required')">
+                  Name ist erforderlich
+                </mat-error>
+                <mat-error *ngIf="personalDataForm.get('customer_name')?.hasError('minlength')">
+                  Name muss mindestens 2 Zeichen lang sein
+                </mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>E-Mail *</mat-label>
+                <input matInput formControlName="customer_email" type="email" placeholder="ihre.email@beispiel.de">
+                <mat-error *ngIf="personalDataForm.get('customer_email')?.hasError('required')">
+                  E-Mail ist erforderlich
+                </mat-error>
+                <mat-error *ngIf="personalDataForm.get('customer_email')?.hasError('email')">
+                  Bitte geben Sie eine gültige E-Mail-Adresse ein
+                </mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Telefon *</mat-label>
+                <input matInput formControlName="customer_phone" placeholder="+49 123 456789">
+                <mat-error *ngIf="personalDataForm.get('customer_phone')?.hasError('required')">
+                  Telefonnummer ist erforderlich
+                </mat-error>
+                <mat-error *ngIf="personalDataForm.get('customer_phone')?.hasError('pattern')">
+                  Bitte geben Sie eine gültige Telefonnummer ein
+                </mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="step-actions">
+              <button mat-raised-button color="primary" matStepperNext [disabled]="!personalDataForm.valid">
+                Weiter
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 2: Date & Time Selection -->
+        <mat-step [stepControl]="appointmentForm" label="Terminauswahl">
+          <ng-template matStepLabel>
+            <div class="step-label">
+              <mat-icon>event</mat-icon>
+              <span>Terminauswahl</span>
+            </div>
+          </ng-template>
+          
+          <form [formGroup]="appointmentForm" class="step-form">
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Datum auswählen *</mat-label>
+                <input matInput 
+                       [matDatepicker]="picker"
+                       [min]="minDate"
+                       formControlName="appointment_date"
+                       (dateChange)="onDatePickerChange($event.value)"
+                       (click)="picker.open()"
+                       placeholder="DD.MM.YYYY"
+                       readonly>
+                <mat-datepicker-toggle matSuffix [for]="picker">
+                  <mat-icon matDatepickerToggleIcon>calendar_today</mat-icon>
+                </mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+                <mat-error *ngIf="appointmentForm.get('appointment_date')?.hasError('required')">
+                  Datum ist erforderlich
+                </mat-error>
+              </mat-form-field>
+            </div>
+
+
+            <!-- Available Time Slots -->
+            <div *ngIf="selectedDate" class="time-slots-section">
+              <h4>Verfügbare Uhrzeiten für {{getFormattedDate(selectedDate)}}</h4>
+              
+              <div *ngIf="isLoadingSlots" class="loading-slots">
+                <mat-spinner diameter="30"></mat-spinner>
+                <span>Lade verfügbare Zeiten...</span>
+              </div>
+
+              <div *ngIf="!isLoadingSlots && allPossibleSlots.length === 0" class="no-slots">
+                <mat-icon>info</mat-icon>
+                <span>Für dieses Datum sind keine Termine verfügbar.</span>
+              </div>
+
+              <div *ngIf="!isLoadingSlots && allPossibleSlots.length > 0" class="time-slots-container">
+
+                <!-- Time Slot Selection - Only One Selectable -->
+                <div class="time-slots-grid">
+                  <button mat-raised-button
+                          *ngFor="let slot of allPossibleSlots"
+                          type="button"
+                          [class.selected-time]="selectedTime === slot"
+                          [class.unavailable-slot]="!isSlotAvailable(slot)"
+                          [disabled]="!isSlotAvailable(slot)"
+                          (click)="selectTimeSlot(slot)"
+                          class="time-slot-button">
+                    <span *ngIf="!isSlotAvailable(slot)" class="unavailable-indicator">
+                      <mat-icon>block</mat-icon>
+                      {{slot}} Uhr (Ausgebucht)
+                    </span>
+                    <span *ngIf="isSlotAvailable(slot)">{{slot}} Uhr</span>
+                  </button>
+                </div>
+
+                <!-- Selected Time Display -->
+                <div *ngIf="selectedTime" class="selected-time-display">
+                  <mat-icon>check_circle</mat-icon>
+                  <span><strong>Ausgewählte Zeit:</strong> {{selectedTime}} Uhr</span>
+                </div>
+
+                <!-- Custom Time Input -->
+                <div class="custom-time-section">
+                  <div class="custom-time-field">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Oder eigene Uhrzeit eingeben</mat-label>
+                      <input matInput 
+                             type="time"
+                             [value]="customTime"
+                             (change)="onCustomTimeChange($event)"
+                             placeholder="HH:MM">
+                      <mat-hint>Format: HH:MM (z.B. 14:30)</mat-hint>
+                    </mat-form-field>
+                  </div>
+                  <div class="add-custom-time-btn">
+                    <button mat-raised-button 
+                            (click)="addCustomTime()"
+                            [disabled]="!customTime || !isCustomTimeValid()">
+                      <mat-icon>add</mat-icon>
+                      Hinzufügen
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Business Hours Info -->
+              <div class="business-hours-info">
+                <mat-icon>schedule</mat-icon>
+                <div class="business-hours-text">
+                  <div><strong>Öffnungszeiten:</strong></div>
+                  <div>Montag - Freitag: 10:00 - 18:00 Uhr</div>
+                  <div>Samstag: 10:30 - 15:30 Uhr</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon>
+                Zurück
+              </button>
+              <button mat-raised-button color="primary" matStepperNext [disabled]="!isAppointmentValid()">
+                Weiter
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 2: Message -->
+        <mat-step [stepControl]="messageForm" label="Nachricht">
+          <ng-template matStepLabel>
+            <div class="step-label">
+              <mat-icon>message</mat-icon>
+              <span>Nachricht</span>
+            </div>
+          </ng-template>
+          
+          <form [formGroup]="messageForm" class="step-form">
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Service auswählen *</mat-label>
+                <mat-select formControlName="service_type">
+                  <mat-select-trigger>
+                    {{getServiceTypeLabel(messageForm.get('service_type')?.value)}}
+                  </mat-select-trigger>
+                  <mat-option value="beratung">
+                    <div class="service-option-content">
+                      <mat-icon>support_agent</mat-icon>
+                      <span>Reiseberatung</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="flight">
+                    <div class="service-option-content">
+                      <mat-icon>flight</mat-icon>
+                      <span>Flugbuchung</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="hotel">
+                    <div class="service-option-content">
+                      <mat-icon>hotel</mat-icon>
+                      <span>Hotelbuchung</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="package">
+                    <div class="service-option-content">
+                      <mat-icon>luggage</mat-icon>
+                      <span>Pauschalreise</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="visum">
+                    <div class="service-option-content">
+                      <mat-icon>description</mat-icon>
+                      <span>Visum-Service</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="custom">
+                    <div class="service-option-content">
+                      <mat-icon>tune</mat-icon>
+                      <span>Individuelle Reise</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="sonstiges">
+                    <div class="service-option-content">
+                      <mat-icon>more_horiz</mat-icon>
+                      <span>Sonstiges</span>
+                    </div>
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="messageForm.get('service_type')?.hasError('required')">
+                  Service-Auswahl ist erforderlich
+                </mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Nachricht (optional)</mat-label>
+                <textarea matInput 
+                          formControlName="message" 
+                          rows="4" 
+                          placeholder="Teilen Sie uns mit, was Sie sich von der Beratung erhoffen oder welche speziellen Wünsche Sie haben..."></textarea>
+                <mat-hint align="end">{{messageForm.get('message')?.value?.length || 0}}/1000</mat-hint>
+              </mat-form-field>
+            </div>
+
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon>
+                Zurück
+              </button>
+              <button mat-raised-button color="primary" matStepperNext [disabled]="!isMessageValid()">
+                Weiter
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 3: Confirmation -->
+        <mat-step label="Bestätigung">
+          <ng-template matStepLabel>
+            <div class="step-label">
+              <mat-icon>check_circle</mat-icon>
+              <span>Bestätigung</span>
+            </div>
+          </ng-template>
+          
+          <div class="confirmation-step">
+            <h3>Bitte überprüfen Sie Ihre Angaben:</h3>
+            
+            <div class="confirmation-details">
+              <div class="detail-section">
+                <h4>Persönliche Daten</h4>
+                <div class="detail-row">
+                  <span><strong>Name:</strong> {{personalDataForm.get('customer_name')?.value}}</span>
+                </div>
+                <div class="detail-row">
+                  <span><strong>E-Mail:</strong> {{personalDataForm.get('customer_email')?.value}}</span>
+                </div>
+                <div class="detail-row">
+                  <span><strong>Telefon:</strong> {{personalDataForm.get('customer_phone')?.value}}</span>
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <h4>Service</h4>
+                <div class="detail-row">
+                  <span><strong>Gewählter Service:</strong> {{getServiceTypeLabel(messageForm.get('service_type')?.value) || 'Reiseberatung'}}</span>
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <h4>Termin</h4>
+                <div class="detail-row">
+                  <span><strong>Datum:</strong> {{selectedDate ? getDisplayDateFormat(selectedDate) : ''}}</span>
+                </div>
+                <div class="detail-row">
+                  <span><strong>Uhrzeit:</strong> {{getSelectedTimesDisplay()}}</span>
+                </div>
+              </div>
+
+              <div class="detail-section" *ngIf="messageForm.get('message')?.value">
+                <h4>Nachricht</h4>
+                <div class="detail-row">
+                  <div class="message-display">
+                    <strong>Nachricht:</strong>
+                    <div class="message-content">
+                      {{messageForm.get('message')?.value}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon>
+                Zurück
+              </button>
+              <button mat-raised-button 
+                      color="primary" 
+                      (click)="submitAppointment()"
+                      [disabled]="isSubmitting">
+                <mat-spinner *ngIf="isSubmitting" diameter="20" class="button-spinner"></mat-spinner>
+                <mat-icon *ngIf="!isSubmitting">check</mat-icon>
+                {{isSubmitting ? 'Wird gebucht...' : 'Termin buchen'}}
+              </button>
+            </div>
+          </div>
+        </mat-step>
+      </mat-vertical-stepper>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Service Dropdown Styles */
+.service-option-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.service-option-content mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: #2196f3;
+}
+
+.service-option-content span {
+  font-size: 14px;
+}
+
+/* Unavailable Slot Styles */
+.unavailable-slot {
+  background-color: #f5f5f5 !important;
+  color: #999 !important;
+  border-color: #ddd !important;
+  cursor: not-allowed !important;
+}
+
+.unavailable-slot:hover {
+  background-color: #f5f5f5 !important;
+  transform: none !important;
+}
+
+.unavailable-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.unavailable-indicator mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+</style>

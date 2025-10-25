@@ -1,0 +1,170 @@
+<div class="offer-dialog">
+  <h2 mat-dialog-title>
+    {{ data.isEdit ? 'Angebot bearbeiten' : 'Neues Angebot erstellen' }}
+  </h2>
+
+  <mat-dialog-content class="dialog-content">
+    <form [formGroup]="offerForm" (ngSubmit)="onSubmit()">
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Titel *</mat-label>
+          <input matInput formControlName="title" placeholder="z.B. Yalihan Aspendos">
+          <mat-error>{{ getFieldError('title') }}</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Standort *</mat-label>
+          <input matInput formControlName="location" placeholder="z.B. Alanya / Türkei">
+          <mat-error>{{ getFieldError('location') }}</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Beschreibung *</mat-label>
+          <textarea matInput formControlName="description" rows="4" 
+                    placeholder="Detaillierte Beschreibung des Angebots"></textarea>
+          <mat-error>{{ getFieldError('description') }}</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Preis (€) *</mat-label>
+          <input matInput type="number" formControlName="price" placeholder="437">
+          <mat-error>{{ getFieldError('price') }}</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Währung</mat-label>
+          <mat-select formControlName="currency">
+            <mat-option value="EUR">EUR</mat-option>
+            <mat-option value="USD">USD</mat-option>
+            <mat-option value="CHF">CHF</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Bewertung (1-5)</mat-label>
+          <mat-select formControlName="rating">
+            <mat-option value="1">★☆☆☆☆ (1 Stern)</mat-option>
+            <mat-option value="2">★★☆☆☆ (2 Sterne)</mat-option>
+            <mat-option value="3">★★★☆☆ (3 Sterne)</mat-option>
+            <mat-option value="4">★★★★☆ (4 Sterne)</mat-option>
+            <mat-option value="5">★★★★★ (5 Sterne)</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Badge</mat-label>
+          <mat-select formControlName="badge">
+            <mat-option value="">Kein Badge</mat-option>
+            <mat-option value="Top-Angebot">⭐ Top-Angebot</mat-option>
+            <mat-option value="Neu">🆕 Neu</mat-option>
+            <mat-option value="Bestseller">🔥 Bestseller</mat-option>
+            <mat-option value="Last Minute">⏰ Last Minute</mat-option>
+            <mat-option value="Frühbucher">📅 Frühbucher</mat-option>
+            <mat-option value="All Inclusive">🍹 All Inclusive</mat-option>
+            <mat-option value="Familienfreundlich">👨‍👩‍👧‍👦 Familienfreundlich</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Dauer</mat-label>
+          <input matInput formControlName="duration" placeholder="z.B. 7 Tage">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Sortierung</mat-label>
+          <input matInput type="number" formControlName="sort_order" placeholder="0">
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Inklusive</mat-label>
+          <input matInput formControlName="inclusions" 
+                 placeholder="z.B. Flug + Transfer, All Inclusive">
+        </mat-form-field>
+      </div>
+
+      <!-- Bild Upload -->
+      <div class="form-row">
+        <div class="image-upload-section">
+          <h3>Angebotsbild</h3>
+          <div class="image-upload-container">
+            <div class="image-preview" *ngIf="imagePreviewUrl">
+              <img [src]="imagePreviewUrl" alt="Vorschau" class="preview-image">
+              <button type="button" mat-icon-button class="remove-image-btn" (click)="removeImage()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+            <div class="upload-area" *ngIf="!imagePreviewUrl">
+              <input #fileInput type="file" accept="image/*" (change)="onImageSelected($event)" style="display: none;">
+              <button type="button" mat-raised-button (click)="fileInput.click()" class="upload-button">
+                <mat-icon>cloud_upload</mat-icon>
+                Bild hochladen
+              </button>
+              <p class="upload-hint">JPG, PNG oder WebP (max. 5MB)</p>
+            </div>
+            <div class="upload-progress" *ngIf="uploading">
+              <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+              <p>Bild wird hochgeladen...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Highlights -->
+      <div class="highlights-section">
+        <h3>Highlights</h3>
+        <div class="highlights-list">
+          <div *ngFor="let highlight of highlights; let i = index; trackBy: trackByIndex" class="highlight-item">
+            <mat-form-field appearance="outline" class="highlight-input">
+              <mat-label>Highlight {{ i + 1 }}</mat-label>
+              <input matInput [(ngModel)]="highlights[i]" 
+                     [ngModelOptions]="{standalone: true}"
+                     placeholder="z.B. 🌴 Wunderschöne Strandlage"
+                     (keydown.enter)="addHighlight()">
+            </mat-form-field>
+            <button mat-icon-button type="button" (click)="removeHighlight(i)" 
+                    class="remove-highlight-btn">
+              <mat-icon>remove_circle</mat-icon>
+            </button>
+          </div>
+        </div>
+        <button mat-button type="button" (click)="addHighlight()" class="add-highlight-btn">
+          <mat-icon>add</mat-icon>
+          Highlight hinzufügen
+        </button>
+        <p class="highlights-hint">💡 Tipp: Drücke Enter im letzten Feld um ein neues Highlight hinzuzufügen</p>
+      </div>
+
+      <!-- Toggle Options -->
+      <div class="toggle-section">
+        <mat-slide-toggle formControlName="is_featured">
+          Als Hauptangebot markieren
+        </mat-slide-toggle>
+        <mat-slide-toggle formControlName="is_active">
+          Angebot aktiv
+        </mat-slide-toggle>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="onCancel()" [disabled]="loading">
+      Abbrechen
+    </button>
+    <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="loading">
+      <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
+      <span *ngIf="!loading">{{ data.isEdit ? 'Aktualisieren' : 'Erstellen' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

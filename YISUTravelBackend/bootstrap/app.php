@@ -41,6 +41,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/whatsapp/send-video',     // ✅ WhatsApp Video senden
             'api/whatsapp/send-document',  // ✅ WhatsApp Dokument senden
             'api/whatsapp/send-audio',     // ✅ WhatsApp Audio senden
+            'api/customer/register',       // ✅ Kunden-Registrierung
+            'api/password/reset-link',     // ✅ Passwort-Reset-Link senden
+            'api/password/reset',          // ✅ Passwort zurücksetzen
+            'api/login',                   // ✅ Login für alle Benutzer
+            'api/appointments',
+            'api/appointments/blocked-slots'
         ]
         );
         /*

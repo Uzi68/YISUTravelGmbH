@@ -1,0 +1,630 @@
+/* Appointment Booking Page Styles */
+.appointment-booking-page {
+  min-height: 100vh;
+  background-color: var(--yisu-bg-main);
+  color: var(--text-color);
+}
+
+/* Page Header */
+.page-header {
+  background: linear-gradient(135deg, var(--yisu-primary) 0%, var(--yisu-secondary) 100%);
+  color: var(--yisu-white);
+  padding: 2rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  opacity: 0.3;
+}
+
+.page-header .container {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.back-button {
+  color: var(--yisu-white);
+  margin-bottom: 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(-2px);
+}
+
+.page-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.page-subtitle {
+  font-size: 1.1rem;
+  margin: 0;
+  opacity: 0.9;
+  font-weight: 300;
+}
+
+/* Page Content */
+.page-content {
+  padding: 3rem 0;
+}
+
+.page-content .container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Stepper Styling */
+.appointment-stepper {
+  background-color: var(--yisu-bg-card);
+  border-radius: 12px;
+  box-shadow: var(--yisu-shadow-lg);
+  padding: 2rem;
+  margin-top: 2rem;
+}
+
+/* Prevent automatic scrolling when changing steps */
+::ng-deep .mat-stepper-vertical .mat-step-content {
+  scroll-behavior: auto !important;
+}
+
+::ng-deep .mat-stepper-vertical .mat-step-header {
+  scroll-behavior: auto !important;
+}
+
+/* Override Material Stepper's automatic scroll behavior */
+::ng-deep .mat-stepper-vertical {
+  scroll-behavior: auto !important;
+}
+
+::ng-deep .mat-stepper-vertical .mat-step-content.mat-step-content-active {
+  scroll-behavior: auto !important;
+}
+
+.mat-stepper-vertical {
+  background-color: transparent;
+}
+
+.mat-step-header {
+  background-color: var(--yisu-bg-section);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  padding: 1rem 1.5rem;
+  transition: all 0.3s ease;
+  border: 1px solid var(--yisu-border-light);
+}
+
+.mat-step-header:hover {
+  background-color: var(--yisu-bg-overlay);
+  transform: translateY(-1px);
+  box-shadow: var(--yisu-shadow-md);
+}
+
+.mat-step-header .mat-step-label {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.mat-step-header .mat-step-label.mat-step-label-active {
+  color: var(--yisu-primary);
+  font-weight: 600;
+}
+
+.mat-step-header .mat-step-icon {
+  background-color: var(--yisu-primary);
+  color: var(--yisu-white);
+  border: 2px solid var(--yisu-white);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mat-step-header .mat-step-icon-selected {
+  background-color: var(--yisu-secondary);
+  transform: scale(1.1);
+}
+
+.step-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.step-label mat-icon {
+  font-size: 1.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+/* Form Styling */
+.step-form {
+  padding: 1.5rem 0;
+}
+
+.form-row {
+  margin-bottom: 1.5rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* Material Datepicker Styling */
+.mat-datepicker-toggle {
+  color: var(--yisu-primary);
+}
+
+.mat-datepicker-toggle:hover {
+  color: var(--yisu-secondary);
+}
+
+::ng-deep .mat-datepicker-popup {
+  border-radius: 12px !important;
+  box-shadow: var(--yisu-shadow-lg) !important;
+}
+
+::ng-deep .mat-calendar {
+  background-color: var(--yisu-bg-card) !important;
+  color: var(--text-color) !important;
+}
+
+::ng-deep .mat-calendar-header {
+  background-color: var(--yisu-bg-section) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+::ng-deep .mat-calendar-table-header th {
+  color: var(--yisu-text-medium) !important;
+  font-weight: 600 !important;
+}
+
+::ng-deep .mat-calendar-body-cell {
+  color: var(--text-color) !important;
+}
+
+::ng-deep .mat-calendar-body-cell:hover {
+  background-color: var(--yisu-bg-overlay) !important;
+}
+
+::ng-deep .mat-calendar-body-selected {
+  background-color: var(--yisu-primary) !important;
+  color: var(--yisu-white) !important;
+}
+
+::ng-deep .mat-calendar-body-today:not(.mat-calendar-body-selected) {
+  border-color: var(--yisu-primary) !important;
+}
+
+.mat-form-field-appearance-outline .mat-form-field-outline {
+  color: var(--yisu-form-border);
+}
+
+.mat-form-field-appearance-outline.mat-focused .mat-form-field-outline-thick {
+  color: var(--yisu-form-focus);
+}
+
+.mat-form-field-label {
+  color: var(--yisu-text-medium);
+}
+
+.mat-form-field-empty.mat-form-field-label {
+  color: var(--yisu-text-light);
+}
+
+.mat-input-element {
+  color: var(--yisu-text-dark);
+}
+
+/* Time Slots */
+.time-slots-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: var(--yisu-bg-section);
+  border-radius: 8px;
+  border: 1px solid var(--yisu-border-light);
+}
+
+.time-slots-section h4 {
+  color: var(--yisu-primary);
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+}
+
+.loading-slots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: var(--yisu-text-medium);
+}
+
+.no-slots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: var(--yisu-text-light);
+  font-style: italic;
+}
+
+.time-slots-container {
+  margin-bottom: 1rem;
+}
+
+.time-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.time-slot-button {
+  min-height: 50px !important;
+  border-radius: 8px !important;
+  background-color: var(--yisu-bg-card) !important;
+  color: var(--yisu-text-primary) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  transition: all 0.3s ease !important;
+  border: 2px solid var(--yisu-border-light) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.time-slot-button:hover {
+  background-color: var(--yisu-primary) !important;
+  color: var(--yisu-white) !important;
+  border-color: var(--yisu-primary) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.time-slot-button.selected-time {
+  background-color: var(--yisu-primary) !important;
+  color: var(--yisu-white) !important;
+  border-color: var(--yisu-primary) !important;
+  box-shadow: 0 4px 12px rgba(var(--yisu-primary-rgb), 0.4) !important;
+  transform: scale(1.05) !important;
+}
+
+.selected-time-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--yisu-bg-card);
+  border-left: 4px solid var(--yisu-primary);
+  border-radius: 4px;
+  color: var(--yisu-text-primary);
+  font-weight: 500;
+}
+
+.selected-time-display mat-icon {
+  color: var(--yisu-primary);
+}
+
+.custom-time-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: var(--yisu-bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--yisu-border-light);
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.custom-time-field {
+  flex: 1;
+}
+
+.add-custom-time-btn {
+  flex-shrink: 0;
+}
+
+.add-custom-time-btn button {
+  height: 56px;
+  min-width: 120px;
+}
+
+.business-hours-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--yisu-bg-card);
+  border-radius: 6px;
+  color: var(--yisu-text-medium);
+  font-size: 0.9rem;
+}
+
+.business-hours-info mat-icon {
+  color: var(--yisu-primary);
+  margin-top: 0.2rem;
+}
+
+.business-hours-text {
+  flex: 1;
+}
+
+.business-hours-text div {
+  margin-bottom: 0.25rem;
+}
+
+.business-hours-text div:last-child {
+  margin-bottom: 0;
+}
+
+/* Step Actions */
+.step-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--yisu-border-light);
+}
+
+.mat-button, .mat-raised-button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.mat-raised-button.mat-primary {
+  background-color: var(--yisu-button-primary);
+  color: var(--yisu-text-black);
+  box-shadow: var(--yisu-shadow-md);
+}
+
+.mat-raised-button.mat-primary:hover {
+  background-color: var(--yisu-button-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--yisu-shadow-lg);
+}
+
+.mat-raised-button.mat-primary:disabled {
+  background-color: var(--yisu-text-light);
+  color: var(--yisu-text-medium);
+  transform: none;
+  box-shadow: none;
+}
+
+.button-spinner {
+  margin-right: 0.5rem;
+}
+
+/* Confirmation Step */
+.confirmation-step {
+  padding: 1.5rem 0;
+}
+
+.confirmation-step h3 {
+  color: var(--yisu-primary);
+  margin-bottom: 2rem;
+  font-weight: 600;
+}
+
+.confirmation-details {
+  background-color: var(--yisu-bg-section);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid var(--yisu-border-light);
+}
+
+.detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section h4 {
+  color: var(--yisu-primary);
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--yisu-border-light);
+  padding-bottom: 0.5rem;
+}
+
+.detail-row {
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-row strong {
+  color: var(--yisu-text-dark);
+  font-weight: 600;
+}
+
+/* Message Display Styling */
+.message-display {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.message-display strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--yisu-text-dark);
+  font-weight: 600;
+}
+
+.message-content {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border: 1px solid var(--yisu-border-light);
+  background-color: var(--yisu-bg-card);
+}
+
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .page-header .container {
+    padding: 0 1rem;
+  }
+
+  .page-title {
+    font-size: 2rem;
+  }
+
+  .page-subtitle {
+    font-size: 1rem;
+  }
+
+  .page-content .container {
+    padding: 0 1rem;
+  }
+
+  .appointment-stepper {
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+
+  .mat-step-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .time-slots-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .custom-time-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .add-custom-time-btn button {
+    height: 48px;
+    width: 100%;
+  }
+
+  .step-actions {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .step-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 1.75rem;
+  }
+
+  .time-slots-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  }
+
+  .confirmation-details {
+    padding: 1rem;
+  }
+
+  .message-content {
+    font-size: 0.85rem;
+  }
+}
+
+/* Dark Mode Adjustments */
+.dark-mode .appointment-booking-page {
+  background-color: var(--yisu-bg-main);
+}
+
+.dark-mode .appointment-stepper {
+  background-color: var(--yisu-bg-card);
+}
+
+.dark-mode .mat-step-header {
+  background-color: var(--yisu-bg-section);
+  border-color: var(--yisu-border-light);
+}
+
+.dark-mode .mat-step-header:hover {
+  background-color: var(--yisu-bg-overlay);
+}
+
+.dark-mode .time-slots-section {
+  background-color: var(--yisu-bg-section);
+  border-color: var(--yisu-border-light);
+}
+
+.dark-mode .confirmation-details {
+  background-color: var(--yisu-bg-section);
+  border-color: var(--yisu-border-light);
+}
+
+.dark-mode .business-hours-info {
+  background-color: var(--yisu-bg-card);
+}
+
+/* Animation for smooth transitions */
+.mat-step-header,
+.time-slot-button,
+.mat-raised-button,
+.mat-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus states for accessibility */
+.time-slot-button:focus,
+.mat-raised-button:focus,
+.mat-button:focus {
+  outline: 2px solid var(--yisu-primary);
+  outline-offset: 2px;
+}
+
+/* Loading state */
+.mat-spinner {
+  margin: 0 auto;
+}
+
+/* Success state animation */
+@keyframes successPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.mat-raised-button.mat-primary:not(:disabled) {
+  animation: successPulse 2s infinite;
+}

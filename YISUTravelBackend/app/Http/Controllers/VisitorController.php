@@ -43,7 +43,10 @@ class VisitorController extends Controller
 
             return response()->json([
                 'name' => $fullName ?: $visitor->name ?? 'Unbekannt',
-                'phone'=> $visitor->phone
+                'phone'=> $visitor->phone,
+                'email'=> $visitor->email,
+                'first_name' => $visitor->first_name,
+                'last_name' => $visitor->last_name
             ]);
         }
 }

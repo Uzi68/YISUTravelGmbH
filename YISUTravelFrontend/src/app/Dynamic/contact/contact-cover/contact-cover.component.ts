@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-contact-cover',
@@ -7,6 +8,17 @@ import { Component } from '@angular/core';
   templateUrl: './contact-cover.component.html',
   styleUrl: './contact-cover.component.css'
 })
-export class ContactCoverComponent {
+export class ContactCoverComponent implements OnInit {
+  isBrowser: boolean = false;
 
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
+
+  ngOnInit() {
+    // Bootstrap Carousel wird automatisch initialisiert durch data-bs-ride="carousel"
+    // Keine zusätzliche Initialisierung erforderlich
+  }
 }

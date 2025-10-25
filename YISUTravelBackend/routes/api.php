@@ -11,17 +11,28 @@ use App\Http\Controllers\MessagePusherController;
 use App\Http\Controllers\MessageAttachmentController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\WhatsAppMessageController;
+use App\Http\Controllers\OfferController;
+use App\Http\Controllers\AppointmentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VisitorController;
+use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\CustomerController;
 use Pusher\Pusher;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
+
+// Password reset routes (public)
+Route::post('/password/reset-link', [AuthController::class, 'sendPasswordResetLink']);
+Route::post('/password/reset', [AuthController::class, 'resetPassword']);
+
+// Customer registration (public)
+Route::post('/customer/register', [CustomerController::class, 'register']);
 
 //Überprüfe ob der Nutzer Authentifiziert ist
 Route::get('/check-auth', function (Request $request) {
@@ -35,9 +46,6 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth');
 
-
-
-
 // Route für den Admin-Check
 Route::middleware('auth')->get('/user-role', function (Request $request) {
     $user = $request->user();
@@ -47,7 +55,6 @@ Route::middleware('auth')->get('/user-role', function (Request $request) {
 });
 
 Route::get('/chats/updates', [ChatbotController::class, 'getUpdatedChats'])->middleware('auth');
-
 
 //Chatbot
 Route::post('/chatbot/input', [ChatbotController::class, 'handleInput']);
@@ -62,26 +69,15 @@ Route::post('/chatbot/test-input', function (Request $request) {
     ]);
 })->middleware('auth');
 
-
-
 Route::post('/chatbot/input/anonymous', [ChatbotController::class, 'handleInputAnonymous']);
 Route::post('/chatbot/end_chatbotSession', [ChatbotController::class, 'end_chatbotSession']);
 Route::post('/chatbot/notification-status', [ChatbotController::class, 'saveNotificationStatus']);
-
-//Route::get('/chat-history', [ChatbotController::class, 'getChatHistory'])->middleware(['auth:sanctum', 'role:Admin']);
-
-
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
 */
-
-
-
-
-
 
 Route::middleware(['auth'])->group(function () {
 
@@ -91,7 +87,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/end_chatbotSession', [ChatbotController::class, 'end_chatbotSession']);
 
         Route::get('/chat-status', [ChatbotController::class, 'getChatStatus']);
-      //  Route::get('/active-chats', [ChatbotController::class, 'getActiveChats']);
 
         Route::post('/accept-chat/{chat}', [ChatRequestController::class, 'accept']);
     });
@@ -103,17 +98,37 @@ Route::post('/chatbot/send-message', [ChatbotController::class, 'sendAgentMessag
 Route::post('messages', [MessagePusherController::class, 'message']);
 
 Route::post('/chatbot/end-by-user', [ChatbotController::class, 'endChatByUser']);
-//Route::post('/chatbot/end-by-agent', [ChatbotController::class, 'endChatByAgent']);
 
 Route::post('/human', [ChatbotController::class, 'requestHuman']);
-Route::get('/chat-history', [ChatbotController::class, 'getChatHistory']);
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/chat-history', [ChatbotController::class, 'getChatHistory']);
 
+    // User profile management
+    Route::get('/profile', [UserManagementController::class, 'getProfile']);
+    Route::put('/profile', [UserManagementController::class, 'updateProfile']);
+    Route::post('/profile/upload-image', [UserManagementController::class, 'uploadProfileImage']);
+    Route::delete('/profile/remove-image', [UserManagementController::class, 'removeProfileImage']);
+    Route::post('/password/change', [AuthController::class, 'changePassword']);
+
+    // Customer routes
+    Route::prefix('customer')->group(function () {
+        Route::get('/profile', [CustomerController::class, 'getProfile']);
+        Route::get('/chat-history', [CustomerController::class, 'getChatHistory']);
+        Route::get('/dashboard-stats', [CustomerController::class, 'getDashboardStats']);
+    })->middleware('role:User');
+
+    // Staff management routes (Admin only)
+    Route::prefix('admin')->middleware('role:Admin')->group(function () {
+        Route::get('/staff', [UserManagementController::class, 'getStaffUsers']);
+        Route::post('/staff', [UserManagementController::class, 'createStaffUser']);
+        Route::put('/staff/{id}', [UserManagementController::class, 'updateStaffUser']);
+        Route::delete('/staff/{id}', [UserManagementController::class, 'deleteStaffUser']);
+    });
 
     // Close chat
     Route::post('/chat/{chat}/close', [ChatbotController::class, 'closeChat'])
-        ->middleware('role:Admin|employee');
+        ->middleware('role:Admin|Agent');
 
     // Transfer chat
     Route::post('/chat/{chat}/transfer', [ChatbotController::class, 'transferChat'])
@@ -123,22 +138,16 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/admin/chats', [ChatbotController::class, 'getAllChatsForAdmin'])
     ->middleware('role:Admin');
 
-
 // In api.php
 Route::middleware(['auth'])->group(function () {
     Route::get('/chat/requests', [ChatRequestController::class, 'index']);
     Route::post('/chat/{chat}/accept', [ChatRequestController::class, 'accept']);
 });
 
-
-
 // Besucher-Details anhand session_id abrufen (GET)
 Route::get('/visitorDetails/{session_id}', [VisitorController::class, 'getVisitorDetails'])->middleware('auth');
 
 Route::post('/messages/mark-as-read', [ChatbotController::class, 'markMessagesAsRead'])->middleware('auth');
-
-
-
 
 //Buchungen
 Route::prefix('bookings')->group(function () {
@@ -148,10 +157,8 @@ Route::prefix('bookings')->group(function () {
     Route::put('/{booking}/status', [BookingController::class, 'updateStatus']); // Status ändern
 });
 
-
 //Chatbot Response hinzufügen
 Route::post('insert-chatbotresponse', [ChatbotResponses::class, 'insertChatbotResponse'])->middleware('auth');
-
 
 Route::get('get-chatbotresponses', [ChatbotResponses::class, 'getTrainedData']);
 Route::delete('delete-chatbotresponse/{id}', [ChatbotResponses::class, 'deleteChatbotResponse']);
@@ -163,24 +170,6 @@ Route::post('register-visitor', [ChatbotController::class, 'registerVisitor']);
 Route::get('check-registration/{sessionId}', [ChatbotController::class, 'checkVisitorRegistration']);
 
 Route::post('/chats/mark-read', [ChatbotController::class, 'markMessagesAsRead']);
-
-
-
-
-//Route::post('/chat/{chat}/assign', [ChatbotController::class, 'assign']);
-
-/*
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/chat/{chat}/assign', [ChatbotController::class, 'assign']);
-    Route::post('/chat/{chat}/reassign', [ChatbotController::class, 'reassign']);
-    Route::post('/chat/{chat}/unassign', [ChatbotController::class, 'unassign']);
-    Route::get('/agents/available', [ChatbotController::class, 'getAvailableAgents']);
-});
-Route::post('/chat/visitor-message', [ChatbotController::class, 'sendMessageFromVisitor']);
-Route::get('/chat/status/{sessionId}', [ChatbotController::class, 'getChatStatus']);
-*/
-
-
 
 // ✅ Anonyme Benutzer Routen (ohne Auth-Middleware)
 Route::post('/send-to-human-chat', [ChatbotController::class, 'sendToHumanChat']);
@@ -222,10 +211,7 @@ Route::get('/chats/{chatId}/attachments', [MessageAttachmentController::class, '
 
 Route::post('/broadcasting/auth/visitor', [BroadcastAuthController::class, 'authenticate']);
 
-
 // Spezielle Broadcasting-Auth für Visitors
-// In routes/api.php - NACH Ihren bestehenden Routen hinzufügen:
-
 Route::post('/broadcasting/auth/visitor', function (Request $request) {
     $sessionId = $request->header('X-Session-ID');
     $channelName = $request->input('channel_name');
@@ -288,4 +274,50 @@ Route::middleware(['auth'])->prefix('whatsapp')->group(function () {
 
     // WhatsApp Chats abrufen
     Route::get('/chats', [WhatsAppMessageController::class, 'getWhatsAppChats']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Offer Management Routes
+|--------------------------------------------------------------------------
+*/
+
+// Public routes (für Homepage)
+Route::get('/offers', [OfferController::class, 'index']);
+Route::get('/offers/featured', [OfferController::class, 'featured']);
+Route::get('/offers/active', [OfferController::class, 'active']);
+Route::get('/offers/{id}', [OfferController::class, 'show']);
+
+// Admin routes (nur für authentifizierte Admins)
+Route::middleware(['auth', 'role:Admin'])->prefix('admin/offers')->group(function () {
+    Route::get('/', [OfferController::class, 'index']); // Alle Angebote (auch inaktive)
+    Route::post('/', [OfferController::class, 'store']); // Neues Angebot erstellen
+    Route::put('/{id}', [OfferController::class, 'update']); // Angebot bearbeiten
+    Route::delete('/{id}', [OfferController::class, 'destroy']); // Angebot löschen
+    Route::post('/{id}/toggle-featured', [OfferController::class, 'toggleFeatured']); // Hauptangebot setzen
+});
+
+/*
+|--------------------------------------------------------------------------
+| Appointment Management Routes
+|--------------------------------------------------------------------------
+*/
+
+// Public appointment routes
+Route::prefix('appointments')->group(function () {
+    Route::post('/', [AppointmentController::class, 'store']);
+    Route::get('/available-slots', [AppointmentController::class, 'getAvailableSlots']);
+    Route::get('/blocked-slots', [AppointmentController::class, 'getBlockedSlots']);
+
+        // Admin routes (authenticated users only)
+        Route::middleware(['auth'])->group(function () {
+            Route::get('/', [AppointmentController::class, 'index']);
+            Route::post('/block', [AppointmentController::class, 'blockSlot']);
+            Route::delete('/unblock/{id}', [AppointmentController::class, 'unblockSlot']);
+            Route::post('/unblock-by-datetime', [AppointmentController::class, 'unblockSlotByDateTime']);
+            Route::post('/unblock-multiple', [AppointmentController::class, 'unblockMultipleSlots']);
+            Route::patch('/{id}/status', [AppointmentController::class, 'updateStatus']);
+            Route::post('/{id}/release', [AppointmentController::class, 'releaseAppointment']);
+            Route::post('/{id}/restore', [AppointmentController::class, 'restoreAppointment']);
+        });
 });

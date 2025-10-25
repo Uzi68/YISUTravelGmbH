@@ -2,7 +2,7 @@
 <div class="additional-info-top">
   <div class="logo-social-container">
     <!-- Logo -->
-    <img src="/logo.png" class="logo-img" routerLink="/" alt="YISU Travel Logo">
+    <img src="/logonav.png" class="logo-img" routerLink="/" alt="YISU Travel Logo">
 
     <!-- Social Media Icons -->
     <div class="social-icons">
@@ -20,7 +20,7 @@
         <i class="fab fa-instagram"></i>
       </a>
       <!-- WhatsApp -->
-      <a class="btn btn-social" id="btntransition3" style="background-color: #25D366;" href="https://wa.me/491773948537"
+      <a class="btn btn-social" id="btntransition3" style="background-color: #25D366;" href="https://wa.me/017696184913"
          target="_blank" role="button">
         <i class="fab fa-whatsapp" style="font-size: 22px;"></i>
       </a>
@@ -29,15 +29,19 @@
 </div>
 
 
-<div class="toolbarbackground">
+<div class="toolbarbackground" *ngIf="!isAdminDashboardRoute">
   <mat-toolbar class="main-toolbar">
     <!-- Logo -->
-    <img src="/logo.png" class="logo-imgMobile" routerLink="/" alt="YISU Travel Logo Mobile">
-
+    <div class="logo-wrapper">
+      <img src="/logonav.png" class="logo-imgMobile" routerLink="/" alt="YISU Travel Logo Mobile">
+    </div>
     <!-- Spacer -->
     <span class="spacer"></span>
 
+    <!-- Spacer zwischen Navigation Seiten -->
+    <div class="nav-spacer"></div>
 
+    <!--
     <div class="desktop-menu2">
       <a routerLink="/in-bearbeitung" class="icon-button">
         <i class="fas fa-hotel"></i>
@@ -51,7 +55,7 @@
         <i class="fas fa-suitcase-rolling"></i>
         Reise
       </a>
-      <a routerLink="/in-bearbeitung" class="icon-button">
+      <a routerLink="/in-bearbeitung" class="icon-button mietwagen">
         <i class="fas fa-car"></i>
         Mietwagen
       </a>
@@ -59,10 +63,10 @@
 
     <!-- Desktop Links -->
     <div class="desktop-menu">
-      <a mat-button routerLink="/" routerLinkActive="active-list-item">Startseite</a>
-      <a mat-button routerLink="/ueber-uns">Über Uns</a>
-      <a mat-button routerLink="/dienstleistung">Dienstleistungen</a>
-      <a mat-button routerLink="/kontakt">Kontakt</a>
+      <a mat-button routerLink="/" routerLinkActive="active-list-item" [routerLinkActiveOptions]="{exact: true}">Startseite</a>
+      <a mat-button routerLink="/ueber-uns" routerLinkActive="active-list-item">Über Uns</a>
+      <a mat-button routerLink="/dienstleistung" routerLinkActive="active-list-item">Dienstleistungen</a>
+      <a mat-button routerLink="/kontakt" routerLinkActive="active-list-item">Kontakt</a>
 
 
       <a mat-button [matMenuTriggerFor]="menu" class="adminicon">
@@ -91,13 +95,13 @@
       class="mobile-menu-btn"
       [class.open]="isOpen">
       <ng-container *ngIf="!isOpen; else closeIcon">
-        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#e8eaed">
+        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px">
           <path
             d="M96.75-220.83v-89.42h766.66v89.42H96.75Zm0-214.97v-89.26h766.66v89.26H96.75Zm0-215.05v-89.42h766.66v89.42H96.75Z"/>
         </svg>
       </ng-container>
       <ng-template #closeIcon>
-        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#e8eaed">
+        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px">
           <path
             d="m249.14-185.88-62.17-63.26L417.49-480 186.97-711.71l62.17-63.51 231.62 231.71 230.1-231.71 62.17 63.51L543.17-480l229.86 230.86-62.17 63.26-230.1-231.71-231.62 231.71Z"/>
         </svg>
@@ -133,7 +137,8 @@
         <i class="fas fa-envelope sidenav-icon"></i> <span class="sidenav-text">Kontakt</span>
       </a>
 
-      <!-- Travel Services Section -->
+      <!-- 
+
       <h3 class="sidenav-header">Reiseangebote</h3>
       <a mat-list-item routerLink="/in-bearbeitung" (click)="sidenav.close(); closeSidenav()">
         <i class="fas fa-hotel sidenav-icon"></i> <span class="sidenav-text">Hotel</span>
@@ -147,6 +152,7 @@
       <a mat-list-item routerLink="/in-bearbeitung" (click)="sidenav.close(); closeSidenav()">
         <i class="fas fa-car sidenav-icon"></i> <span class="sidenav-text">Mietwagen</span>
       </a>
+     -->
 
       <!-- Admin Login -->
       <h3 class="sidenav-header">Admin Dashboard</h3>

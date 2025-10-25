@@ -1,10 +1,8 @@
-import {Component, ElementRef, Inject, PLATFORM_ID, QueryList, ViewChildren} from '@angular/core';
+import {Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, Inject, PLATFORM_ID, QueryList, ViewChildren, OnInit} from '@angular/core';
 import {isPlatformBrowser, NgClass, NgForOf} from "@angular/common";
-import {RouterLink} from "@angular/router";
-import {TerminVereinbarenComponent} from "./termin-vereinbaren/termin-vereinbaren.component";
-import {MatDialog} from "@angular/material/dialog";
-import {MatButton, MatFabAnchor, MatFabButton} from "@angular/material/button";
-import {MatIcon} from "@angular/material/icon";
+import {RouterLink, Router} from "@angular/router";
+import {MatButton, MatFabAnchor, MatFabButton, MatButtonModule} from "@angular/material/button";
+import {MatIcon, MatIconModule} from "@angular/material/icon";
 
 @Component({
   selector: 'app-homepage-contact',
@@ -16,34 +14,44 @@ import {MatIcon} from "@angular/material/icon";
     MatButton,
     MatFabButton,
     MatIcon,
-    MatFabAnchor
-
+    MatFabAnchor,
+    MatButtonModule,
+    MatIconModule
   ],
   templateUrl: './homepage-contact.component.html',
-  styleUrl: './homepage-contact.component.css'
+  styleUrl: './homepage-contact.component.css',
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class HomepageContactComponent {
+export class HomepageContactComponent implements OnInit {
   isOpen = false;
+  isBrowser: boolean = false;
 
   toggleDropdown() {
     this.isOpen = !this.isOpen;
   }
 
-  constructor(private dialog: MatDialog, @Inject(PLATFORM_ID) private platformId: Object) {
+  constructor(
+    private router: Router, 
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
-  openDialog(): void {
-    const dialogRef = this.dialog.open(TerminVereinbarenComponent, {
-      width: '1000px',
-      autoFocus: false,
-      panelClass: 'custom-dialog-container'
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      console.log('The dialog was closed. Selected date:', result);
-    });
+  async ngOnInit() {
+    if (this.isBrowser) {
+      // Initialize Swiper elements
+      try {
+        const { register } = await import('swiper/element/bundle');
+        register();
+      } catch (error) {
+        console.error('Swiper initialization failed:', error);
+      }
+    }
   }
 
+  openAppointmentBooking(): void {
+    this.router.navigate(['/termin-buchen']);
+  }
 
   @ViewChildren('carouselanimation') boxElements!: QueryList<ElementRef>;
 

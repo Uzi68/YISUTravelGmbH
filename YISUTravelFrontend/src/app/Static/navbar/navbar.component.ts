@@ -73,6 +73,19 @@ export class NavbarComponent {
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object, private authService: AuthService, private router: Router, private chatbot: ChatbotService) {
     this.authenticated = this.authService.getAuthenticated();
+    
+    // Dark Mode Flashbang Prevention - Set immediately in constructor
+    if (isPlatformBrowser(this.platformId)) {
+      const savedDarkMode = JSON.parse(localStorage.getItem('dark-mode') || 'false');
+      this.darkMode = savedDarkMode;
+      
+      // Apply Dark Mode immediately if it was saved
+      if (this.darkMode) {
+        document.documentElement.classList.add('dark-mode');
+        document.body.classList.add('dark-mode');
+      }
+    }
+    
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
@@ -81,23 +94,20 @@ export class NavbarComponent {
   }
 
   onLogout() {
-    //this.authenticated = false;
-    this.authService.logout(); // Call the logout method from the AuthService
+    this.authService.logout().subscribe({
+      next: () => {
+        // Navigation wird bereits im AuthService gehandhabt
+      },
+      error: (error: any) => {
+        console.error('Error logging out:', error);
+      }
+    });
   }
 
 
   ngOnInit() {
-    // Check if running in the browser
-    if (isPlatformBrowser(this.platformId)) {
-      // Retrieve the saved Dark Mode state
-      const savedDarkMode = JSON.parse(localStorage.getItem('dark-mode') || 'false');
-      this.darkMode = savedDarkMode;
-
-      // Apply Dark Mode if it was saved
-      if (this.darkMode) {
-        document.body.classList.add('dark-mode');
-      }
-    }
+    // Dark Mode state is already set in constructor to prevent flashbang
+    // This is just for compatibility
   }
 
   checkAuth()  {
@@ -118,8 +128,10 @@ export class NavbarComponent {
 
     // Add or remove the 'dark-mode' class
     if (this.darkMode) {
+      document.documentElement.classList.add('dark-mode');
       document.body.classList.add('dark-mode');
     } else {
+      document.documentElement.classList.remove('dark-mode');
       document.body.classList.remove('dark-mode');
     }
 

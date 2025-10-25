@@ -1,19 +1,80 @@
 /* You can add global styles to this file, and also import other style files */
 @import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 
-/* DSGVO-konform: Lokale Material Icons (keine Google Fonts) */
+/* DSGVO-konform: Lokale Fonts */
 @import '@fontsource/material-icons';
-@import '@fontsource/roboto/300.css';
-@import '@fontsource/roboto/400.css';
-@import '@fontsource/roboto/500.css';
-@import '@fontsource/roboto/700.css';
+@import '@fontsource/playfair-display/400.css';
+@import '@fontsource/playfair-display/600.css';
+@import '@fontsource/playfair-display/700.css';
+@import '@fontsource/poppins/300.css';
+@import '@fontsource/poppins/400.css';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/600.css';
+@import '@fontsource/open-sans/300.css';
+@import '@fontsource/open-sans/400.css';
+@import '@fontsource/open-sans/500.css';
+@import '@fontsource/open-sans/600.css';
 
 html, body {
   height: 100%;
   /* Skip animation  */
   scroll-behavior: auto !important;
 }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Dark Mode Flashbang Prevention */
+html {
+  color-scheme: light;
+}
+
+html.dark-mode {
+  color-scheme: dark;
+}
+
+/* Script für sofortiges Dark Mode Loading - Verhindert Flashbang */
+html:not(.dark-mode) {
+  background-color: #ffffff;
+}
+
+html.dark-mode {
+  background-color: #0f172a;
+}
+
+/* Verhindert Flashbang - Setzt sofort beim Laden */
+body {
+  background-color: var(--yisu-bg-main);
+  color: var(--yisu-text-dark);
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+/* Sofortiges Dark Mode ohne Delay */
+html.dark-mode body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+/* Font Familie Definitionen */
+body { 
+  margin: 0; 
+  font-family: 'Open Sans', "Helvetica Neue", sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* Font Klassen */
+.font-heading {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+}
+
+.font-subheading {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+}
+
+.font-body {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 400;
+}
 
 /* Ensure Material Icons render correctly */
 .mat-icon {
@@ -37,74 +98,184 @@ body.dark-mode {
   background-color: #121212;
 }
 
-/* Default (Light Mode) */
+/* ====================================
+   YISU Travel - Einheitliches Farbschema
+   ==================================== */
+
+/* Default (Light Mode) - Flyer-basiertes Travel Farbschema */
 :root {
-  --background-color: #f7faff;
-  --text-color: #333333;
-  --offertext-color: #333;
-  --offertextTitle-color: #666;
-  --offertextPrice-color: #444;
-  --offer-background-color: #fff;
-  --offershadow-background-color: 0 6px 15px rgba(0, 0, 0, 0.1);
-  --primary-color: #1E90FF;
-  --secondary-color: #87CEEB;
-  --link-color: #1E90FF;
-  --box-color: #d9d8de;
-  --dropdown-color: #ffffff;
-  --header-color:#0077b6;
-  --lc-block-color: white;
-  --lc-block-text-color: #666;
-  --lc-block-header-color: #333;
-  --lc-block-hover1-color: #e6faff;
-  --lc-block-hover2-color: #ffffff;
-  --lc-block-hover3-color: rgba(23, 177, 241, 0.05);
-  --amt-section-color: #0077b6;
-  --ueber-uns-color: rgba(0, 123, 255, 0.1);
-  --customer-ratings-color: linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(9,121,202,1) 35%, rgba(0,212,255,1) 100%);
-  --additional-info-color: #f5f5f5;
-  --toolbarkit-color: linear-gradient(90deg,#fff 15%,#0077b6 75%);
-  --toolbarkit-mobile-color: linear-gradient(90deg,#fff 15%,#0077b6 75%);
-  --shadow-color: 0 8px 20px rgba(0, 0, 0, 0.2);
-  --formfield-color: #73767e;
-  --formfield-error-color: #b91a1a;
+  /* === Flyer Travel Agency Farbschema === */
+  --yisu-primary: #1976d2;          /* Modernes Blau - Logo/Text */
+  --yisu-secondary: #fbbf24;        /* Sonniges Gelb - Banner/Akzente */
+  --yisu-nav-items: #1976d2;
+  --yisu-nav-items-hover: #1976d2;
+  --yisu-nav-items-hover-background: #ffffff;
+  --yisu-nav-items-active: #ffffff;
+  --yisu-nav-items-active-hover: #ffffff;
+  --yisu-nav-items-active-hover-background: #2196f3;
+  --yisu-accent: #e3f2fd;           /* Helles Blau - Hintergrund/Akzent */
+  --yisu-red: #dc2626;              /* Rot - Akzent aus Flyer */
+  --yisu-light: #ffffff;            /* Main Background */
+  --yisu-white: #ffffff;            /* Pure White */
+  
+  /* === Textfarben === */
+  --yisu-text-dark: #333333;        /* Dunkles Grau - Haupttexte */
+  --yisu-text-medium: #555555;      /* Medium Text */
+  --yisu-text-light: #777777;       /* Heller Text */
+  --yisu-text-white: #ffffff;       /* Weißer Text */
+  --yisu-text-black: #1a1a1a;       /* Schwarzer Text */
+  
+  /* === UI Elemente === */
+  --yisu-navbar-bg: #ffffff;        /* Weiß - Navbar Background */
+  --yisu-navbar-text: #333333;      /* Dunkles Grau - Navbar Text */
+  --yisu-navbar-hover: #fbbf24;     /* Gelb - Hover */
+  --yisu-navbar-top: #fbbf24;       /* Sonniges Gelb - Top Bar */
+  
+  /* === Buttons & Links === */
+  --yisu-button-primary: #fbbf24;   /* Sonniges Gelb - CTA Button */
+  --yisu-button-primary-hover: #f59e0b;
+  --yisu-button-secondary: #87ceeb; /* Himmelblau - Akzent Button */
+  --yisu-button-secondary-hover: #7dd3fc;
+  
+  /* === Backgrounds === */
+  --yisu-bg-main: #ffffff;          /* Main Background */
+  --yisu-bg-section: #f0f9ff;        /* Helles Himmelblau - Section */
+  --yisu-bg-card: #ffffff;          /* Card Background */
+  --yisu-bg-overlay: rgba(30, 58, 138, 0.2); /* Leichtes Overlay */
+  
+  /* === Borders & Shadows === */
+  --yisu-border-light: #e0f2fe;
+  --yisu-border-medium: #fbbf24;    /* Sonniges Gelb - Border */
+  --yisu-shadow-sm: 0 2px 8px rgba(30, 58, 138, 0.08);
+  --yisu-shadow-md: 0 4px 16px rgba(30, 58, 138, 0.12);
+  --yisu-shadow-lg: 0 8px 24px rgba(30, 58, 138, 0.15);
+  
+  /* === Formulare === */
+  --yisu-form-border: #87ceeb;       /* Himmelblau - Border */
+  --yisu-form-focus: #1e3a8a;       /* Dunkles Blau - Focus */
+  --yisu-form-error: #dc2626;
+  
+  /* === Legacy Kompatibilität (wird schrittweise ersetzt) === */
+  --background-color: var(--yisu-bg-main);
+  --text-color: var(--yisu-text-dark);
+  --offertext-color: var(--yisu-text-dark);
+  --offertextTitle-color: var(--yisu-text-medium);
+  --offertextPrice-color: var(--yisu-text-dark);
+  --offer-background-color: var(--yisu-bg-card);
+  --offershadow-background-color: var(--yisu-shadow-md);
+  --primary-color: var(--yisu-primary);
+  --secondary-color: var(--yisu-secondary);
+  --link-color: var(--yisu-primary);
+  --box-color: var(--yisu-bg-section);
+  --dropdown-color: var(--yisu-white);
+  --header-color: var(--yisu-primary);
+  --lc-block-color: var(--yisu-white);
+  --lc-block-text-color: var(--yisu-text-medium);
+  --lc-block-header-color: var(--yisu-text-dark);
+  --lc-block-hover1-color: #f8f9fa;
+  --lc-block-hover2-color: var(--yisu-white);
+  --lc-block-hover3-color: rgba(255, 215, 94, 0.08);
+  --amt-section-color: var(--yisu-primary);
+  --ueber-uns-color: rgba(142, 209, 220, 0.1);
+  --customer-ratings-color: var(--yisu-bg-section);
+  --additional-info-color: var(--yisu-bg-section);
+  --toolbarkit-color: var(--yisu-navbar-bg);
+  --toolbarkit-mobile-color: var(--yisu-navbar-bg);
+  --shadow-color: var(--yisu-shadow-lg);
+  --formfield-color: var(--yisu-text-medium);
+  --formfield-error-color: var(--yisu-form-error);
 }
 
 /* Dark Mode */
 body.dark-mode {
-  --background-color: #121212;
-  --text-color: #E1E1E1;
-  --offertext-color: #fff;
-  --offertextTitle-color: #fff;
-  --offertextPrice-color: #fff;
-  --offer-background-color: #2b2b2b;
-  --offershadow-background-color: 0 6px 15px rgba(255, 255, 255, 0.1);
-  --primary-color: #1E90FF;
-  --secondary-color: #4682B4;
-  --link-color: #87CEFA;
-  --box-color: #3e3e3e;
-  --dropdown-color:#202020;
-  --header-color:#1ab0ff;
-  --lc-block-color: #3e3e3e;
-  --lc-block-text-color: white;
-  --lc-block-header-color: white;
-  --lc-block-hover1-color: #505050;
-  --lc-block-hover2-color: #000000;
-  --lc-block-hover3-color: rgba(0, 85, 124, 0.32);
-  --amt-section-color: #003d5e;
-  --ueber-uns-color: rgba(78, 158, 255, 0.44);
-  --customer-ratings-color: linear-gradient(90deg,#000,#124468 35%,#256775);
-  --additional-info-color: #121212;
-  --toolbarkit-color: linear-gradient(90deg, #000000 15%, #00456a 75%);
-  --toolbarkit-mobile-color: linear-gradient(90deg, #44a5ff 15%, #000000 80%);
-  --shadow-color: 0 8px 20px rgba(255, 255, 255, 0.2);
-  --formfield-color: white;
-  --formfield-error-color: red;
+  /* === Flyer-basiertes Travel Agency Dark Mode === */
+  --yisu-primary: #60a5fa;          /* Helleres Blau - Dark Mode */
+  --yisu-secondary: #fbbf24;        /* Sonniges Gelb - bleibt gleich */
+  --yisu-nav-items: #fbbf24;        /* Sonniges Gelb - bleibt gleich */
+  --yisu-nav-items-hover: #fbbf24;
+  --yisu-nav-items-hover-background: #fbbf240f;
+  --yisu-nav-items-active: #0f172a; /*#f59e0b*/
+  --yisu-nav-items-active-hover: #1e293b;
+  --yisu-nav-items-active-hover-background: #facc15;
+  --yisu-accent: #7dd3fc;           /* Helleres Himmelblau - Dark Mode */
+  --yisu-light: #0f172a;            /* Dunkler Hintergrund */
+  --yisu-white: #ffffff;            /* Pure White */
+  
+  /* === Textfarben Dark Mode === */
+  --yisu-text-dark: #f1f5f9;        /* Heller Text */
+  --yisu-text-medium: #cbd5e1;      /* Medium Text */
+  --yisu-text-light: #94a3b8;       /* Dunkler Text */
+  --yisu-text-white: #ffffff;       /* Weißer Text */
+  
+  /* === UI Elemente Dark Mode === */
+  --yisu-navbar-bg: #87ceeb;        /* Himmelblau - Navbar Background */
+  --yisu-navbar-text: #1e3a8a;      /* Dunkles Blau - Navbar Text */
+  --yisu-navbar-hover: #fbbf24;     /* Sonniges Gelb - Hover */
+  --yisu-navbar-top: #fbbf24;       /* Sonniges Gelb - Top Bar */
+  
+  /* === Buttons & Links Dark Mode === */
+  --yisu-button-primary: #fbbf24;   /* Sonniges Gelb - CTA Button */
+  --yisu-button-primary-hover: #f59e0b;
+  --yisu-button-secondary: #7dd3fc; /* Helleres Himmelblau - Akzent */
+  --yisu-button-secondary-hover: #60a5fa;
+  
+  /* === Backgrounds Dark Mode === */
+  --yisu-bg-main: #0f172a;          /* Main Background */
+  --yisu-bg-section: #1e293b;        /* Section Background */
+  --yisu-bg-card: #334155;          /* Card Background */
+  --yisu-bg-overlay: rgba(30, 58, 138, 0.6); /* Marine Blau Overlay */
+  
+  /* === Borders & Shadows Dark Mode === */
+  --yisu-border-light: #475569;
+  --yisu-border-medium: #fbbf24;    /* Sonniges Gelb - Border */
+  --yisu-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --yisu-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --yisu-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  
+  /* === Formulare Dark Mode === */
+  --yisu-form-border: #7dd3fc;       /* Helleres Himmelblau - Border */
+  --yisu-form-focus: #60a5fa;       /* Helleres Blau - Focus */
+  --yisu-form-error: #f87171;
+  
+  /* === Legacy Kompatibilität Dark Mode === */
+  --background-color: var(--yisu-bg-main);
+  --text-color: var(--yisu-text-dark);
+  --offertext-color: var(--yisu-text-dark);
+  --offertextTitle-color: var(--yisu-text-medium);
+  --offertextPrice-color: var(--yisu-text-dark);
+  --offer-background-color: var(--yisu-bg-card);
+  --offershadow-background-color: var(--yisu-shadow-md);
+  --primary-color: var(--yisu-primary);
+  --secondary-color: var(--yisu-secondary);
+  --link-color: var(--yisu-secondary);
+  --box-color: var(--yisu-bg-section);
+  --dropdown-color: var(--yisu-bg-card);
+  --header-color: var(--yisu-secondary);
+  --lc-block-color: var(--yisu-bg-card);
+  --lc-block-text-color: var(--yisu-text-dark);
+  --lc-block-header-color: var(--yisu-text-white);
+  --lc-block-hover1-color: #1a3a4a;
+  --lc-block-hover2-color: #0e2431;
+  --lc-block-hover3-color: rgba(255, 215, 94, 0.15);
+  --amt-section-color: var(--yisu-primary);
+  --ueber-uns-color: rgba(102, 191, 210, 0.2);
+  --customer-ratings-color: var(--yisu-bg-section);
+  --additional-info-color: var(--yisu-bg-section);
+  --toolbarkit-color: var(--yisu-navbar-bg);
+  --toolbarkit-mobile-color: var(--yisu-navbar-bg);
+  --shadow-color: var(--yisu-shadow-lg);
+  --formfield-color: var(--yisu-text-dark);
+  --formfield-error-color: var(--yisu-form-error);
 }
 
 .icon path {
   fill: var(--header-color); /* Verwende die Variable */
 }
 
+
+.mat-mdc-standard-chip:not(.mdc-evolution-chip--disabled) .mdc-evolution-chip__text-label {
+  color: var(--yisu-text) !important;
+}
 
 .foe {
   /* Default colors for all states */
@@ -141,6 +312,201 @@ body.dark-mode {
   --mdc-outlined-text-field-error-hover-input-text-color: var(--formfield-error-color);
   --mdc-outlined-text-field-error-hover-caret-color: var(--formfield-error-color);
 
+}
+
+/* Global Material Form Field Dark Mode Overrides */
+body.dark-mode {
+  --mdc-outlined-text-field-container-shape: 12px;
+  --mdc-outlined-text-field-outline-color: var(--yisu-text-medium);
+  --mdc-outlined-text-field-label-text-color: var(--yisu-text-medium);
+  --mdc-outlined-text-field-input-text-color: var(--yisu-text-dark);
+  --mdc-outlined-text-field-caret-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-placeholder-text-color: var(--yisu-text-light);
+  --mdc-outlined-text-field-hover-outline-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-hover-label-text-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-hover-input-text-color: var(--yisu-text-dark);
+  --mdc-outlined-text-field-hover-caret-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-focus-outline-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-focus-label-text-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-focus-input-text-color: var(--yisu-text-dark);
+  --mdc-outlined-text-field-focus-caret-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-error-outline-color: #f87171;
+  --mdc-outlined-text-field-error-label-text-color: #f87171;
+  --mdc-outlined-text-field-error-hover-outline-color: #f87171;
+  --mdc-outlined-text-field-error-hover-label-text-color: #f87171;
+  --mdc-outlined-text-field-error-hover-input-text-color: var(--yisu-text-dark);
+  --mdc-outlined-text-field-error-hover-caret-color: #f87171;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper {
+  background-color: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-input-control {
+  background-color: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-input-element {
+  color: var(--yisu-text-dark) !important;
+  background-color: transparent !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-label {
+  color: var(--yisu-text-medium) !important;
+}
+
+body.dark-mode .mat-mdc-form-field.mat-focused .mat-mdc-form-field-label {
+  color: var(--yisu-secondary) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-outline {
+  color: var(--yisu-text-medium) !important;
+}
+
+body.dark-mode .mat-mdc-form-field.mat-focused .mat-mdc-form-field-outline {
+  color: var(--yisu-secondary) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-icon-suffix {
+  color: var(--yisu-secondary) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-hint-text {
+  color: var(--yisu-text-light) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-error {
+  color: #f87171 !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-focus-overlay {
+  background-color: rgba(251, 191, 36, 0.04) !important;
+}
+
+/* Additional Material Design Overrides */
+body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex {
+  background-color: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex .mat-mdc-form-field-infix {
+  background-color: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex .mat-mdc-form-field-infix input {
+  color: var(--yisu-text-dark) !important;
+  background-color: transparent !important;
+}
+
+/* Button Overrides */
+body.dark-mode .mat-mdc-raised-button {
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3) !important;
+}
+
+body.dark-mode .mat-mdc-raised-button:not(:disabled) {
+  border: none !important;
+  outline: none !important;
+}
+
+body.dark-mode .mat-mdc-raised-button:focus {
+  outline: none !important;
+  border: none !important;
+}
+
+/* Force Material Design Variable Overrides */
+body.dark-mode {
+  --mdc-filled-text-field-container-color: var(--yisu-bg-card);
+  --mdc-filled-text-field-input-text-color: var(--yisu-text-dark);
+  --mdc-filled-text-field-label-text-color: var(--yisu-text-medium);
+  --mdc-filled-text-field-active-indicator-color: var(--yisu-secondary);
+  --mdc-filled-text-field-hover-active-indicator-color: var(--yisu-secondary);
+  --mdc-filled-text-field-focus-active-indicator-color: var(--yisu-secondary);
+  --mdc-filled-text-field-error-active-indicator-color: #f87171;
+  --mdc-filled-text-field-error-hover-active-indicator-color: #f87171;
+  --mdc-filled-text-field-error-focus-active-indicator-color: #f87171;
+  --mdc-filled-text-field-error-label-text-color: #f87171;
+  --mdc-filled-text-field-error-hover-label-text-color: #f87171;
+  --mdc-filled-text-field-error-focus-label-text-color: #f87171;
+  --mdc-filled-text-field-error-input-text-color: var(--yisu-text-dark);
+  --mdc-filled-text-field-error-hover-input-text-color: var(--yisu-text-dark);
+  --mdc-filled-text-field-error-focus-input-text-color: var(--yisu-text-dark);
+  --mdc-filled-text-field-caret-color: var(--yisu-secondary);
+  --mdc-filled-text-field-error-caret-color: #f87171;
+  --mdc-filled-text-field-error-hover-caret-color: #f87171;
+  --mdc-filled-text-field-error-focus-caret-color: #f87171;
+}
+
+/* Additional Material Design Component Overrides */
+body.dark-mode .mat-mdc-select {
+  --mdc-select-focus-outline-color: var(--yisu-secondary);
+  --mdc-select-hover-outline-color: var(--yisu-secondary);
+  --mdc-select-outline-color: var(--yisu-text-medium);
+  --mdc-select-label-text-color: var(--yisu-text-medium);
+  --mdc-select-focus-label-text-color: var(--yisu-secondary);
+  --mdc-select-hover-label-text-color: var(--yisu-secondary);
+  --mdc-select-outline-width: 1px;
+  --mdc-select-outline-style: solid;
+  --mdc-select-outline-color: var(--yisu-text-medium);
+  --mdc-select-focus-outline-color: var(--yisu-secondary);
+  --mdc-select-hover-outline-color: var(--yisu-secondary);
+}
+
+body.dark-mode .mat-mdc-select .mat-mdc-select-value {
+  color: var(--yisu-text-dark) !important;
+}
+
+body.dark-mode .mat-mdc-select .mat-mdc-select-placeholder {
+  color: var(--yisu-text-light) !important;
+}
+
+body.dark-mode .mat-mdc-select .mat-mdc-select-arrow {
+  color: var(--yisu-secondary) !important;
+}
+
+/* Material Table Dark Mode Overrides */
+body.dark-mode .mat-mdc-table {
+  background: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-header-cell {
+  color: var(--yisu-text-dark) !important;
+  background: var(--yisu-primary) !important;
+}
+
+body.dark-mode .mat-mdc-cell {
+  color: var(--yisu-text-dark) !important;
+  background: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-row {
+  background: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-row:hover {
+  background: rgba(25, 118, 210, 0.05) !important;
+}
+
+body.dark-mode .mat-mdc-row:nth-child(even) {
+  background: var(--yisu-bg-card) !important;
+}
+
+body.dark-mode .mat-mdc-row:nth-child(odd) {
+  background: var(--yisu-bg-card) !important;
+}
+
+/* Material Icon Dark Mode */
+body.dark-mode mat-icon {
+  color: var(--yisu-secondary) !important;
+}
+
+/* Material Button Dark Mode */
+body.dark-mode .mat-mdc-icon-button {
+  color: var(--yisu-secondary) !important;
+}
+
+body.dark-mode .mat-mdc-icon-button:hover {
+  background: rgba(251, 191, 36, 0.1) !important;
 }
 
 

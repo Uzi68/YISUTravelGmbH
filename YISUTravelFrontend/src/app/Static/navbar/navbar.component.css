@@ -1,36 +1,65 @@
+/* ====================================
+   YISU Travel - Navbar Design
+   ==================================== */
+
 .main-toolbar {
   display: flex;
   align-items: center;
-  padding: 0 0; /* Optional padding adjustment */
-  font-size: 18px; /* Increase base font size */
-  max-width: 1400px;
+  justify-content: center;
+  padding: 0.75rem 2rem;
+  font-size: 16px;
+  max-width: 1600px;
   margin: 0 auto;
   background: transparent;
+  height: 65px;
+  gap: 1.5rem;
+  
   @media (max-width: 768px) {
-    padding: 0 20px;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    height: 60px;
+    gap: 1rem;
   }
 }
 
 .toolbarbackground {
-  background: var(--toolbarkit-color);
-  @media (max-width: 768px) {
-    background: var(--toolbarkit-mobile-color)!important;
-  }
+  box-shadow: 0 4px 20px rgba(25, 118, 210, 0.15);
+  border-bottom: 1px solid rgba(25, 118, 210, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 ::ng-deep .mat-mdc-menu-content {
   padding: 0px !important;
 }
 
 .adminicon{
-  fill: white;
+  fill: var(--yisu-nav-items);
+  transition: all 0.3s ease;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .adminicon:hover {
-  fill: rgb(3, 56, 94);
+  fill: var(--yisu-nav-items-hover);
+  background: rgba(25, 118, 210, 0.1);
+  transform: scale(1.05);
+}
+
+body.dark-mode .adminicon {
+  fill: rgba(255, 255, 255, 0.95);
+  
+  &:hover {
+    fill: var(--yisu-secondary);
+    background: rgba(251, 191, 36, 0.12);
+  }
 }
 
 .adminiconMobile {
-  fill: var(--header-color);
+  fill: var(--yisu-nav-items);
   margin-bottom: 2px;
 }
 
@@ -43,9 +72,6 @@
 }
 
 
-
-
-
 .logo {
   font-size: 24px; /* Logo font size */
   font-weight: bold; /* Bold logo */
@@ -53,13 +79,33 @@
 }
 
 .logo-img {
-  height: 100px;
-  margin-bottom: -25px;
-  margin-top: -25px;
+  height: 65px;
   cursor: pointer;
-  @media (min-width: 1200px) {
-    margin-right: auto; /* Push the menu to the right */
-    padding-left: 10%; /* Add right padding for a better layout */
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
+  border-radius: 60px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  &:hover {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+  
+  @media (max-width: 940px) {
+    height: 55px;
+    padding: 6px 10px;
+  }
+}
+
+/* Dark Mode Logo Styling */
+body.dark-mode .logo-img {
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -80,33 +126,65 @@
 .instagram-btn i {
   margin-right: 0; /* Remove margin inside icon */
 }
-
+.logo-wrapper {
+  width: 50px;              /* gleiche Höhe wie dein Bild */
+  height: 50px;
+  border-radius: 60px;
+  overflow: hidden;          /* schneidet alles außerhalb ab */
+  display: inline-block;
+}
 .logo-imgMobile {
-  height: 80px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: none;
+  box-shadow: none;
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
   cursor: pointer;
-  @media (min-width: 769px) {
+
+  &:hover {
+    transform: scale(1.1); /* optional stärkerer Zoom beim Hover */
+  }
+  
+  @media (min-width: 941px) {
     display: none;
   }
 }
 
 
 .spacer {
-  flex: 1;
+  display: none;
+  
+  @media (max-width: 940px) {
+    display: block;
+    flex: 1;
+  }
+}
+
+.nav-spacer {
+  display: none;
 }
 
 /*checked*/
 ::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked:not(.mat-disabled) .mdc-switch__shadow {
-  background-color: rgb(255, 255, 255);
+  background-color: var(--yisu-nav-items);
 }
 
 ::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked:not(.mat-disabled) .mdc-switch__track::after {
   background-color: #333 !important;
 }
+/* Icon im aktivierten Zustand (wenn Toggle an ist) */
+::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked .mdc-switch__icon {
+  fill: #333 !important;      /* helleres Blau oder gewünschte Farbe */
+  stroke: #333 !important;
+  stroke-width: 1px !important;
+}
 
 /*unchecked*/
 /* Background Icon */
 ::ng-deep .mat-mdc-slide-toggle:not(.mat-mdc-slide-toggle-checked):not(.mat-disabled) .mdc-switch__shadow {
-  background-color: #9c9c9c /* White shadow color */
+  background-color: var(--yisu-nav-items); /* White shadow color */
 }
 
 /* Hintergrundfarbe Schieberegler nicht aktiviert ist */
@@ -116,7 +194,10 @@
 
 /* Icon Farbe */
 ::ng-deep .mat-mdc-slide-toggle:not(.mat-mdc-slide-toggle-checked) .mdc-switch__icon {
-  fill: #ffffff !important;  /* Ändere die Farbe des Icons auf rot */
+  fill: #fbbf24 !important;  /* Ändere die Farbe des Icons auf rot */
+  stroke: #fbbf24 !important;   /* Farbe des Icons */
+  stroke-width: 1px !important; /* Macht das Symbol dicker */
+
 }
 
 ::ng-deep .mat-mdc-slide-toggle .mdc-switch__track::before,
@@ -131,104 +212,132 @@ mat-slide-toggle {
 
 .desktop-menu {
   display: flex;
-  justify-content: center; /* Center the items horizontally */
-  /* Style the links */
+  align-items: center;
+  gap: 3rem;
+  flex-shrink: 0;
+  
   a {
-    font-size: 18px; /* Larger font size for the links */
-    padding: 20px 15px; /* Increased padding for a larger clickable area */
-    text-transform: uppercase; /* Optional: Make text uppercase */
-    position: relative; /* For the hover effect */
-    color: white; /* Link color */
-    border-radius: 0px; /* Rounded corners for buttons */
-    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
+    font-size: 17px;
+    font-weight: 500;
+    padding: 0.75rem 1.8rem;
+    color: var(--yisu-nav-items);
+    text-decoration: none;
+    border-radius: 10px;
+    position: relative;
+    transition: all 0.3s ease;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 3px;
+      background: var(--yisu-nav-items-hover);
+      transition: width 0.3s ease;
+      border-radius: 2px;
+    }
+    
+    &:hover {
+      color: var(--yisu-nav-items-hover);
+      background: var(--yisu-nav-items-hover-background);
+      transform: translateY(-1px);
+      
+      &::after {
+        width: 75%;
+      }
+    }
+    
+    &.active-list-item {
+      background: var(--yisu-nav-items);
+      color: var(--yisu-nav-items-active);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+      transform: translateY(-1px);
+      
+      &::after {
+        background: var(--yisu-nav-items-active);
+        width: 80%;
+      }
+      
+      &:hover {
+        background: var(--yisu-nav-items-active-hover-background);
+        color: var(--yisu-nav-items-active-hover);
+        box-shadow: 0 4px 12px rgba(21, 101, 192, 0.4);
+        
+        &::after {
+          background: var(--yisu-nav-items-active-hover);
+          width: 90%;
+        }
+      }
+    }
   }
 
-  /* Hover effect */
-  a:hover {
-    background-color: #f3f3f3; /* Light background on hover */
-    color: rgb(3, 56, 94); /* Change link color on hover */
-  }
-
-  /* On larger screens (like desktop), slightly move the menu to the right */
-  @media (min-width: 1200px) {
-    margin-left: auto; /* Push the menu to the right */
-    padding-right: 8%; /* Add right padding for a better layout */
-  }
-
-
-  /* Hide desktop menu on tablet/mobile screens */
-  @media (max-width: 768px) {
+  @media (max-width: 940px) {
     display: none;
   }
 }
 
+/* Dark Mode Navigation Styles */
+body.dark-mode .desktop-menu a {
+  color: var(--yisu-secondary);
+  background: transparent;
+  
+  &:hover {
+    color: var(--yisu-text-black);
+    background: var(--yisu-secondary);
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+  }
+  
+  &.active-list-item {
+    background: var(--yisu-secondary);
+    color: var(--yisu-text-black);
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+    
+    &:hover {
+      background: #f59e0b;
+      color: var(--yisu-text-black);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
+    }
+  }
+}
 
-/*Linke Seite der Navigation bar*/
+/* Dark Mode Quick Access Buttons */
+body.dark-mode .desktop-menu2 a {
+  color: var(--yisu-white) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: var(--yisu-accent) !important;
+  
+  i {
+    color: var(--yisu-accent) !important;
+  }
+  
+  &:hover {
+    background: var(--yisu-secondary) !important;
+    color: var(--yisu-text-black) !important;
+    border-color: var(--yisu-secondary) !important;
+    
+    i {
+      color: var(--yisu-text-black) !important;
+    }
+  }
+}
+
+/* Quick Access Buttons - Linke Seite */
 .desktop-menu2 {
-  display: flex;
-  justify-content: center; /* Center the items horizontally */
-
-  /* Style the links */
-  a {
-    font-size: 14px; /* Larger font size for the links */
-    margin: 0 5px; /* Reduced space between the links */
-    padding: 10px 13px; /* Increased padding for a larger clickable area */
-    position: relative; /* For the hover effect */
-    border-radius: 5px; /* Rounded corners for buttons */
-    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
-    box-shadow: 3px 3px 7px rgba(0, 97, 124, 1); /* Add specific color to shadow */
-  }
-
-  a:hover {
-    background-color: rgb(16, 138, 189); /* Light background on hover */
-    box-shadow: 3px 3px 7px rgba(0, 97, 124, 1); /* Maintain consistent shadow color */
-    color: #ffffff; /* Change link color on hover */
-  }
-
-
-  /* On larger screens (like desktop), slightly move the menu to the right */
-  @media (min-width: 1200px) {
-    margin-left: auto; /* Push the menu to the right */
-    padding-right: 5%; /* Add right padding for a better layout */
-  }
-
-  @media (max-width: 900px) {
-    margin-left: 0;
-    padding-right: 0!important;
-  }
-
-
-  @media (max-width: 1200px) {
-    margin-right: auto; /* Push the menu to the right */
-    padding-right: 5%;
-  }
-
-  /* Hide desktop menu on tablet/mobile screens */
-  @media (max-width: 768px) {
-    display: none;
-  }
-}
-
-.desktop-menu2 a {
-  @media (max-width: 1070px) {
-    font-size: 9px;
-    padding: 3px 4px;
-  }
-}
-
-.desktop-menu a {
-  @media (max-width: 950px) {
-    font-size: 14px;
-    margin: -5px;
-  }
+  display: none;
 }
 
 /* Burger menu button for mobile */
 .mobile-menu-btn {
   display: none;
+  fill: var(--yisu-nav-items);
 
   /* Show burger button on tablet/mobile screens */
-  @media (max-width: 768px) {
+  @media (max-width: 940px) {
     display: block;
     position: relative; /* For the animation */
     border-radius: 50%; /* Make the button circular for better aesthetics */
@@ -266,7 +375,7 @@ mat-sidenav {
 }
 
 /* Hide mobile menu button on desktop */
-@media (min-width: 769px) {
+@media (min-width: 941px) {
   .mobile-menu-btn {
     display: none;
   }
@@ -281,69 +390,83 @@ mat-sidenav {
 /* Sidenav animation when open */
 .mat-sidenav.open .mobile-menu-btn mat-icon {
   transform: rotate(90deg); /* Rotate the burger icon to X */
+  fill: var(--yisu-nav-items-hover);
 }
 
 .mobile-sidenav a {
   padding: 10px 15px; /* Increased padding for better hover area */
   text-decoration: none; /* Remove underline */
-  color: black; /* Link color in the sidenav */
+  color: var(--yisu-text-dark); /* Link color in the sidenav */
   border-radius: 5px; /* Rounded corners for buttons */
 }
 
 /* Hover effect for sidenav links */
 .mobile-sidenav a:hover {
-  background-color: rgba(0, 0, 0, 0.1); /* Background color on hover */
+  background-color: var(--yisu-bg-section); /* Background color on hover */
 }
 
 
+/* Social Media Icons */
 .social-icons {
-  display: flex; /* Display icons in a row */
-  margin-right: 40px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  
+  a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: var(--yisu-white);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: var(--yisu-shadow-sm);
+    
+    i {
+      font-size: 20px;
+    }
+    
+    &:hover {
+      transform: translateY(-3px) scale(1.1);
+      box-shadow: var(--yisu-shadow-md);
+    }
+  }
 }
-
 
 svg {
-  font-size: 30px;
+  font-size: 26px;
 }
 
-.social-icons a {
-  margin: 0 8px; /* Space between social icons */
-  color: white; /* Color for social icons */
-  font-size: 20px; /* Size for social icons */
-  transition: color 0.3s; /* Transition for hover effect */
-}
-
-.social-icons a:hover {
-  color: #ffffff; /* Color change on hover */
-}
-
-.social-icons mat-icon {
-  color: white; /* Icon color */
-  font-size: 24px; /* Icon size */
-}
-
-/* Additional info styles */
+/* Additional Info Bar unter Navbar */
 .additional-info {
-  background-color: var(--additional-info-color); /* Light background color */
-  text-align: center; /* Center text */
-  padding: 10px 0; /* Vertical padding */
-  font-size: 14px; /* Font size */
-  color: #333; /* Darker text color */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-  @media (max-width: 768px) {
+  background: var(--yisu-bg-section);
+  text-align: center;
+  padding: 0.75rem 0;
+  font-size: 14px;
+  color: var(--yisu-text-dark);
+  border-bottom: 1px solid var(--yisu-border-light);
+  
+  span {
+    display: inline-block;
+    margin: 0 2.5rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    cursor: default;
+    
+    &:hover {
+      color: var(--yisu-accent);
+    }
+  }
+  
+  @media (max-width: 940px) {
     display: none;
   }
-
-}
-
-.additional-info span {
-  display: inline-block; /* Allow spacing between items */
-  margin: 0 70px; /* Increased margin for more horizontal spacing */
-  color: var(--text-color);
 }
 
 #additiona-info-left {
-  margin-left: 0px;
+  margin-left: 0;
 }
 
 .mobile-menu-btn {
@@ -371,27 +494,29 @@ svg {
 }
 
 
+/* Top Info Bar mit Logo und Social Media */
 .additional-info-top {
-  background-color: #ffffff; /* Change color as needed */
-  color: black; /* Text color */
-  text-align: center; /* Center text */
-  padding: 10px 0; /* Vertical padding */
-  font-size: 18px; /* Font size */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Shadow for depth */
-  @media (max-width: 768px) {
+  background: linear-gradient(135deg, var(--yisu-navbar-top) 0%, #f59e0b 100%);
+  padding: 0.75rem 0;
+  border-bottom: 3px solid rgba(25, 118, 210, 0.2);
+  position: relative;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+  
+  @media (max-width: 940px) {
     display: none;
   }
 }
 
-
-
 .logo-social-container {
-  display: flex; /* Align items in a row */
-  justify-content: space-between; /* Space out logo and social icons */
-  align-items: center; /* Center vertically */
-  padding: 0 30px; /* Horizontal padding to add space from the edges */
-  max-width: 1400px; /* Maximal Breite für den Container */
-  margin: 0 auto; /* Zentriert den Container horizontal */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  gap: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 
@@ -400,35 +525,31 @@ svg {
 
 
 .btn-social {
-  display: inline-flex; /* Flexbox für zentriertes Layout */
-  align-items: center; /* Vertikale Zentrierung */
-  justify-content: center; /* Horizontale Zentrierung */
-  width: 40px; /* Breite der Schaltfläche */
-  height: 40px; /* Höhe der Schaltfläche */
-  border-radius: 50%; /* Runde Schaltflächen */
-  color: white; /* Schriftfarbe */
-  text-decoration: none; /* Unterstreichung entfernen */
-  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Schatten für Tiefe */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--yisu-white);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: var(--yisu-shadow-sm);
+  
+  i {
+    font-size: 20px;
+  }
+  
+  &:hover {
+    transform: translateY(-3px) scale(1.1);
+    box-shadow: var(--yisu-shadow-md);
+  }
 }
 
-.btn-social:hover {
-  transform: scale(1.1); /* Schaltfläche bei Hover vergrößern */
-}
-
-/* Icon-Stile */
-.btn-social i {
-  font-size: 20px; /* Größe der Icons */
-}
-
-#btntransition1 {
-  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
-}
-#btntransition2 {
-  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
-}
+#btntransition1,
+#btntransition2,
 #btntransition3 {
-  transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
+  transition: all 0.3s ease;
 }
 
 
@@ -467,35 +588,67 @@ svg {
   .icon-button {
     padding: 8px 10px; /* Adjust padding for mobile */
   }
+
 }
 
 
 
+/* Mobile Sidenav Styles */
 .sidenav-icon {
-  margin-right: 10px; /* Adjust this value to increase or decrease the space */
-  font-size: 20px; /* Adjust icon size if needed */
-  color: var(--header-color); /* You can change the color of the icons if desired */
+  margin-right: 12px;
+  font-size: 20px;
+  color: var(--yisu-nav-items);
+  transition: transform 0.3s ease;
 }
 
 .sidenav-header {
-  font-size: 1.2rem; /* Increase font size for headers */
-  color: var(--header-color); /* Header color */
-  margin: 10px 0; /* Space above and below headers */
-  padding: 0 16px; /* Align with nav items */
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--yisu-nav-items);
+  margin: 1.25rem 0 0.75rem;
+  padding: 0 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--yisu-nav-items);
+  padding-bottom: 0.5rem;
+}
+
+/* Dark Mode Sidenav Styles */
+body.dark-mode .sidenav-icon {
+  color: var(--yisu-accent);
+}
+
+body.dark-mode .sidenav-header {
+  color: var(--yisu-accent);
+  border-bottom: 2px solid var(--yisu-accent);
 }
 
 .mat-nav-list a {
-  padding: 10px 16px; /* Add padding to nav items */
+  padding: 0.875rem 1rem;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  margin: 0.25rem 0.5rem;
+  
+  &:hover {
+    background: var(--yisu-bg-section);
+    
+    .sidenav-icon {
+      transform: scale(1.15);
+    }
+  }
 }
 
 .sidenav-text {
-  color: var(--text-color);
+  color: var(--yisu-text-dark);
+  font-weight: 500;
 }
 
 
 mat-sidenav-container {
   background-color: var(--background-color);
 }
+
+
 
 
 

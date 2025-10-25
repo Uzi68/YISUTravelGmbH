@@ -36,7 +36,7 @@
 
 /* Left Section (Emergency Info) */
 .left-section {
-  background: var(--customer-ratings-color);
+  background: var(--yisu-primary);
   padding: 30px;
   flex: 1;
   display: flex;
@@ -79,7 +79,7 @@
 
 /* Right Section (Icons) */
 .right-section {
-  background: var(--background-color); /* Soft gradient background */
+  background: var(--yisu-bg-main); /* Soft gradient background */
   flex: 1;
   padding: 30px;
   display: flex;
@@ -92,7 +92,7 @@
 /* Heading */
 .connect-heading {
   font-size: 26px;
-  color: var(--text-color);
+  color: var(--yisu-text-dark);
   font-weight: 700;
   margin-bottom: 10px;
   text-align: center; /* Centered heading */

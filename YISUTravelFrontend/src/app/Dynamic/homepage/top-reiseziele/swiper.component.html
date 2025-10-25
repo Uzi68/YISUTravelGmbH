@@ -1,10 +1,10 @@
 <!-- Desktop -->
-<section class="popular-destinations">
+<section class="popular-destinations" *ngIf="isBrowser">
   <h2 class="section-title">Unsere schönsten Reiseziele</h2>
   <swiper-container
     loop="true"
-    navigation="true"
     slides-per-view="3"
+    slides-per-group="1"
     speed="500"
     space-between="15"
     class="desktop custom-swiper"
@@ -46,9 +46,11 @@
 
 <!-- Mobile -->
 <swiper-container
+  *ngIf="isBrowser"
   loop="true"
-  navigation="true"
+  navigation="false"
   slides-per-view="1"
+  slides-per-group="1"
   speed="500"
   space-between="15"
   class="custom-swiper mobile"

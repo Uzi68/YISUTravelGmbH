@@ -46,15 +46,14 @@ export class AuthService {
   }
 
 
-  logout(): void {
-    this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).subscribe(
-      () => {
-        this.setAuthenticated(false);
-        this.router.navigate(['/admin-login']);
-      },
-      (error) => {
+  logout(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).pipe(
+      tap(() => this.setAuthenticated(false)),
+      tap(() => this.router.navigate(['/admin-login'])),
+      catchError((error) => {
         console.error('Logout fehlgeschlagen', error);
-      }
+        throw error;
+      })
     );
   }
 

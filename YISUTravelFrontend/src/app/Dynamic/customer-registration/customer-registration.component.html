@@ -1,0 +1,118 @@
+<div class="customer-registration-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>person_add</mat-icon>
+        Kunden-Registrierung
+      </mat-card-title>
+      <mat-card-subtitle>Erstellen Sie Ihr Kundenkonto bei YISU Travel</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <mat-progress-spinner *ngIf="loading" diameter="50"></mat-progress-spinner>
+
+      <div *ngIf="!loading">
+        <form [formGroup]="registrationForm" (ngSubmit)="register()">
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Vorname</mat-label>
+              <input matInput formControlName="first_name" required>
+              <mat-icon matSuffix>person</mat-icon>
+              <mat-error *ngIf="registrationForm.get('first_name')?.hasError('required')">
+                Vorname ist erforderlich
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Nachname</mat-label>
+              <input matInput formControlName="last_name" required>
+              <mat-icon matSuffix>person</mat-icon>
+              <mat-error *ngIf="registrationForm.get('last_name')?.hasError('required')">
+                Nachname ist erforderlich
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>E-Mail-Adresse</mat-label>
+              <input matInput type="email" formControlName="email" required>
+              <mat-icon matSuffix>email</mat-icon>
+              <mat-error *ngIf="registrationForm.get('email')?.hasError('required')">
+                E-Mail ist erforderlich
+              </mat-error>
+              <mat-error *ngIf="registrationForm.get('email')?.hasError('email')">
+                Bitte geben Sie eine gültige E-Mail ein
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Telefon (optional)</mat-label>
+              <input matInput formControlName="phone">
+              <mat-icon matSuffix>phone</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Passwort</mat-label>
+              <input matInput type="password" formControlName="password" required>
+              <mat-icon matSuffix>lock</mat-icon>
+              <mat-error *ngIf="registrationForm.get('password')?.hasError('required')">
+                Passwort ist erforderlich
+              </mat-error>
+              <mat-error *ngIf="registrationForm.get('password')?.hasError('minlength')">
+                Passwort muss mindestens 8 Zeichen lang sein
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Passwort bestätigen</mat-label>
+              <input matInput type="password" formControlName="password_confirmation" required>
+              <mat-icon matSuffix>lock</mat-icon>
+              <mat-error *ngIf="registrationForm.get('password_confirmation')?.hasError('required')">
+                Passwort-Bestätigung ist erforderlich
+              </mat-error>
+              <mat-error *ngIf="registrationForm.get('password_confirmation')?.hasError('passwordMismatch')">
+                Passwörter stimmen nicht überein
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="form-actions">
+            <button mat-button type="button" (click)="goToLogin()">
+              <mat-icon>arrow_back</mat-icon>
+              Zurück zum Login
+            </button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="!registrationForm.valid">
+              <mat-icon>person_add</mat-icon>
+              Konto erstellen
+            </button>
+          </div>
+        </form>
+
+        <div class="registration-benefits">
+          <h3>Ihre Vorteile als registrierter Kunde:</h3>
+          <ul>
+            <li>
+              <mat-icon>chat</mat-icon>
+              <span>Chat-Historie einsehen und fortsetzen</span>
+            </li>
+            <li>
+              <mat-icon>support_agent</mat-icon>
+              <span>Direkter Kontakt zu unseren Support-Mitarbeitern</span>
+            </li>
+            <li>
+              <mat-icon>history</mat-icon>
+              <span>Vollständige Übersicht über alle Ihre Anfragen</span>
+            </li>
+            <li>
+              <mat-icon>notifications</mat-icon>
+              <span>Benachrichtigungen über neue Nachrichten</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
