@@ -2,28 +2,25 @@
 
 namespace App\Mail;
 
+use App\Models\Appointment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class PasswordResetMail extends Mailable
+class AppointmentConfirmationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $token;
-    public $email;
-    public $resetUrl;
+    public $appointment;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($token, $email)
+    public function __construct(Appointment $appointment)
     {
-        $this->token = $token;
-        $this->email = $email;
-        $this->resetUrl = config('app.frontend_url') . '/password-reset?token=' . $token . '&email=' . urlencode($email);
+        $this->appointment = $appointment;
     }
 
     /**
@@ -32,7 +29,7 @@ class PasswordResetMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Passwort zurücksetzen - YISU Travel',
+            subject: 'Terminbestätigung - YISU Travel',
         );
     }
 
@@ -42,11 +39,9 @@ class PasswordResetMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.password-reset',
+            view: 'emails.appointment-confirmation',
             with: [
-                'token' => $this->token,
-                'email' => $this->email,
-                'resetUrl' => $this->resetUrl,
+                'appointment' => $this->appointment,
             ]
         );
     }

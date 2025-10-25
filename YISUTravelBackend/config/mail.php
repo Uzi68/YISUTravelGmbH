@@ -43,6 +43,7 @@ return [
             'url' => env('MAIL_URL'),
             'host' => env('MAIL_HOST', '127.0.0.1'),
             'port' => env('MAIL_PORT', 2525),
+            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
@@ -111,6 +112,35 @@ return [
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', 'Example'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Email Configuration
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the admin email address that receives notifications
+    | for new appointments and other administrative notifications.
+    |
+    */
+
+    'admin_email' => env('MAIL_ADMIN_EMAIL', 'info@yisu-travel.de'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | IONOS Shared Hosting Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for IONOS shared hosting email settings
+    |
+    */
+
+    'ionos' => [
+        'host' => env('MAIL_HOST', 'smtp.ionos.de'),
+        'port' => env('MAIL_PORT', 587),
+        'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+        'username' => env('MAIL_USERNAME', 'info@yisu-travel.de'),
+        'password' => env('MAIL_PASSWORD'),
     ],
 
 ];

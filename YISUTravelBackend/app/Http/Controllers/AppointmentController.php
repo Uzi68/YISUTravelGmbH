@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AppointmentRequest;
 use App\Models\Appointment;
 use App\Models\BlockedSlot;
+use App\Mail\AppointmentConfirmationMail;
+use App\Mail\AppointmentNotificationMail;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 class AppointmentController extends Controller
@@ -18,9 +21,34 @@ class AppointmentController extends Controller
     {
         $appointment = Appointment::create($request->validated());
         
+        // Send confirmation email to customer
+        try {
+            Mail::to($appointment->customer_email)->send(new AppointmentConfirmationMail($appointment));
+            \Log::info('Customer confirmation email sent successfully to: ' . $appointment->customer_email);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send customer confirmation email: ' . $e->getMessage(), [
+                'email' => $appointment->customer_email,
+                'appointment_id' => $appointment->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+        
+        // Send notification email to admin
+        try {
+            $adminEmail = config('mail.admin_email', 'info@yisu-travel.de');
+            Mail::to($adminEmail)->send(new AppointmentNotificationMail($appointment));
+            \Log::info('Admin notification email sent successfully to: ' . $adminEmail);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send admin notification email: ' . $e->getMessage(), [
+                'admin_email' => $adminEmail,
+                'appointment_id' => $appointment->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+        
         return response()->json([
             'success' => true,
-            'message' => 'Termin erfolgreich gebucht!',
+            'message' => 'Termin erfolgreich gebucht! Bestätigungsemail wurde versendet.',
             'appointment' => $appointment
         ], 201);
     }
