@@ -14,7 +14,6 @@ import {MatIcon} from "@angular/material/icon";
 import {DatePipe, NgClass, NgForOf, NgIf, isPlatformBrowser} from "@angular/common";
 import {PLATFORM_ID} from "@angular/core";
 import { TruncatePipe } from "./truncate.pipe";
-import { environment } from "../../../../environments/environment";
 import {MatFormField, MatHint, MatInput, MatLabel} from "@angular/material/input";
 import {MatTooltip} from "@angular/material/tooltip";
 import {animate, style, transition, trigger} from "@angular/animations";
@@ -3861,7 +3860,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     
     // If it's a relative path or starts with /storage, prepend the backend URL
     if (imageUrl.startsWith('/storage') || !imageUrl.startsWith('/')) {
-      return `${environment.backendUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+      return `http://localhost:8000${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
     }
     
     return imageUrl;

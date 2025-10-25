@@ -28,8 +28,11 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(10px);
+  will-change: background-color, box-shadow, border-color;
 }
 ::ng-deep .mat-mdc-menu-content {
   padding: 0px !important;
@@ -207,6 +210,24 @@ body.dark-mode .logo-img {
 
 mat-slide-toggle {
   align-content: center;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/* Optimize Material Slide Toggle transitions */
+::ng-deep .mat-mdc-slide-toggle .mdc-switch {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+::ng-deep .mat-mdc-slide-toggle .mdc-switch__track {
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: background-color;
+}
+
+::ng-deep .mat-mdc-slide-toggle .mdc-switch__handle {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 

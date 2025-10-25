@@ -126,14 +126,17 @@ export class NavbarComponent {
   toggleDarkMode() {
     this.darkMode = !this.darkMode;
 
-    // Add or remove the 'dark-mode' class
-    if (this.darkMode) {
-      document.documentElement.classList.add('dark-mode');
-      document.body.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-      document.body.classList.remove('dark-mode');
-    }
+    // Use requestAnimationFrame for smoother transitions
+    requestAnimationFrame(() => {
+      // Add or remove the 'dark-mode' class
+      if (this.darkMode) {
+        document.documentElement.classList.add('dark-mode');
+        document.body.classList.add('dark-mode');
+      } else {
+        document.documentElement.classList.remove('dark-mode');
+        document.body.classList.remove('dark-mode');
+      }
+    });
 
     // Save the state in localStorage if running in the browser
     if (isPlatformBrowser(this.platformId)) {
