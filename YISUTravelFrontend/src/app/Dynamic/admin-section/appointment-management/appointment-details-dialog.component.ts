@@ -203,6 +203,14 @@ import { AppointmentService } from '../../../Services/appointment-service/appoin
                 <mat-icon>block</mat-icon>
                 Ganzen Tag blockieren
               </button>
+              <button mat-raised-button color="primary" (click)="onBlockTimeSlots()">
+                <mat-icon>schedule</mat-icon>
+                Zeit-Slots blockieren
+              </button>
+              <button mat-raised-button color="accent" (click)="onUnblockTimeSlots()">
+                <mat-icon>lock_open</mat-icon>
+                Zeit-Slots freigeben
+              </button>
             </div>
           </div>
         </div>
