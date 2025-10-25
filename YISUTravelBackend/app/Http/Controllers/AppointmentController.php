@@ -5,11 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AppointmentRequest;
 use App\Models\Appointment;
 use App\Models\BlockedSlot;
-use App\Mail\AppointmentConfirmationMail;
-use App\Mail\AppointmentNotificationMail;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 class AppointmentController extends Controller
@@ -17,46 +13,42 @@ class AppointmentController extends Controller
     /**
      * Store a new appointment
      */
-    public function store(AppointmentRequest $request): JsonResponse
+    public function store(AppointmentRequest $request): \Illuminate\Http\JsonResponse
     {
-        $appointment = Appointment::create($request->validated());
-        
-        // Send confirmation email to customer
         try {
-            Mail::to($appointment->customer_email)->send(new AppointmentConfirmationMail($appointment));
-            \Log::info('Customer confirmation email sent successfully to: ' . $appointment->customer_email);
-        } catch (\Exception $e) {
-            \Log::error('Failed to send customer confirmation email: ' . $e->getMessage(), [
-                'email' => $appointment->customer_email,
+            $appointment = Appointment::create($request->validated());
+            
+            // Send emails using IONOS-compatible mail system
+            $this->sendAppointmentEmailsIonos($appointment);
+            
+            \Log::info('Appointment booked successfully', [
                 'appointment_id' => $appointment->id,
-                'trace' => $e->getTraceAsString()
+                'customer_email' => $appointment->customer_email
             ]);
-        }
-        
-        // Send notification email to admin
-        try {
-            $adminEmail = config('mail.admin_email', 'info@yisu-travel.de');
-            Mail::to($adminEmail)->send(new AppointmentNotificationMail($appointment));
-            \Log::info('Admin notification email sent successfully to: ' . $adminEmail);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Termin erfolgreich gebucht! Bestätigungsemail wurde versendet.',
+                'appointment' => $appointment
+            ], 201);
+            
         } catch (\Exception $e) {
-            \Log::error('Failed to send admin notification email: ' . $e->getMessage(), [
-                'admin_email' => $adminEmail,
-                'appointment_id' => $appointment->id,
-                'trace' => $e->getTraceAsString()
+            \Log::error('Appointment booking failed', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
             ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Erstellen des Termins: ' . $e->getMessage()
+            ], 500);
         }
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Termin erfolgreich gebucht! Bestätigungsemail wurde versendet.',
-            'appointment' => $appointment
-        ], 201);
     }
 
     /**
      * Get all appointments (admin only)
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): \Illuminate\Http\JsonResponse
     {
         $query = Appointment::query();
 
@@ -84,134 +76,148 @@ class AppointmentController extends Controller
     /**
      * Get available time slots for a specific date
      */
-    public function getAvailableSlots(Request $request): JsonResponse
-    {
-        $date = $request->input('date');
-        
-        if (!$date) {
-            return response()->json(['error' => 'Date is required'], 400);
-        }
-
-        $carbonDate = Carbon::parse($date);
-        $dayOfWeek = $carbonDate->dayOfWeek; // 0 = Sunday, 1 = Monday, etc.
-
-        // Check if it's Sunday (closed)
-        if ($dayOfWeek === 0) {
-            return response()->json(['slots' => []]);
-        }
-
-        // Define business hours
-        $isSaturday = $dayOfWeek === 6;
-        $startTime = $isSaturday ? '10:30' : '10:00';
-        $endTime = $isSaturday ? '15:00' : '17:30';
-
-        // Generate all possible 30-minute slots
-        $allSlots = $this->generateTimeSlots($startTime, $endTime);
-
-        // Get booked slots for this date
-        $bookedSlots = Appointment::where('appointment_date', $date)
-            ->pluck('appointment_time')
-            ->map(function ($time) {
-                return Carbon::parse($time)->format('H:i');
-            })
-            ->toArray();
-
-        // Get blocked slots for this date
-        $blockedSlots = BlockedSlot::getBlockedSlotsForDate($date);
-
-        // Filter out booked and blocked slots
-        $unavailableSlots = array_merge($bookedSlots, $blockedSlots);
-        $availableSlots = array_diff($allSlots, $unavailableSlots);
-
-        return response()->json([
-            'slots' => array_values($availableSlots),
-            'business_hours' => [
-                'start' => $startTime,
-                'end' => $endTime
-            ]
-        ]);
-    }
-
-    /**
-     * Admin blocks a specific slot
-     */
-    public function blockSlot(Request $request): JsonResponse
+    public function getAvailableSlots(Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate([
-            'date' => 'required|date|after_or_equal:today',
-            'time' => 'required|date_format:H:i'
+            'date' => 'required|date|after_or_equal:today'
         ]);
 
-        // Check if slot is already booked
-        $existingAppointment = Appointment::where('appointment_date', $request->date)
-            ->where('appointment_time', $request->time)
-            ->first();
+        $date = $request->date;
+        $availableSlots = [];
 
-        if ($existingAppointment) {
-            return response()->json([
-                'error' => 'Dieser Termin ist bereits gebucht'
-            ], 400);
+        // Generate time slots (9:00 - 18:00, every 30 minutes)
+        $timeSlots = $this->generateTimeSlots('09:00', '18:00');
+
+        foreach ($timeSlots as $time) {
+            // Convert time to database format (H:i:s)
+            $timeFormatted = $time . ':00';
+            
+            // Check if slot is already booked
+            $isBooked = Appointment::where('appointment_date', $date)
+                ->where('appointment_time', $timeFormatted)
+                ->where('status', '!=', 'cancelled')
+                ->exists();
+
+            // Check if slot is blocked
+            $isBlocked = BlockedSlot::where('blocked_date', $date)
+                ->where('blocked_time', $timeFormatted)
+                ->exists();
+
+            if (!$isBooked && !$isBlocked) {
+                $availableSlots[] = $time;
+            }
         }
-
-        // Check if slot is already blocked
-        if (BlockedSlot::isBlocked($request->date, $request->time)) {
-            return response()->json([
-                'error' => 'Dieser Zeit-Slot ist bereits blockiert'
-            ], 400);
-        }
-
-        // Block the slot
-        $blockedSlot = BlockedSlot::blockSlot($request->date, $request->time, 'Admin blockiert');
 
         return response()->json([
             'success' => true,
-            'message' => 'Zeit-Slot erfolgreich blockiert',
-            'blocked_slot' => $blockedSlot
+            'date' => $date,
+            'available_slots' => $availableSlots
         ]);
     }
 
     /**
-     * Admin unblocks a slot
+     * Block a time slot (admin only)
      */
-    public function unblockSlot(int $id): JsonResponse
+    public function blockSlot(Request $request): \Illuminate\Http\JsonResponse
     {
-        $appointment = Appointment::findOrFail($id);
-
-        if (!$appointment->blocked_by_admin) {
-            return response()->json([
-                'error' => 'Dieser Termin wurde nicht von einem Admin blockiert'
-            ], 400);
-        }
-
-        $appointment->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Termin erfolgreich freigegeben'
+        $request->validate([
+            'date' => 'required|date',
+            'time' => 'required|date_format:H:i',
+            'reason' => 'nullable|string|max:255'
         ]);
+
+        try {
+            // Convert time to database format (H:i:s)
+            $timeFormatted = $request->time . ':00';
+            
+            $blockedSlot = BlockedSlot::create([
+                'blocked_date' => $request->date,
+                'blocked_time' => $timeFormatted,
+                'reason' => $request->reason ?? 'Manually blocked'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Zeitslot erfolgreich blockiert',
+                'blocked_slot' => $blockedSlot
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Blockieren des Slots: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Unblock a time slot (admin only)
+     */
+    public function unblockSlot($id): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $blockedSlot = BlockedSlot::findOrFail($id);
+            $blockedSlot->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Zeitslot erfolgreich freigegeben'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Freigeben des Slots: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Get blocked slots for a specific date
      */
-    public function getBlockedSlots(Request $request): JsonResponse
+    public function getBlockedSlots(Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate([
             'date' => 'required|date'
         ]);
 
-        $blockedSlots = BlockedSlot::getBlockedSlotsForDate($request->date);
+        $blockedSlots = BlockedSlot::where('blocked_date', $request->date)->get();
+        
+        \Log::info('getBlockedSlots debug:', [
+            'date' => $request->date,
+            'raw_slots' => $blockedSlots->toArray(),
+            'slot_count' => $blockedSlots->count()
+        ]);
+        
+        // Format times for frontend (remove seconds)
+        $formattedSlots = $blockedSlots->map(function($slot) {
+            \Log::info('Processing slot:', [
+                'id' => $slot->id,
+                'raw_time' => $slot->blocked_time,
+                'time_type' => gettype($slot->blocked_time),
+                'time_length' => strlen($slot->blocked_time ?? ''),
+                'formatted_time' => date('H:i', strtotime($slot->blocked_time))
+            ]);
+            
+            return [
+                'id' => $slot->id,
+                'time' => date('H:i', strtotime($slot->blocked_time)), // Format as HH:MM
+                'reason' => $slot->reason
+            ];
+        });
+
+        \Log::info('Final formatted slots:', $formattedSlots->toArray());
 
         return response()->json([
             'success' => true,
-            'blocked_slots' => $blockedSlots
+            'blocked_slots' => $formattedSlots
         ]);
     }
 
     /**
      * Update appointment status
      */
-    public function updateStatus(Request $request, int $id): JsonResponse
+    public function updateStatus(Request $request, int $id): \Illuminate\Http\JsonResponse
     {
         $request->validate([
             'status' => 'required|in:confirmed,cancelled,completed'
@@ -234,32 +240,29 @@ class AppointmentController extends Controller
     {
         $request->validate([
             'date' => 'required|date',
-            'time' => 'required|string'
+            'time' => 'required|date_format:H:i'
         ]);
 
-        $date = $request->input('date');
-        $time = $request->input('time');
-
         try {
-            // Check if slot is actually blocked
-            $blockedSlot = BlockedSlot::where('blocked_date', $date)
-                ->where('blocked_time', Carbon::parse($time)->format('H:i:s'))
+            // Convert time to database format (H:i:s)
+            $timeFormatted = $request->time . ':00';
+            
+            $blockedSlot = BlockedSlot::where('blocked_date', $request->date)
+                ->where('blocked_time', $timeFormatted)
                 ->first();
 
-            if (!$blockedSlot) {
+            if ($blockedSlot) {
+                $blockedSlot->delete();
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Slot erfolgreich freigegeben'
+                ]);
+            } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Slot ist nicht blockiert'
-                ], 400);
+                    'message' => 'Slot war nicht blockiert'
+                ], 404);
             }
-
-            // Remove the blocked slot
-            $blockedSlot->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Slot erfolgreich freigegeben'
-            ]);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -277,19 +280,22 @@ class AppointmentController extends Controller
         $request->validate([
             'date' => 'required|date',
             'times' => 'required|array',
-            'times.*' => 'required|string'
+            'times.*' => 'date_format:H:i'
         ]);
 
-        $date = $request->input('date');
-        $times = $request->input('times');
+        $date = $request->date;
+        $times = $request->times;
 
         try {
             $unblockedCount = 0;
             $errors = [];
 
             foreach ($times as $time) {
+                // Convert time to database format (H:i:s)
+                $timeFormatted = $time . ':00';
+                
                 $blockedSlot = BlockedSlot::where('blocked_date', $date)
-                    ->where('blocked_time', Carbon::parse($time)->format('H:i:s'))
+                    ->where('blocked_time', $timeFormatted)
                     ->first();
 
                 if ($blockedSlot) {
@@ -335,7 +341,7 @@ class AppointmentController extends Controller
     /**
      * Release a booked appointment (admin can free up slots when customers cancel)
      */
-    public function releaseAppointment($id): JsonResponse
+    public function releaseAppointment($id): \Illuminate\Http\JsonResponse
     {
         $appointment = Appointment::findOrFail($id);
 
@@ -363,7 +369,7 @@ class AppointmentController extends Controller
     /**
      * Restore a cancelled appointment (admin can restore if customer rebooks)
      */
-    public function restoreAppointment($id): JsonResponse
+    public function restoreAppointment($id): \Illuminate\Http\JsonResponse
     {
         $appointment = Appointment::findOrFail($id);
 
@@ -387,6 +393,106 @@ class AppointmentController extends Controller
             'appointment' => $appointment
         ]);
     }
+
+    /**
+     * Send appointment emails using simple PHP mail() function (IONOS compatible)
+     */
+    private function sendAppointmentEmailsIonos($appointment): void
+    {
+        try {
+            // Format date for display
+            $formattedDate = \Carbon\Carbon::parse($appointment->appointment_date)->format('d.m.Y');
+            $serviceTypeLabel = $this->getServiceTypeLabel($appointment->service_type);
+            
+            // Send emails
+            $this->sendSimpleAppointmentEmails($appointment, $formattedDate, $serviceTypeLabel);
+            
+            \Log::info('Appointment emails sent successfully', [
+                'appointment_id' => $appointment->id,
+                'customer_email' => $appointment->customer_email
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Failed to send appointment emails', [
+                'appointment_id' => $appointment->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send simple text-based emails (IONOS compatible)
+     */
+    private function sendSimpleAppointmentEmails($appointment, $formattedDate, $serviceTypeLabel): void
+    {
+        // Admin notification email
+        $adminMessage = "Neue Terminvereinbarung von www.yisu-travel.de\n\n";
+        $adminMessage .= "Name: {$appointment->customer_name}\n";
+        $adminMessage .= "E-Mail: {$appointment->customer_email}\n";
+        $adminMessage .= "Telefon: {$appointment->customer_phone}\n";
+        $adminMessage .= "Datum: $formattedDate\n";
+        $adminMessage .= "Uhrzeit: {$appointment->appointment_time}\n";
+        $adminMessage .= "Service: $serviceTypeLabel\n";
+        if ($appointment->message) {
+            $adminMessage .= "Nachricht: {$appointment->message}\n";
+        }
+        $adminMessage .= "\nZeit: " . date('Y-m-d H:i:s') . "\n";
+        
+        // Customer confirmation email
+        $customerMessage = "Vielen Dank für Ihre Terminvereinbarung an YISU Travel!\n\n";
+        $customerMessage .= "Ihre Termindetails:\n";
+        $customerMessage .= "Name: {$appointment->customer_name}\n";
+        $customerMessage .= "E-Mail: {$appointment->customer_email}\n";
+        $customerMessage .= "Telefon: {$appointment->customer_phone}\n";
+        $customerMessage .= "Datum: $formattedDate\n";
+        $customerMessage .= "Uhrzeit: {$appointment->appointment_time}\n";
+        $customerMessage .= "Service: $serviceTypeLabel\n";
+        if ($appointment->message) {
+            $customerMessage .= "Ihre Nachricht: {$appointment->message}\n";
+        }
+        $customerMessage .= "\nWir werden uns so schnell wie möglich bei Ihnen melden.\n\n";
+        $customerMessage .= "Mit freundlichen Grüßen\nIhr YISU Travel Team\n\n";
+        $customerMessage .= "Kontakt:\n";
+        $customerMessage .= "E-Mail: info@yisu-travel.de\n";
+        $customerMessage .= "Web: https://yisu-travel.de";
+        
+        // Email headers
+        $headers = "From: info@yisu-travel.de\r\n";
+        $headers .= "Reply-To: info@yisu-travel.de\r\n";
+        $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
+        
+        // Send admin email
+        $adminResult = mail('info@yisu-travel.de', 'Neue Terminvereinbarung YISU Travel', $adminMessage, $headers);
+        
+        // Send customer email
+        $customerResult = mail($appointment->customer_email, 'Terminbestätigung YISU Travel', $customerMessage, $headers);
+        
+        // Log results
+        \Log::info('Email sending completed', [
+            'admin_success' => $adminResult,
+            'customer_success' => $customerResult,
+            'appointment_id' => $appointment->id
+        ]);
+    }
+
+    /**
+     * Get service type label
+     */
+    private function getServiceTypeLabel($serviceType): string
+    {
+        $serviceTypes = [
+            'flight' => 'Flugbuchung',
+            'hotel' => 'Hotelbuchung',
+            'package' => 'Pauschalreise',
+            'custom' => 'Individuelle Reise',
+            'consultation' => 'Reiseberatung',
+            'beratung' => 'Reiseberatung',
+            'buchung' => 'Buchung',
+            'visum' => 'Visum-Service',
+            'sonstiges' => 'Sonstiges'
+        ];
+        
+        return $serviceTypes[$serviceType] ?? $serviceType;
+    }
 }
-
-

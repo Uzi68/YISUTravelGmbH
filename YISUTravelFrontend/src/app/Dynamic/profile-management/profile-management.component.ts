@@ -15,6 +15,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { UserManagementService, UserProfile, UpdateProfileRequest, ChangePasswordRequest } from '../../Services/user-management-service.service';
 import { AuthService } from '../../Services/AuthService/auth.service';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-profile-management',
@@ -245,11 +246,11 @@ export class ProfileManagementComponent implements OnInit {
     
     // If it starts with /storage, prepend the backend URL
     if (imageUrl.startsWith('/storage')) {
-      return 'http://localhost:8000' + imageUrl;
+      return environment.backendUrl + imageUrl;
     }
     
     // Otherwise, assume it's a relative path and prepend backend URL
-    return 'http://localhost:8000/storage/' + imageUrl;
+    return environment.backendUrl + '/storage/' + imageUrl;
   }
 
   // Profile Image Methods

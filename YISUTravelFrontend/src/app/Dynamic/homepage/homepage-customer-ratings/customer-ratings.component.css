@@ -1,9 +1,6 @@
 .gradient-custom {
   background-blend-mode: screen, color-dodge, overlay, difference, normal;
   height: 660px;
-  @media (max-width: 992px) {
-    height: 1000px;
-  }
 }
 .carousel-indicators {
   border-radius: 50%;

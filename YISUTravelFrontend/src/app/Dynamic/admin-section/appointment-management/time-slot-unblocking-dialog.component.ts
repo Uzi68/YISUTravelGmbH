@@ -41,11 +41,11 @@ import { CommonModule } from '@angular/common';
           <div class="time-slots-grid" *ngIf="blockedSlots.length > 0">
             <div class="slot-item" *ngFor="let slot of blockedSlots; trackBy: trackBySlot">
               <mat-checkbox 
-                [(ngModel)]="selectedSlots[slot]"
+                [(ngModel)]="selectedSlots[slot.id.toString()]"
                 (change)="onSlotChange(slot, $event.checked)"
                 class="slot-checkbox">
                 <div class="slot-content">
-                  <div class="slot-time">{{slot}} Uhr</div>
+                  <div class="slot-time">{{getSlotTime(slot)}} Uhr</div>
                   <div class="blocked-indicator">
                     <mat-icon>block</mat-icon>
                     Ausgebucht
@@ -325,41 +325,39 @@ import { CommonModule } from '@angular/common';
 })
 export class TimeSlotUnblockingDialog {
   selectedDate: Date;
-  blockedSlots: string[] = [];
+  blockedSlots: Array<{id: number, time: string, reason: string}> = [];
   selectedSlots: { [key: string]: boolean } = {};
 
   constructor(
     public dialogRef: MatDialogRef<TimeSlotUnblockingDialog>,
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {
-    console.log('TimeSlotUnblockingDialog constructor data:', data);
     this.selectedDate = data.date;
+    // Store the full slot objects
     this.blockedSlots = data.blockedSlots || [];
     
-    console.log('Initialized blockedSlots:', this.blockedSlots);
-    
-    // Initialize selected slots
+    // Initialize selected slots using slot IDs as keys
     this.blockedSlots.forEach(slot => {
-      this.selectedSlots[slot] = false;
+      this.selectedSlots[slot.id.toString()] = false;
     });
-    
-    console.log('Initialized selectedSlots:', this.selectedSlots);
   }
 
   getSelectedSlotsCount(): number {
-    const count = Object.values(this.selectedSlots).filter(selected => selected).length;
-    console.log('getSelectedSlotsCount called, current selectedSlots:', this.selectedSlots, 'count:', count);
-    return count;
+    return Object.values(this.selectedSlots).filter(selected => selected).length;
   }
 
-  onSlotChange(slot: string, checked: boolean): void {
-    console.log('onSlotChange called for slot:', slot, 'checked:', checked);
-    this.selectedSlots[slot] = checked;
-    console.log('Updated selectedSlots:', this.selectedSlots);
+  onSlotChange(slot: {id: number, time: string, reason: string}, checked: boolean): void {
+    // Use the slot ID as the key
+    this.selectedSlots[slot.id.toString()] = checked;
   }
 
-  trackBySlot(index: number, slot: string): string {
-    return slot;
+  trackBySlot(index: number, slot: {id: number, time: string, reason: string}): string {
+    // Use the slot ID for tracking
+    return slot.id.toString();
+  }
+
+  getSlotTime(slot: {id: number, time: string, reason: string}): string {
+    return slot.time;
   }
 
   onCancel(): void {
@@ -367,16 +365,20 @@ export class TimeSlotUnblockingDialog {
   }
 
   onConfirm(): void {
-    const slotsToUnblock = Object.keys(this.selectedSlots).filter(slot => this.selectedSlots[slot]);
-    console.log('onConfirm called, slotsToUnblock:', slotsToUnblock);
+    const slotsToUnblock: string[] = [];
+    
+    // Iterate through blockedSlots and check if they're selected
+    this.blockedSlots.forEach(slot => {
+      if (this.selectedSlots[slot.id.toString()]) {
+        slotsToUnblock.push(slot.time);
+      }
+    });
     
     if (slotsToUnblock.length === 0) {
-      console.log('No slots selected for unblocking');
       return;
     }
 
     // Directly unblock without confirmation dialog
-    console.log('User confirmed unblocking, closing dialog with result');
     this.dialogRef.close({
       action: 'unblockTimeSlots',
       date: this.selectedDate,

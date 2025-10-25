@@ -126,11 +126,11 @@
                 <h3 style="margin-top: 0; color: #28a745;">Termindetails:</h3>
                 <div class="detail-row">
                     <span class="detail-label">Datum:</span>
-                    <span class="detail-value">{{ $appointment->appointment_date->format('d.m.Y') }}</span>
+                    <span class="detail-value">{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('d.m.Y') }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Uhrzeit:</span>
-                    <span class="detail-value">{{ $appointment->appointment_time->format('H:i') }} Uhr</span>
+                    <span class="detail-value">{{ $appointment->appointment_time }} Uhr</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Service:</span>

@@ -1,15 +1,146 @@
-<!-- Desktop Swiper Slider -->
+<!-- Desktop Bootstrap Carousel -->
 <section class="hero-slider">
-  <swiper-container
-    loop="true"
-    navigation="true"
-    slides-per-view="1"
-    speed="500"
-    class="desktop custom-swiper hero-swiper"
-    autoplay-delay="3500"
-    autoplay-disable-on-interaction="false"
-  >
-    <swiper-slide>
+  <div id="desktopCarousel" class="carousel slide desktop hero-carousel" data-bs-ride="carousel" data-bs-interval="3500">
+    <div class="carousel-indicators">
+      <button type="button" data-bs-target="#desktopCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+      <button type="button" data-bs-target="#desktopCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+      <button type="button" data-bs-target="#desktopCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+      <button type="button" data-bs-target="#desktopCarousel" data-bs-slide-to="3" aria-label="Slide 4"></button>
+      <button type="button" data-bs-target="#desktopCarousel" data-bs-slide-to="4" aria-label="Slide 5"></button>
+    </div>
+    
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <div class="slider-wrapper">
+          <img src="/homepage/cover-carousel/homepagecover1.jpg" alt="YISU Travel GmbH" class="slider-img">
+          <div class="slider-overlay">
+            <div class="slider-content">
+              <h1>YISU Travel GmbH</h1>
+              <h2>Ihr Reisebüro</h2>
+              <h3>Von der ersten Beratung bis zur Rückkehr</h3>
+              <div class="hero-buttons">
+                <a routerLink="/termin-buchen" class="hero-btn hero-btn-primary">
+                  <i class="fas fa-calendar-alt"></i>
+                  Termin vereinbaren
+                </a>
+                <a href="https://wa.me/017696184913" target="_blank" class="hero-btn hero-btn-secondary">
+                  <i class="fab fa-whatsapp"></i>
+                  WhatsApp Kontakt
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="slider-wrapper">
+          <img src="/homepage/cover-carousel/homepagecover2.jpg" alt="YISU Travel GmbH" class="slider-img">
+          <div class="slider-overlay">
+            <div class="slider-content">
+              <h1>Entdecke die Welt</h1>
+              <h2>Mit YISU Travel</h2>
+              <h3>Ihre Träume werden Wirklichkeit</h3>
+              <div class="hero-buttons">
+                <a routerLink="/termin-buchen" class="hero-btn hero-btn-primary">
+                  <i class="fas fa-calendar-alt"></i>
+                  Termin vereinbaren
+                </a>
+                <a href="https://wa.me/017696184913" target="_blank" class="hero-btn hero-btn-secondary">
+                  <i class="fab fa-whatsapp"></i>
+                  WhatsApp Kontakt
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="slider-wrapper">
+          <img src="/homepage/cover-carousel/homepagecover3.jpg" alt="YISU Travel GmbH" class="slider-img">
+          <div class="slider-overlay">
+            <div class="slider-content">
+              <h1>Unvergessliche Reisen</h1>
+              <h2>Perfekt geplant</h2>
+              <h3>Unvergessliche Momente erwarten Sie</h3>
+              <div class="hero-buttons">
+                <a routerLink="/termin-buchen" class="hero-btn hero-btn-primary">
+                  <i class="fas fa-calendar-alt"></i>
+                  Termin vereinbaren
+                </a>
+                <a href="https://wa.me/017696184913" target="_blank" class="hero-btn hero-btn-secondary">
+                  <i class="fab fa-whatsapp"></i>
+                  WhatsApp Kontakt
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="slider-wrapper">
+          <img src="/homepage/cover-carousel/homepagecover4.jpg" alt="YISU Travel GmbH" class="slider-img">
+          <div class="slider-overlay">
+            <div class="slider-content">
+              <h1>Gemeinsam Reisen</h1>
+              <h2>Unvergessliche Erlebnisse</h2>
+              <h3>Gemeinsame Erinnerungen schaffen</h3>
+              <div class="hero-buttons">
+                <a routerLink="/termin-buchen" class="hero-btn hero-btn-primary">
+                  <i class="fas fa-calendar-alt"></i>
+                  Termin vereinbaren
+                </a>
+                <a href="https://wa.me/017696184913" target="_blank" class="hero-btn hero-btn-secondary">
+                  <i class="fab fa-whatsapp"></i>
+                  WhatsApp Kontakt
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="slider-wrapper">
+          <img src="/homepage/cover-carousel/homepagecover5.jpg" alt="YISU Travel GmbH" class="slider-img">
+          <div class="slider-overlay">
+            <div class="slider-content">
+              <h1>Kulturelle Vielfalt</h1>
+              <h2>Authentische Erlebnisse</h2>
+              <h3>Lokale Traditionen erleben</h3>
+              <div class="hero-buttons">
+                <a routerLink="/termin-buchen" class="hero-btn hero-btn-primary">
+                  <i class="fas fa-calendar-alt"></i>
+                  Termin vereinbaren
+                </a>
+                <a href="https://wa.me/017696184913" target="_blank" class="hero-btn hero-btn-secondary">
+                  <i class="fab fa-whatsapp"></i>
+                  WhatsApp Kontakt
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+<!-- Mobile Bootstrap Carousel -->
+<div id="mobileCarousel" class="carousel slide mobile hero-carousel" data-bs-ride="carousel" data-bs-interval="3500">
+  <div class="carousel-indicators">
+    <button type="button" data-bs-target="#mobileCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+    <button type="button" data-bs-target="#mobileCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+    <button type="button" data-bs-target="#mobileCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+    <button type="button" data-bs-target="#mobileCarousel" data-bs-slide-to="3" aria-label="Slide 4"></button>
+    <button type="button" data-bs-target="#mobileCarousel" data-bs-slide-to="4" aria-label="Slide 5"></button>
+  </div>
+  
+  <div class="carousel-inner">
+    <div class="carousel-item active">
       <div class="slider-wrapper">
         <img src="/homepage/cover-carousel/homepagecover1.jpg" alt="YISU Travel GmbH" class="slider-img">
         <div class="slider-overlay">
@@ -30,9 +161,9 @@
           </div>
         </div>
       </div>
-    </swiper-slide>
+    </div>
 
-    <swiper-slide>
+    <div class="carousel-item">
       <div class="slider-wrapper">
         <img src="/homepage/cover-carousel/homepagecover2.jpg" alt="YISU Travel GmbH" class="slider-img">
         <div class="slider-overlay">
@@ -53,9 +184,9 @@
           </div>
         </div>
       </div>
-    </swiper-slide>
+    </div>
 
-    <swiper-slide>
+    <div class="carousel-item">
       <div class="slider-wrapper">
         <img src="/homepage/cover-carousel/homepagecover3.jpg" alt="YISU Travel GmbH" class="slider-img">
         <div class="slider-overlay">
@@ -76,9 +207,9 @@
           </div>
         </div>
       </div>
-    </swiper-slide>
+    </div>
 
-    <swiper-slide>
+    <div class="carousel-item">
       <div class="slider-wrapper">
         <img src="/homepage/cover-carousel/homepagecover4.jpg" alt="YISU Travel GmbH" class="slider-img">
         <div class="slider-overlay">
@@ -99,9 +230,9 @@
           </div>
         </div>
       </div>
-    </swiper-slide>
+    </div>
 
-    <swiper-slide>
+    <div class="carousel-item">
       <div class="slider-wrapper">
         <img src="/homepage/cover-carousel/homepagecover5.jpg" alt="YISU Travel GmbH" class="slider-img">
         <div class="slider-overlay">
@@ -122,132 +253,6 @@
           </div>
         </div>
       </div>
-    </swiper-slide>
-  </swiper-container>
-</section>
-
-<!-- Mobile Swiper Slider -->
-<swiper-container
-  loop="true"
-  navigation="true"
-  slides-per-view="1"
-  speed="500"
-  class="custom-swiper mobile hero-swiper"
-  autoplay-delay="3500"
-  autoplay-disable-on-interaction="false"
->
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/homepage/cover-carousel/homepagecover1.jpg" alt="YISU Travel GmbH" class="slider-img">
-      <div class="slider-overlay">
-        <div class="slider-content">
-          <h1>YISU Travel GmbH</h1>
-          <h2>Ihr Reisebüro</h2>
-          <h3>Von der ersten Beratung bis zur Rückkehr</h3>
-          <div class="hero-buttons">
-            <a routerLink="/termin-buchen" class="hero-btn hero-btn-primary">
-              <i class="fas fa-calendar-alt"></i>
-              Termin vereinbaren
-            </a>
-            <a href="https://wa.me/017696184913" target="_blank" class="hero-btn hero-btn-secondary">
-              <i class="fab fa-whatsapp"></i>
-              WhatsApp Kontakt
-            </a>
-          </div>
-        </div>
-      </div>
     </div>
-  </swiper-slide>
-
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/homepage/cover-carousel/homepagecover2.jpg" alt="YISU Travel GmbH" class="slider-img">
-      <div class="slider-overlay">
-        <div class="slider-content">
-          <h1>Entdecke die Welt</h1>
-          <h2>Mit YISU Travel</h2>
-          <h3>Ihre Träume werden Wirklichkeit</h3>
-          <div class="hero-buttons">
-            <a routerLink="/termin-buchen" class="hero-btn hero-btn-primary">
-              <i class="fas fa-calendar-alt"></i>
-              Termin vereinbaren
-            </a>
-            <a href="https://wa.me/017696184913" target="_blank" class="hero-btn hero-btn-secondary">
-              <i class="fab fa-whatsapp"></i>
-              WhatsApp Kontakt
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </swiper-slide>
-
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/homepage/cover-carousel/homepagecover3.jpg" alt="YISU Travel GmbH" class="slider-img">
-      <div class="slider-overlay">
-        <div class="slider-content">
-          <h1>Unvergessliche Reisen</h1>
-          <h2>Perfekt geplant</h2>
-          <h3>Unvergessliche Momente erwarten Sie</h3>
-          <div class="hero-buttons">
-            <a routerLink="/termin-buchen" class="hero-btn hero-btn-primary">
-              <i class="fas fa-calendar-alt"></i>
-              Termin vereinbaren
-            </a>
-            <a href="https://wa.me/017696184913" target="_blank" class="hero-btn hero-btn-secondary">
-              <i class="fab fa-whatsapp"></i>
-              WhatsApp Kontakt
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </swiper-slide>
-
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/homepage/cover-carousel/homepagecover4.jpg" alt="YISU Travel GmbH" class="slider-img">
-      <div class="slider-overlay">
-        <div class="slider-content">
-          <h1>Gemeinsam Reisen</h1>
-          <h2>Unvergessliche Erlebnisse</h2>
-          <h3>Gemeinsame Erinnerungen schaffen</h3>
-          <div class="hero-buttons">
-            <a routerLink="/termin-buchen" class="hero-btn hero-btn-primary">
-              <i class="fas fa-calendar-alt"></i>
-              Termin vereinbaren
-            </a>
-            <a href="https://wa.me/017696184913" target="_blank" class="hero-btn hero-btn-secondary">
-              <i class="fab fa-whatsapp"></i>
-              WhatsApp Kontakt
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </swiper-slide>
-
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/homepage/cover-carousel/homepagecover5.jpg" alt="YISU Travel GmbH" class="slider-img">
-      <div class="slider-overlay">
-        <div class="slider-content">
-          <h1>Kulturelle Vielfalt</h1>
-          <h2>Authentische Erlebnisse</h2>
-          <h3>Lokale Traditionen erleben</h3>
-          <div class="hero-buttons">
-            <a routerLink="/termin-buchen" class="hero-btn hero-btn-primary">
-              <i class="fas fa-calendar-alt"></i>
-              Termin vereinbaren
-            </a>
-            <a href="https://wa.me/017696184913" target="_blank" class="hero-btn hero-btn-secondary">
-              <i class="fab fa-whatsapp"></i>
-              WhatsApp Kontakt
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </swiper-slide>
-</swiper-container>
+  </div>
+</div>

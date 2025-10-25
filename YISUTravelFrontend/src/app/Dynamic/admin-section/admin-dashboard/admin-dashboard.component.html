@@ -236,10 +236,11 @@
                   (click)="toggleOfferManagement()">
             <mat-icon>local_offer</mat-icon>
           </button>
-          <button mat-icon-button class="profile-action-btn" matTooltip="Buchungsliste"
+          <!-- Temporarily disabled for now -->
+          <!-- <button mat-icon-button class="profile-action-btn" matTooltip="Buchungsliste"
                   routerLink="/admin/buchungsliste">
             <mat-icon>list_alt</mat-icon>
-          </button>
+          </button> -->
           <button mat-icon-button class="profile-action-btn" matTooltip="Terminverwaltung"
                   (click)="toggleAppointmentManagement()">
             <mat-icon>event</mat-icon>
@@ -279,7 +280,7 @@
         <div class="user-info">
           <div class="user-header">
             <h3 class="user-name">
-              {{(visitor?.first_name && visitor?.last_name) ?
+              {{(visitor.first_name && visitor.last_name) ?
               (visitor.first_name + ' ' + visitor.last_name) :
               (selectedChat.customerName || 'Anonymer Benutzer')}}
               <!-- WhatsApp Channel Badge in Header -->
@@ -588,7 +589,7 @@
             [maxLength]="1000"
             (keydown)="onKeyDown($event, messageInput)"></textarea>
           <div class="char-counter">
-            {{ messageInput.value?.length || 0 }}/1000
+            {{ messageInput.value.length || 0 }}/1000
           </div>
         </div>
 
@@ -597,7 +598,7 @@
           color="primary"
           class="send-button"
           (click)="isWhatsAppChat(selectedChat) ? sendWhatsAppMessage(messageInput.value, messageInput) : sendMessage(messageInput.value, messageInput)"
-          [disabled]="!messageInput.value?.trim()"
+          [disabled]="!messageInput.value.trim()"
           [matTooltip]="isWhatsAppChat(selectedChat) ? 'WhatsApp Nachricht senden' : 'Nachricht senden'">
           <mat-icon>send</mat-icon>
         </button>

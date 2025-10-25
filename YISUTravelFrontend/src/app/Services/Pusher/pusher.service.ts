@@ -275,6 +275,5 @@ export class PusherService {
 
 
 /*
-*     this.notificationSound = new Audio('http://localhost:8000/storage/sounds/notification.mp3');
-   // this.notificationSound = new Audio('https://backend.yisu-travel.de/storage/sounds/notification.mp3');
+*     this.notificationSound = new Audio(`${environment.backendUrl}/storage/sounds/notification.mp3`);
 * */

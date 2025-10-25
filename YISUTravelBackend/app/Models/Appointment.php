@@ -23,7 +23,7 @@ class Appointment extends Model
 
     protected $casts = [
         'appointment_date' => 'date',
-        'appointment_time' => 'datetime',
+        'appointment_time' => 'string',
         'blocked_by_admin' => 'boolean'
     ];
 
@@ -97,7 +97,7 @@ class Appointment extends Model
     public function getFormattedDateTimeAttribute(): string
     {
         $date = $this->appointment_date->format('d.m.Y');
-        $time = $this->appointment_time->format('H:i');
+        $time = $this->appointment_time; // Already a string, no need to format
         return "{$date} um {$time} Uhr";
     }
 }

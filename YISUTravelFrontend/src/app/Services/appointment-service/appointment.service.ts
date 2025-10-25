@@ -16,7 +16,7 @@ import {
 })
 export class AppointmentService {
   private http = inject(HttpClient);
-  private apiUrl = environment.apiUrl || 'http://localhost:8000/api';
+  private apiUrl = environment.apiUrl;
 
   /**
    * Create a new appointment
@@ -172,6 +172,7 @@ export class AppointmentService {
    * Unblock multiple time slots (admin only)
    */
   unblockMultipleSlots(date: string, times: string[]): Observable<{ success: boolean; message: string; unblocked_count: number; errors: string[] }> {
+    console.log('unblockMultipleSlots called with:', { date, times });
     return this.http.post<{ success: boolean; message: string; unblocked_count: number; errors: string[] }>(`${this.apiUrl}/appointments/unblock-multiple`, {
       date,
       times
@@ -183,8 +184,8 @@ export class AppointmentService {
   /**
    * Get blocked slots for a specific date
    */
-  getBlockedSlots(date: string): Observable<{ success: boolean; blocked_slots: string[] }> {
-    return this.http.get<{ success: boolean; blocked_slots: string[] }>(`${this.apiUrl}/appointments/blocked-slots`, {
+  getBlockedSlots(date: string): Observable<{ success: boolean; blocked_slots: Array<{id: number, time: string, reason: string}> }> {
+    return this.http.get<{ success: boolean; blocked_slots: Array<{id: number, time: string, reason: string}> }>(`${this.apiUrl}/appointments/blocked-slots`, {
       params: { date },
       withCredentials: true
     });

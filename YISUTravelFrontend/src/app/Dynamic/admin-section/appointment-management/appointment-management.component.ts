@@ -244,8 +244,6 @@ export class AppointmentManagementComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        console.log('Date appointments dialog closed with result:', result);
-        
         if (result.action === 'blockDay') {
           this.handleBlockDay(result.date);
         } else if (result.action === 'blockTimeSlots') {
@@ -273,8 +271,6 @@ export class AppointmentManagementComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        console.log('Block slot dialog closed with result:', result);
-        
         if (result.action === 'refresh') {
           this.loadAppointments();
         }
@@ -366,13 +362,11 @@ export class AppointmentManagementComponent implements OnInit {
    */
   private openTimeSlotBlockingDialog(dateString: string): void {
     const date = new Date(dateString);
-    console.log('Loading blocked slots for:', dateString);
     
     // Load blocked slots asynchronously
     this.appointmentService.getBlockedSlots(dateString).subscribe({
       next: (response: any) => {
         const blockedSlots = response.blocked_slots || [];
-        console.log('Blocked slots loaded:', blockedSlots);
         
         const dialogRef = this.dialog.open(TimeSlotBlockingDialog, {
           width: '700px',
@@ -520,7 +514,6 @@ export class AppointmentManagementComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         // Handle any actions after dialog closes
-        console.log('Dialog closed with result:', result);
       }
     });
   }

@@ -137,7 +137,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
       const day = String(date.getDate()).padStart(2, '0');
       const dateString = `${year}-${month}-${day}`;
       
-      console.log('Date picker changed:', dateString);
       this.selectedDate = dateString;
       this.loadAvailableTimeSlots(dateString);
       this.loadBlockedSlots(dateString);
@@ -151,7 +150,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
 
   onDateChange(event: any): void {
     const selectedDate = event.target.value;
-    console.log('Date changed:', selectedDate); // Debug log
     if (selectedDate) {
       this.selectedDate = selectedDate;
       // Update the form control to make the form valid
@@ -166,7 +164,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
   }
 
   private loadAvailableTimeSlots(date: string): void {
-    console.log('Loading time slots for date:', date); // Debug log
     this.isLoadingSlots = true;
     this.availableSlots = [];
     this.allPossibleSlots = [];
@@ -175,13 +172,11 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
 
     // Generate all possible slots first
     this.allPossibleSlots = this.generateTimeSlots(date);
-    console.log('All possible slots:', this.allPossibleSlots); // Debug log
 
     // Load available slots from backend
     this.appointmentService.getAvailableSlots(date).subscribe({
       next: (response: any) => {
-        console.log('Available slots from backend:', response.slots); // Debug log
-        this.availableSlots = response.slots || [];
+        this.availableSlots = response.available_slots || [];
         this.isLoadingSlots = false;
       },
       error: (error) => {
@@ -197,7 +192,8 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
     // Load blocked slots from the blocked_slots table
     this.appointmentService.getBlockedSlots(date).subscribe({
       next: (response: any) => {
-        this.blockedSlots = response.blocked_slots || [];
+        // Extract time strings from blocked slots array
+        this.blockedSlots = (response.blocked_slots || []).map((slot: any) => slot.time || slot);
       },
       error: (error) => {
         console.error('Error loading blocked slots:', error);
@@ -211,29 +207,22 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
     const selectedDate = new Date(date);
     const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 6 = Saturday
     
-    console.log('Generating slots for:', date, 'Day of week:', dayOfWeek); // Debug log
-    
     let startTime: string;
     let endTime: string;
     
     if (dayOfWeek === 6) { // Saturday
       startTime = this.businessHours.saturday.start;
       endTime = this.businessHours.saturday.end;
-      console.log('Saturday hours:', startTime, '-', endTime); // Debug log
     } else if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
       startTime = this.businessHours.weekdays.start;
       endTime = this.businessHours.weekdays.end;
-      console.log('Weekday hours:', startTime, '-', endTime); // Debug log
     } else { // Sunday - closed
-      console.log('Sunday - closed'); // Debug log
       return [];
     }
     
     // Parse start and end times
     const [startHour, startMin] = startTime.split(':').map(Number);
     const [endHour, endMin] = endTime.split(':').map(Number);
-    
-    console.log('Parsed times - Start:', startHour, ':', startMin, 'End:', endHour, ':', endMin); // Debug log
     
     // Generate 30-minute slots
     let currentHour = startHour;
@@ -251,13 +240,11 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
       }
     }
     
-    console.log('Final slots array:', slots); // Debug log
     return slots;
   }
 
   selectTimeSlot(slot: string): void {
     this.selectedTime = slot;
-    console.log('Selected time slot:', slot);
   }
 
   onCustomTimeChange(event: any): void {
@@ -298,7 +285,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
     if (this.customTime && this.isCustomTimeValid()) {
       this.selectedTime = this.customTime;
       this.customTime = '';
-      console.log('Added custom time:', this.selectedTime);
     }
   }
 
@@ -379,7 +365,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
 
       this.appointmentService.createAppointment(appointmentData).subscribe({
         next: (response: any) => {
-          console.log('Appointment created successfully:', response);
           this.snackBar.open('Termin erfolgreich gebucht! Wir melden uns bald bei Ihnen.', 'OK', {
             duration: 5000,
             panelClass: ['success-snackbar']

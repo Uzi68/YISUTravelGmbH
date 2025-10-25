@@ -315,7 +315,8 @@ export class TimeSlotBlockingDialog {
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {
     this.selectedDate = data.date;
-    this.blockedSlots = data.blockedSlots || [];
+    // Extract time strings from blocked slots array (handle both formats)
+    this.blockedSlots = (data.blockedSlots || []).map((slot: any) => slot.time || slot);
     this.appointments = data.appointments || [];
     this.generateTimeSlots();
   }

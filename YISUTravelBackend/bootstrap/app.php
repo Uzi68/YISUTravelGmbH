@@ -45,7 +45,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/password/reset-link',     // ✅ Passwort-Reset-Link senden
             'api/password/reset',          // ✅ Passwort zurücksetzen
             'api/login',                   // ✅ Login für alle Benutzer
-            'api/appointments'
+            'api/appointments',
+            'api/appointments/blocked-slots'
         ]
         );
         /*

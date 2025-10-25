@@ -1,4 +1,4 @@
-import {Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, Inject, PLATFORM_ID, QueryList, ViewChildren} from '@angular/core';
+import {Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, Inject, PLATFORM_ID, QueryList, ViewChildren, OnInit} from '@angular/core';
 import {isPlatformBrowser, NgClass, NgForOf} from "@angular/common";
 import {RouterLink, Router} from "@angular/router";
 import {MatButton, MatFabAnchor, MatFabButton, MatButtonModule} from "@angular/material/button";
@@ -22,20 +22,36 @@ import {MatIcon, MatIconModule} from "@angular/material/icon";
   styleUrl: './homepage-contact.component.css',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class HomepageContactComponent {
+export class HomepageContactComponent implements OnInit {
   isOpen = false;
+  isBrowser: boolean = false;
 
   toggleDropdown() {
     this.isOpen = !this.isOpen;
   }
 
-  constructor(private router: Router, @Inject(PLATFORM_ID) private platformId: Object) {
+  constructor(
+    private router: Router, 
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
+
+  async ngOnInit() {
+    if (this.isBrowser) {
+      // Initialize Swiper elements
+      try {
+        const { register } = await import('swiper/element/bundle');
+        register();
+      } catch (error) {
+        console.error('Swiper initialization failed:', error);
+      }
+    }
   }
 
   openAppointmentBooking(): void {
     this.router.navigate(['/termin-buchen']);
   }
-
 
   @ViewChildren('carouselanimation') boxElements!: QueryList<ElementRef>;
 

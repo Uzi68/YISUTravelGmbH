@@ -1,17 +1,65 @@
-<!-- Desktop Swiper Slider -->
+<!-- Desktop Bootstrap Carousel -->
 <section class="contact-hero-slider">
-  <swiper-container
-    loop="true"
-    navigation="true"
-    slides-per-view="1"
-    speed="500"
-    class="desktop custom-swiper contact-swiper"
-    autoplay-delay="3500"
-    autoplay-disable-on-interaction="false"
-  >
-    <swiper-slide>
+  <div id="desktopContactCarousel" class="carousel slide desktop custom-swiper contact-swiper" data-bs-ride="carousel" data-bs-interval="3500">
+    <div class="carousel-indicators">
+      <button type="button" data-bs-target="#desktopContactCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+      <button type="button" data-bs-target="#desktopContactCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+      <button type="button" data-bs-target="#desktopContactCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+    </div>
+    
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <div class="slider-wrapper">
+          <img src="/contact/contact-us.jpg" alt="Kontakt YISU Travel" class="slider-img">
+          <div class="slider-overlay">
+            <div class="slider-content">
+              <h1 class="display-1">Kontaktieren Sie Uns</h1>
+              <p class="lead">Wir helfen gerne weiter</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="slider-wrapper">
+          <img src="/homepage/cover-carousel/homepagecover2.jpg" alt="YISU Travel Service" class="slider-img">
+          <div class="slider-overlay">
+            <div class="slider-content">
+              <h1 class="display-1">Persönliche Beratung</h1>
+              <p class="lead">Ihr Ansprechpartner für alle Fragen</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="carousel-item">
+        <div class="slider-wrapper">
+          <img src="/homepage/cover-carousel/homepagecover3.jpg" alt="YISU Travel Erreichbarkeit" class="slider-img">
+          <div class="slider-overlay">
+            <div class="slider-content">
+              <h1 class="display-1">Wir Sind Für Sie Da</h1>
+              <p class="lead">Montag bis Samstag erreichbar</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+<!-- Mobile Bootstrap Carousel -->
+<div id="mobileContactCarousel" class="carousel slide custom-swiper mobile contact-swiper" data-bs-ride="carousel" data-bs-interval="3500">
+  <div class="carousel-indicators">
+    <button type="button" data-bs-target="#mobileContactCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+    <button type="button" data-bs-target="#mobileContactCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+    <button type="button" data-bs-target="#mobileContactCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+  </div>
+  
+  <div class="carousel-inner">
+    <div class="carousel-item active">
       <div class="slider-wrapper">
-        <img src="/contact/contact-us.jpg" alt="Kontakt YISU Travel" class="slider-img">
+        <img src="/homepage/contact1.jpg" alt="Kontakt YISU Travel" class="slider-img">
         <div class="slider-overlay">
           <div class="slider-content">
             <h1 class="display-1">Kontaktieren Sie Uns</h1>
@@ -19,9 +67,9 @@
           </div>
         </div>
       </div>
-    </swiper-slide>
+    </div>
 
-    <swiper-slide>
+    <div class="carousel-item">
       <div class="slider-wrapper">
         <img src="/homepage/cover-carousel/homepagecover2.jpg" alt="YISU Travel Service" class="slider-img">
         <div class="slider-overlay">
@@ -31,9 +79,9 @@
           </div>
         </div>
       </div>
-    </swiper-slide>
+    </div>
 
-    <swiper-slide>
+    <div class="carousel-item">
       <div class="slider-wrapper">
         <img src="/homepage/cover-carousel/homepagecover3.jpg" alt="YISU Travel Erreichbarkeit" class="slider-img">
         <div class="slider-overlay">
@@ -43,53 +91,6 @@
           </div>
         </div>
       </div>
-    </swiper-slide>
-  </swiper-container>
-</section>
-
-<!-- Mobile Swiper Slider -->
-<swiper-container
-  loop="true"
-  navigation="true"
-  slides-per-view="1"
-  speed="500"
-  class="custom-swiper mobile contact-swiper"
-  autoplay-delay="3500"
-  autoplay-disable-on-interaction="false"
->
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/contact/contact1.jpg" alt="Kontakt YISU Travel" class="slider-img">
-      <div class="slider-overlay">
-        <div class="slider-content">
-          <h1 class="display-1">Kontaktieren Sie Uns</h1>
-          <p class="lead">Wir helfen gerne weiter</p>
-        </div>
-      </div>
     </div>
-  </swiper-slide>
-
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/homepage/cover-carousel/homepagecover2.jpg" alt="YISU Travel Service" class="slider-img">
-      <div class="slider-overlay">
-        <div class="slider-content">
-          <h1 class="display-1">Persönliche Beratung</h1>
-          <p class="lead">Ihr Ansprechpartner für alle Fragen</p>
-        </div>
-      </div>
-    </div>
-  </swiper-slide>
-
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/homepage/cover-carousel/homepagecover3.jpg" alt="YISU Travel Erreichbarkeit" class="slider-img">
-      <div class="slider-overlay">
-        <div class="slider-content">
-          <h1 class="display-1">Wir Sind Für Sie Da</h1>
-          <p class="lead">Montag bis Samstag erreichbar</p>
-        </div>
-      </div>
-    </div>
-  </swiper-slide>
-</swiper-container>
+  </div>
+</div>

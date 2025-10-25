@@ -711,13 +711,9 @@ export class AppointmentDetailsDialog {
   }
 
   onUnblockTimeSlots(): void {
-    console.log('onUnblockTimeSlots called!');
     if (!this.selectedDate) {
-      console.log('No selectedDate available');
       return;
     }
-    
-    console.log('onUnblockTimeSlots called for date:', this.selectedDate);
     
     // Create date string without timezone issues
     const year = this.selectedDate.getFullYear();
@@ -725,7 +721,6 @@ export class AppointmentDetailsDialog {
     const day = String(this.selectedDate.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
     
-    console.log('Opening unblocking dialog for dateString:', dateString);
     this.openTimeSlotUnblockingDialog(dateString);
   }
 
@@ -756,11 +751,9 @@ export class AppointmentDetailsDialog {
 
   private openTimeSlotUnblockingDialog(dateString: string): void {
     const date = new Date(dateString);
-    console.log('Opening unblocking dialog for date:', dateString);
     
     this.appointmentService.getBlockedSlots(dateString).subscribe({
       next: (response: any) => {
-        console.log('Blocked slots response:', response);
         const blockedSlots = response.blocked_slots || [];
         
         if (blockedSlots.length === 0) {
@@ -770,7 +763,6 @@ export class AppointmentDetailsDialog {
           return;
         }
         
-        console.log('Opening dialog with blocked slots:', blockedSlots);
         const dialogRef = this.dialog.open(TimeSlotUnblockingDialog, {
           width: '700px',
           maxWidth: '90vw',
@@ -782,7 +774,6 @@ export class AppointmentDetailsDialog {
         });
 
         dialogRef.afterClosed().subscribe(result => {
-          console.log('Unblocking dialog result:', result);
           if (result && result.action === 'unblockTimeSlots') {
             this.handleUnblockTimeSlots(result.date, result.slots);
           }
@@ -809,7 +800,7 @@ export class AppointmentDetailsDialog {
           next: (slotsResponse: any) => {
             // Get all possible slots for this date
             const allSlots = this.generateTimeSlotsForDay(date);
-            const availableSlots = slotsResponse.slots || [];
+            const availableSlots = slotsResponse.available_slots || [];
             
             // Find booked slots (all slots minus available slots)
             const bookedSlots = allSlots.filter(slot => !availableSlots.includes(slot));
@@ -907,21 +898,17 @@ export class AppointmentDetailsDialog {
   }
 
   private handleUnblockTimeSlots(date: Date, slots: string[]): void {
-    console.log('handleUnblockTimeSlots called with:', { date, slots });
-    
     // Create date string without timezone issues
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-    
-    console.log('Created dateString:', dateString);
+
+    console.log('handleUnblockTimeSlots called with:', { dateString, slots });
 
     // Unblock multiple slots
-    console.log('Calling appointmentService.unblockMultipleSlots with:', { dateString, slots });
     this.appointmentService.unblockMultipleSlots(dateString, slots).subscribe({
       next: (response) => {
-        console.log('Unblock response:', response);
         this.snackBar.open(response.message, 'OK', {
           duration: 3000
         });
