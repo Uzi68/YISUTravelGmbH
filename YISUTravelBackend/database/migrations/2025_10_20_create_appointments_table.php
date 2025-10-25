@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('customer_phone');
             $table->date('appointment_date');
             $table->time('appointment_time');
-            $table->enum('service_type', ['beratung', 'buchung', 'visum', 'sonstiges']);
+            $table->enum('service_type', ['flight', 'hotel', 'package', 'custom', 'consultation', 'beratung', 'buchung', 'visum', 'sonstiges']);
             $table->integer('travelers_count');
             $table->string('destination')->nullable();
             $table->string('budget_range')->nullable();
@@ -42,4 +42,5 @@ return new class extends Migration
         Schema::dropIfExists('appointments');
     }
 };
+
 

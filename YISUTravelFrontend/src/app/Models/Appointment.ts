@@ -6,9 +6,6 @@ export interface Appointment {
   appointment_date: string;
   appointment_time: string;
   service_type: string;
-  travelers_count: number;
-  destination?: string | null;
-  budget_range?: string | null;
   message?: string | null;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   blocked_by_admin?: boolean;
@@ -23,9 +20,6 @@ export interface AppointmentFormData {
   appointment_date: string;
   appointment_time: string;
   service_type: string;
-  travelers_count: number;
-  destination?: string | null;
-  budget_range?: string | null;
   message?: string | null;
 }
 

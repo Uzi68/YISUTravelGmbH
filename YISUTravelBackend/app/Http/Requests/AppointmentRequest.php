@@ -27,10 +27,7 @@ class AppointmentRequest extends FormRequest
             'customer_phone' => 'required|string|regex:/^[\+]?[0-9\s\-\(\)]{10,}$/',
             'appointment_date' => 'required|date|after_or_equal:today',
             'appointment_time' => 'required|date_format:H:i',
-            'service_type' => 'required|in:beratung,buchung,visum,sonstiges',
-            'travelers_count' => 'required|integer|min:1|max:20',
-            'destination' => 'nullable|string|max:255',
-            'budget_range' => 'nullable|string|max:100',
+            'service_type' => 'required|in:flight,hotel,package,custom,consultation,beratung,buchung,visum,sonstiges',
             'message' => 'nullable|string|max:1000',
         ];
     }
@@ -119,11 +116,8 @@ class AppointmentRequest extends FormRequest
             'appointment_time.date_format' => 'Bitte geben Sie eine gültige Uhrzeit ein.',
             'service_type.required' => 'Bitte wählen Sie eine Dienstleistung aus.',
             'service_type.in' => 'Bitte wählen Sie eine gültige Dienstleistung aus.',
-            'travelers_count.required' => 'Bitte geben Sie die Anzahl der Reisenden an.',
-            'travelers_count.integer' => 'Die Anzahl der Reisenden muss eine Zahl sein.',
-            'travelers_count.min' => 'Mindestens eine Person muss reisen.',
-            'travelers_count.max' => 'Maximal 20 Personen pro Termin.',
         ];
     }
 }
+
 

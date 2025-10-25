@@ -114,22 +114,28 @@
                 <span>Lade verfügbare Zeiten...</span>
               </div>
 
-              <div *ngIf="!isLoadingSlots && availableSlots.length === 0" class="no-slots">
+              <div *ngIf="!isLoadingSlots && allPossibleSlots.length === 0" class="no-slots">
                 <mat-icon>info</mat-icon>
                 <span>Für dieses Datum sind keine Termine verfügbar.</span>
               </div>
 
-              <div *ngIf="!isLoadingSlots && availableSlots.length > 0" class="time-slots-container">
+              <div *ngIf="!isLoadingSlots && allPossibleSlots.length > 0" class="time-slots-container">
 
                 <!-- Time Slot Selection - Only One Selectable -->
                 <div class="time-slots-grid">
                   <button mat-raised-button
-                          *ngFor="let slot of availableSlots"
+                          *ngFor="let slot of allPossibleSlots"
                           type="button"
                           [class.selected-time]="selectedTime === slot"
+                          [class.unavailable-slot]="!isSlotAvailable(slot)"
+                          [disabled]="!isSlotAvailable(slot)"
                           (click)="selectTimeSlot(slot)"
                           class="time-slot-button">
-                    {{slot}} Uhr
+                    <span *ngIf="!isSlotAvailable(slot)" class="unavailable-indicator">
+                      <mat-icon>block</mat-icon>
+                      {{slot}} Uhr (Ausgebucht)
+                    </span>
+                    <span *ngIf="isSlotAvailable(slot)">{{slot}} Uhr</span>
                   </button>
                 </div>
 
@@ -141,22 +147,25 @@
 
                 <!-- Custom Time Input -->
                 <div class="custom-time-section">
-                  <mat-form-field appearance="outline" class="custom-time-field">
-                    <mat-label>Oder eigene Uhrzeit eingeben</mat-label>
-                    <input matInput 
-                           type="time"
-                           [value]="customTime"
-                           (change)="onCustomTimeChange($event)"
-                           placeholder="HH:MM">
-                    <mat-hint>Format: HH:MM (z.B. 14:30)</mat-hint>
-                  </mat-form-field>
-                  <button mat-stroked-button 
-                          (click)="addCustomTime()"
-                          [disabled]="!customTime || !isCustomTimeValid()"
-                          class="add-custom-time-btn">
-                    <mat-icon>add</mat-icon>
-                    Hinzufügen
-                  </button>
+                  <div class="custom-time-field">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Oder eigene Uhrzeit eingeben</mat-label>
+                      <input matInput 
+                             type="time"
+                             [value]="customTime"
+                             (change)="onCustomTimeChange($event)"
+                             placeholder="HH:MM">
+                      <mat-hint>Format: HH:MM (z.B. 14:30)</mat-hint>
+                    </mat-form-field>
+                  </div>
+                  <div class="add-custom-time-btn">
+                    <button mat-raised-button 
+                            (click)="addCustomTime()"
+                            [disabled]="!customTime || !isCustomTimeValid()">
+                      <mat-icon>add</mat-icon>
+                      Hinzufügen
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -184,83 +193,7 @@
           </form>
         </mat-step>
 
-        <!-- Step 3: Travel Details -->
-        <mat-step [stepControl]="travelDetailsForm" label="Reisedetails">
-          <ng-template matStepLabel>
-            <div class="step-label">
-              <mat-icon>flight_takeoff</mat-icon>
-              <span>Reisedetails</span>
-            </div>
-          </ng-template>
-          
-          <form [formGroup]="travelDetailsForm" class="step-form">
-            <div class="form-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Art der Beratung *</mat-label>
-                <mat-select formControlName="service_type">
-                  <mat-option *ngFor="let service of serviceTypes" [value]="service.value">
-                    {{service.label}}
-                  </mat-option>
-                </mat-select>
-                <mat-error *ngIf="travelDetailsForm.get('service_type')?.hasError('required')">
-                  Art der Beratung ist erforderlich
-                </mat-error>
-              </mat-form-field>
-            </div>
-
-            <div class="form-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Anzahl Reisende *</mat-label>
-                <input matInput 
-                       type="number" 
-                       formControlName="travelers_count" 
-                       min="1" 
-                       max="20"
-                       placeholder="1">
-                <mat-error *ngIf="travelDetailsForm.get('travelers_count')?.hasError('required')">
-                  Anzahl Reisende ist erforderlich
-                </mat-error>
-                <mat-error *ngIf="travelDetailsForm.get('travelers_count')?.hasError('min')">
-                  Mindestens 1 Person erforderlich
-                </mat-error>
-                <mat-error *ngIf="travelDetailsForm.get('travelers_count')?.hasError('max')">
-                  Maximal 20 Personen möglich
-                </mat-error>
-              </mat-form-field>
-            </div>
-
-            <div class="form-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Reiseziel (optional)</mat-label>
-                <input matInput formControlName="destination" placeholder="z.B. Mallorca, Thailand, USA...">
-              </mat-form-field>
-            </div>
-
-            <div class="form-row">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Budget (optional)</mat-label>
-                <mat-select formControlName="budget_range">
-                  <mat-option *ngFor="let budget of budgetRanges" [value]="budget.value">
-                    {{budget.label}}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
-
-            <div class="step-actions">
-              <button mat-button matStepperPrevious>
-                <mat-icon>arrow_back</mat-icon>
-                Zurück
-              </button>
-              <button mat-raised-button color="primary" matStepperNext [disabled]="!isTravelDetailsValid()">
-                Weiter
-                <mat-icon>arrow_forward</mat-icon>
-              </button>
-            </div>
-          </form>
-        </mat-step>
-
-        <!-- Step 4: Message -->
+        <!-- Step 2: Message -->
         <mat-step [stepControl]="messageForm" label="Nachricht">
           <ng-template matStepLabel>
             <div class="step-label">
@@ -270,6 +203,62 @@
           </ng-template>
           
           <form [formGroup]="messageForm" class="step-form">
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Service auswählen *</mat-label>
+                <mat-select formControlName="service_type">
+                  <mat-select-trigger>
+                    {{getServiceTypeLabel(messageForm.get('service_type')?.value)}}
+                  </mat-select-trigger>
+                  <mat-option value="beratung">
+                    <div class="service-option-content">
+                      <mat-icon>support_agent</mat-icon>
+                      <span>Reiseberatung</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="flight">
+                    <div class="service-option-content">
+                      <mat-icon>flight</mat-icon>
+                      <span>Flugbuchung</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="hotel">
+                    <div class="service-option-content">
+                      <mat-icon>hotel</mat-icon>
+                      <span>Hotelbuchung</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="package">
+                    <div class="service-option-content">
+                      <mat-icon>luggage</mat-icon>
+                      <span>Pauschalreise</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="visum">
+                    <div class="service-option-content">
+                      <mat-icon>description</mat-icon>
+                      <span>Visum-Service</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="custom">
+                    <div class="service-option-content">
+                      <mat-icon>tune</mat-icon>
+                      <span>Individuelle Reise</span>
+                    </div>
+                  </mat-option>
+                  <mat-option value="sonstiges">
+                    <div class="service-option-content">
+                      <mat-icon>more_horiz</mat-icon>
+                      <span>Sonstiges</span>
+                    </div>
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="messageForm.get('service_type')?.hasError('required')">
+                  Service-Auswahl ist erforderlich
+                </mat-error>
+              </mat-form-field>
+            </div>
+
             <div class="form-row">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Nachricht (optional)</mat-label>
@@ -294,7 +283,7 @@
           </form>
         </mat-step>
 
-        <!-- Step 5: Confirmation -->
+        <!-- Step 3: Confirmation -->
         <mat-step label="Bestätigung">
           <ng-template matStepLabel>
             <div class="step-label">
@@ -321,6 +310,13 @@
               </div>
 
               <div class="detail-section">
+                <h4>Service</h4>
+                <div class="detail-row">
+                  <span><strong>Gewählter Service:</strong> {{getServiceTypeLabel(messageForm.get('service_type')?.value) || 'Reiseberatung'}}</span>
+                </div>
+              </div>
+
+              <div class="detail-section">
                 <h4>Termin</h4>
                 <div class="detail-row">
                   <span><strong>Datum:</strong> {{selectedDate ? getDisplayDateFormat(selectedDate) : ''}}</span>
@@ -330,21 +326,9 @@
                 </div>
               </div>
 
-              <div class="detail-section">
-                <h4>Reisedetails</h4>
+              <div class="detail-section" *ngIf="messageForm.get('message')?.value">
+                <h4>Nachricht</h4>
                 <div class="detail-row">
-                  <span><strong>Art der Beratung:</strong> {{getServiceTypeLabel(travelDetailsForm.get('service_type')?.value)}}</span>
-                </div>
-                <div class="detail-row">
-                  <span><strong>Anzahl Reisende:</strong> {{travelDetailsForm.get('travelers_count')?.value}} Person(en)</span>
-                </div>
-                <div class="detail-row" *ngIf="travelDetailsForm.get('destination')?.value">
-                  <span><strong>Reiseziel:</strong> {{travelDetailsForm.get('destination')?.value}}</span>
-                </div>
-                <div class="detail-row" *ngIf="travelDetailsForm.get('budget_range')?.value">
-                  <span><strong>Budget:</strong> {{getBudgetRangeLabel(travelDetailsForm.get('budget_range')?.value)}}</span>
-                </div>
-                <div class="detail-row" *ngIf="messageForm.get('message')?.value">
                   <div class="message-display">
                     <strong>Nachricht:</strong>
                     <div class="message-content">
@@ -375,3 +359,50 @@
     </div>
   </div>
 </div>
+
+<style>
+/* Service Dropdown Styles */
+.service-option-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.service-option-content mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: #2196f3;
+}
+
+.service-option-content span {
+  font-size: 14px;
+}
+
+/* Unavailable Slot Styles */
+.unavailable-slot {
+  background-color: #f5f5f5 !important;
+  color: #999 !important;
+  border-color: #ddd !important;
+  cursor: not-allowed !important;
+}
+
+.unavailable-slot:hover {
+  background-color: #f5f5f5 !important;
+  transform: none !important;
+}
+
+.unavailable-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.unavailable-indicator mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+</style>

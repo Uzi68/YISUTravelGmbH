@@ -161,8 +161,23 @@ export class OfferManagementComponent implements OnInit {
   }
 
   deleteOffer(offer: Offer): void {
-    // TODO: Implement delete offer confirmation
-    console.log('Delete offer clicked:', offer);
+    const confirmMessage = `Möchten Sie das Angebot "${offer.title}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`;
+    
+    if (confirm(confirmMessage)) {
+      this.offerService.deleteOffer(offer.id).subscribe({
+        next: (response) => {
+          if (response.success) {
+            // Remove the offer from the local array
+            this.offers = this.offers.filter(o => o.id !== offer.id);
+            console.log('Angebot erfolgreich gelöscht');
+          }
+        },
+        error: (error) => {
+          console.error('Error deleting offer:', error);
+          alert('Fehler beim Löschen des Angebots');
+        }
+      });
+    }
   }
 
   toggleFeatured(offer: Offer): void {

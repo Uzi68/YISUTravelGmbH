@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AppointmentRequest;
 use App\Models\Appointment;
+use App\Models\BlockedSlot;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
@@ -87,8 +88,12 @@ class AppointmentController extends Controller
             })
             ->toArray();
 
-        // Filter out booked slots
-        $availableSlots = array_diff($allSlots, $bookedSlots);
+        // Get blocked slots for this date
+        $blockedSlots = BlockedSlot::getBlockedSlotsForDate($date);
+
+        // Filter out booked and blocked slots
+        $unavailableSlots = array_merge($bookedSlots, $blockedSlots);
+        $availableSlots = array_diff($allSlots, $unavailableSlots);
 
         return response()->json([
             'slots' => array_values($availableSlots),
@@ -120,22 +125,20 @@ class AppointmentController extends Controller
             ], 400);
         }
 
-        $blockedAppointment = Appointment::create([
-            'customer_name' => 'Admin Block',
-            'customer_email' => 'admin@yisu-travel.de',
-            'customer_phone' => '0000000000',
-            'appointment_date' => $request->date,
-            'appointment_time' => $request->time,
-            'service_type' => 'sonstiges',
-            'travelers_count' => 0,
-            'status' => 'confirmed',
-            'blocked_by_admin' => true
-        ]);
+        // Check if slot is already blocked
+        if (BlockedSlot::isBlocked($request->date, $request->time)) {
+            return response()->json([
+                'error' => 'Dieser Zeit-Slot ist bereits blockiert'
+            ], 400);
+        }
+
+        // Block the slot
+        $blockedSlot = BlockedSlot::blockSlot($request->date, $request->time, 'Admin blockiert');
 
         return response()->json([
             'success' => true,
-            'message' => 'Termin erfolgreich blockiert',
-            'appointment' => $blockedAppointment
+            'message' => 'Zeit-Slot erfolgreich blockiert',
+            'blocked_slot' => $blockedSlot
         ]);
     }
 
@@ -161,6 +164,23 @@ class AppointmentController extends Controller
     }
 
     /**
+     * Get blocked slots for a specific date
+     */
+    public function getBlockedSlots(Request $request): JsonResponse
+    {
+        $request->validate([
+            'date' => 'required|date'
+        ]);
+
+        $blockedSlots = BlockedSlot::getBlockedSlotsForDate($request->date);
+
+        return response()->json([
+            'success' => true,
+            'blocked_slots' => $blockedSlots
+        ]);
+    }
+
+    /**
      * Update appointment status
      */
     public function updateStatus(Request $request, int $id): JsonResponse
@@ -180,6 +200,94 @@ class AppointmentController extends Controller
     }
 
     /**
+     * Unblock a specific time slot by date and time
+     */
+    public function unblockSlotByDateTime(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'time' => 'required|string'
+        ]);
+
+        $date = $request->input('date');
+        $time = $request->input('time');
+
+        try {
+            // Check if slot is actually blocked
+            $blockedSlot = BlockedSlot::where('blocked_date', $date)
+                ->where('blocked_time', Carbon::parse($time)->format('H:i:s'))
+                ->first();
+
+            if (!$blockedSlot) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Slot ist nicht blockiert'
+                ], 400);
+            }
+
+            // Remove the blocked slot
+            $blockedSlot->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Slot erfolgreich freigegeben'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Freigeben des Slots: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Unblock multiple time slots
+     */
+    public function unblockMultipleSlots(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'times' => 'required|array',
+            'times.*' => 'required|string'
+        ]);
+
+        $date = $request->input('date');
+        $times = $request->input('times');
+
+        try {
+            $unblockedCount = 0;
+            $errors = [];
+
+            foreach ($times as $time) {
+                $blockedSlot = BlockedSlot::where('blocked_date', $date)
+                    ->where('blocked_time', Carbon::parse($time)->format('H:i:s'))
+                    ->first();
+
+                if ($blockedSlot) {
+                    $blockedSlot->delete();
+                    $unblockedCount++;
+                } else {
+                    $errors[] = "Slot {$time} war nicht blockiert";
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$unblockedCount} Slots erfolgreich freigegeben",
+                'unblocked_count' => $unblockedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fehler beim Freigeben der Slots: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Generate time slots between start and end time
      */
     private function generateTimeSlots(string $startTime, string $endTime): array
@@ -195,5 +303,62 @@ class AppointmentController extends Controller
 
         return $slots;
     }
+
+    /**
+     * Release a booked appointment (admin can free up slots when customers cancel)
+     */
+    public function releaseAppointment($id): JsonResponse
+    {
+        $appointment = Appointment::findOrFail($id);
+
+        // Check if appointment is confirmed or pending (not already cancelled)
+        if ($appointment->status === 'cancelled') {
+            return response()->json([
+                'error' => 'Dieser Termin wurde bereits storniert'
+            ], 400);
+        }
+
+        // Update status to cancelled
+        $appointment->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+            'cancelled_by' => 'admin'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Termin erfolgreich freigegeben - Slot ist wieder verfügbar',
+            'appointment' => $appointment
+        ]);
+    }
+
+    /**
+     * Restore a cancelled appointment (admin can restore if customer rebooks)
+     */
+    public function restoreAppointment($id): JsonResponse
+    {
+        $appointment = Appointment::findOrFail($id);
+
+        // Check if appointment is cancelled
+        if ($appointment->status !== 'cancelled') {
+            return response()->json([
+                'error' => 'Dieser Termin ist nicht storniert'
+            ], 400);
+        }
+
+        // Restore to pending status
+        $appointment->update([
+            'status' => 'confirmed',
+            'cancelled_at' => null,
+            'cancelled_by' => null
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Termin erfolgreich wiederhergestellt',
+            'appointment' => $appointment
+        ]);
+    }
 }
+
 

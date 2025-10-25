@@ -11,11 +11,6 @@
   <p>{{ error }}</p>
 </div>
 
-<!-- Empty State -->
-<div *ngIf="!loading && !hasOffers()" class="empty-state">
-  <p>Derzeit sind keine Angebote verfügbar.</p>
-</div>
-
 <!-- Featured Offer Section -->
 <section *ngIf="!loading && featuredOffer" class="offer-section">
   <div class="offer-card">

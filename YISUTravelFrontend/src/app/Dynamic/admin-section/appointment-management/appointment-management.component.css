@@ -94,26 +94,85 @@
   padding: 20px;
 }
 
-.calendar-placeholder {
+.calendar-month {
+  width: 100%;
+  max-width: 800px;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  margin-bottom: 8px;
+}
+
+.weekday {
+  padding: 12px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--yisu-text-dark);
+  background: var(--yisu-bg-section);
+  border-radius: 4px;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.calendar-day {
+  min-height: 80px;
+  padding: 8px;
+  background: var(--yisu-bg-card);
+  border: 1px solid var(--yisu-border-light);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+}
+
+.calendar-day:hover {
+  background: var(--yisu-bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-day.today {
+  background: var(--yisu-primary-light);
+  border-color: var(--yisu-primary);
+}
+
+.calendar-day.has-appointments {
+  background: var(--yisu-success-light);
+  border-color: var(--yisu-success);
+}
+
+.calendar-day.other-month {
+  opacity: 0.4;
+  background: var(--yisu-bg-muted);
+}
+
+.day-number {
+  font-weight: 500;
+  color: var(--yisu-text-dark);
+}
+
+.appointments-count {
+  background: var(--yisu-primary);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  height: 300px;
-  color: var(--yisu-text-medium);
-}
-
-.calendar-placeholder mat-icon {
-  font-size: 48px;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 16px;
-  color: var(--yisu-secondary);
-}
-
-.calendar-placeholder p {
-  margin: 8px 0;
-  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: auto;
+  align-self: flex-end;
 }
 
 /* List View */
@@ -419,4 +478,72 @@ html.dark-mode .status-completed {
   background: rgba(33, 150, 243, 0.2);
   color: #64b5f6;
 }
+
+
+/* Enhanced Calendar Day Styling */
+.calendar-day {
+  position: relative;
+  min-height: 80px;
+  padding: 8px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.calendar-day:hover {
+  background: #f8f9fa;
+  border-color: #2196f3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+}
+
+.calendar-day.has-appointments {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  border-color: #2196f3;
+}
+
+.calendar-day.today {
+  background: linear-gradient(135deg, #fff3e0 0%, #e8f5e9 100%);
+  border-color: #4caf50;
+  border-width: 2px;
+}
+
+.calendar-day.today .day-number {
+  color: #2e7d32;
+  font-weight: 700;
+}
+
+.day-number {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.appointments-count {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: #2196f3;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.calendar-day.has-appointments .appointments-count {
+  background: #1976d2;
+}
+
+.calendar-day.today .appointments-count {
+  background: #4caf50;
+}
+
 

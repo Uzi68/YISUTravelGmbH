@@ -10,10 +10,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AppointmentService } from '../../../../Services/appointment-service/appointment.service';
 import { Appointment, AppointmentFormData } from '../../../../Models/Appointment';
 
@@ -31,10 +31,10 @@ import { Appointment, AppointmentFormData } from '../../../../Models/Appointment
     MatSelectModule,
     MatCheckboxModule,
     MatProgressSpinnerModule,
-    MatTooltipModule,
-    MatSnackBarModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatTooltipModule,
+    MatSnackBarModule
   ],
   templateUrl: './appointment-booking.component.html',
   styleUrl: './appointment-booking.component.css'
@@ -50,7 +50,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
   // Form groups for each step
   personalDataForm!: FormGroup;
   appointmentForm!: FormGroup;
-  travelDetailsForm!: FormGroup;
   messageForm!: FormGroup;
 
   // Date and time selection
@@ -60,6 +59,8 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
   selectedTime: string | null = null;
   selectedTimes: string[] = []; // Multiple time selection
   availableSlots: string[] = [];
+  allPossibleSlots: string[] = [];
+  blockedSlots: string[] = []; // Blocked slots for selected date
   isLoadingSlots = false;
   customTime: string = '';
   
@@ -72,28 +73,17 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
   // Form submission
   isSubmitting = false;
 
-  // Service types and budget ranges
-  serviceTypes = [
-    { value: 'flight', label: 'Flugbuchung' },
-    { value: 'hotel', label: 'Hotelbuchung' },
-    { value: 'package', label: 'Pauschalreise' },
-    { value: 'custom', label: 'Individuelle Reise' },
-    { value: 'consultation', label: 'Reiseberatung' }
-  ];
-
-  budgetRanges = [
-    { value: 'under-1000', label: 'Unter 1.000 €' },
-    { value: '1000-2500', label: '1.000 - 2.500 €' },
-    { value: '2500-5000', label: '2.500 - 5.000 €' },
-    { value: '5000-10000', label: '5.000 - 10.000 €' },
-    { value: 'over-10000', label: 'Über 10.000 €' }
-  ];
 
   constructor() {
     // Set minimum date to today
     const today = new Date();
     this.minDate = today;
-    this.minDateString = today.toISOString().split('T')[0];
+    
+    // Create date string without timezone issues
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    this.minDateString = `${year}-${month}-${day}`;
   }
 
   ngOnInit(): void {
@@ -128,22 +118,35 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
       appointment_date: [null, Validators.required]
     });
 
-    // Travel details form
-    this.travelDetailsForm = this.fb.group({
-      service_type: ['', Validators.required],
-      travelers_count: [1, [Validators.required, Validators.min(1), Validators.max(20)]],
-      destination: [''],
-      budget_range: ['']
-    });
-
     // Message form
     this.messageForm = this.fb.group({
+      service_type: ['beratung', [Validators.required]],
       message: ['', Validators.maxLength(1000)]
     });
   }
 
   goBack(): void {
     this.router.navigate(['/']);
+  }
+
+  onDatePickerChange(date: Date | null): void {
+    if (date) {
+      // Create date string without timezone issues
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
+      
+      console.log('Date picker changed:', dateString);
+      this.selectedDate = dateString;
+      this.loadAvailableTimeSlots(dateString);
+      this.loadBlockedSlots(dateString);
+    } else {
+      this.selectedDate = null;
+      this.availableSlots = [];
+      this.blockedSlots = [];
+      this.selectedTime = null;
+    }
   }
 
   onDateChange(event: any): void {
@@ -162,34 +165,45 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
     }
   }
 
-  onDatePickerChange(date: Date | null): void {
-    if (date) {
-      const selectedDate = date.toISOString().split('T')[0];
-      console.log('Date picker changed:', selectedDate); // Debug log
-      this.selectedDate = selectedDate;
-      this.loadAvailableTimeSlots(selectedDate);
-    } else {
-      this.selectedDate = null;
-      this.availableSlots = [];
-      this.selectedTime = null;
-    }
-  }
-
   private loadAvailableTimeSlots(date: string): void {
     console.log('Loading time slots for date:', date); // Debug log
     this.isLoadingSlots = true;
     this.availableSlots = [];
+    this.allPossibleSlots = [];
     this.selectedTime = null;
     this.customTime = '';
 
-    // Simulate API call to get available slots
-    setTimeout(() => {
-      // Generate time slots based on business hours and day of week
-      const slots = this.generateTimeSlots(date);
-      console.log('Generated slots:', slots); // Debug log
-      this.availableSlots = slots;
-      this.isLoadingSlots = false;
-    }, 1000);
+    // Generate all possible slots first
+    this.allPossibleSlots = this.generateTimeSlots(date);
+    console.log('All possible slots:', this.allPossibleSlots); // Debug log
+
+    // Load available slots from backend
+    this.appointmentService.getAvailableSlots(date).subscribe({
+      next: (response: any) => {
+        console.log('Available slots from backend:', response.slots); // Debug log
+        this.availableSlots = response.slots || [];
+        this.isLoadingSlots = false;
+      },
+      error: (error) => {
+        console.error('Error loading available slots:', error);
+        // Fallback to generated slots if API fails
+        this.availableSlots = this.allPossibleSlots;
+        this.isLoadingSlots = false;
+      }
+    });
+  }
+
+  private loadBlockedSlots(date: string): void {
+    // Load blocked slots from the blocked_slots table
+    this.appointmentService.getBlockedSlots(date).subscribe({
+      next: (response: any) => {
+        this.blockedSlots = response.blocked_slots || [];
+      },
+      error: (error) => {
+        console.error('Error loading blocked slots:', error);
+        this.blockedSlots = [];
+      }
+    });
   }
 
   private generateTimeSlots(date: string): string[] {
@@ -292,9 +306,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
     return !!(this.appointmentForm.get('appointment_date')?.valid && this.selectedTime);
   }
 
-  isTravelDetailsValid(): boolean {
-    return this.travelDetailsForm.valid;
-  }
 
   getFormattedDate(dateString: string): string {
     const date = new Date(dateString);
@@ -315,6 +326,26 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
     });
   }
 
+  getServiceTypeLabel(serviceType: string | null | undefined): string {
+    if (!serviceType) {
+      return 'Reiseberatung'; // Default fallback
+    }
+    
+    const serviceTypes: { [key: string]: string } = {
+      'flight': 'Flugbuchung',
+      'hotel': 'Hotelbuchung',
+      'package': 'Pauschalreise',
+      'custom': 'Individuelle Reise',
+      'consultation': 'Reiseberatung',
+      'beratung': 'Reiseberatung',
+      'buchung': 'Buchung',
+      'visum': 'Visum-Service',
+      'sonstiges': 'Sonstiges'
+    };
+    
+    return serviceTypes[serviceType] || serviceType;
+  }
+
   getSelectedTimesDisplay(): string {
     return this.selectedTime ? `${this.selectedTime} Uhr` : '';
   }
@@ -323,17 +354,8 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
     return this.messageForm.valid;
   }
 
-  getServiceTypeLabel(value: string): string {
-    const service = this.serviceTypes.find(s => s.value === value);
-    return service ? service.label : value;
-  }
 
-  getBudgetRangeLabel(value: string): string {
-    const budget = this.budgetRanges.find(b => b.value === value);
-    return budget ? budget.label : value;
-  }
-
-  async submitAppointment(): Promise<void> {
+  submitAppointment(): void {
     if (!this.isAllFormsValid()) {
       this.snackBar.open('Bitte füllen Sie alle Pflichtfelder aus', 'OK', {
         duration: 3000,
@@ -351,24 +373,48 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
         customer_phone: this.personalDataForm.get('customer_phone')?.value,
         appointment_date: this.selectedDate!,
         appointment_time: this.selectedTime!,
-        service_type: this.travelDetailsForm.get('service_type')?.value,
-        travelers_count: this.travelDetailsForm.get('travelers_count')?.value,
-        destination: this.travelDetailsForm.get('destination')?.value || null,
-        budget_range: this.travelDetailsForm.get('budget_range')?.value || null,
+        service_type: this.messageForm.get('service_type')?.value || 'beratung',
         message: this.messageForm.get('message')?.value || null
       };
 
-      await this.appointmentService.createAppointment(appointmentData);
+      this.appointmentService.createAppointment(appointmentData).subscribe({
+        next: (response: any) => {
+          console.log('Appointment created successfully:', response);
+          this.snackBar.open('Termin erfolgreich gebucht! Wir melden uns bald bei Ihnen.', 'OK', {
+            duration: 5000,
+            panelClass: ['success-snackbar']
+          });
 
-      this.snackBar.open('Termin erfolgreich gebucht! Wir melden uns bald bei Ihnen.', 'OK', {
-        duration: 5000,
-        panelClass: ['success-snackbar']
+          // Navigate back to homepage after successful booking
+          setTimeout(() => {
+            this.router.navigate(['/']);
+          }, 2000);
+        },
+        error: (error: any) => {
+          console.error('Error booking appointment:', error);
+          
+          let errorMessage = 'Fehler beim Buchen des Termins. Bitte versuchen Sie es erneut.';
+          
+          if (error.error && error.error.message) {
+            errorMessage = error.error.message;
+          } else if (error.status === 422 && error.error && error.error.errors) {
+            // Validation errors
+            const errors = error.error.errors;
+            const firstError = Object.values(errors)[0];
+            if (Array.isArray(firstError) && firstError.length > 0) {
+              errorMessage = firstError[0] as string;
+            }
+          }
+          
+          this.snackBar.open(errorMessage, 'OK', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+        },
+        complete: () => {
+          this.isSubmitting = false;
+        }
       });
-
-      // Navigate back to homepage after successful booking
-      setTimeout(() => {
-        this.router.navigate(['/']);
-      }, 2000);
 
     } catch (error: any) {
       console.error('Error booking appointment:', error);
@@ -376,7 +422,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
         duration: 5000,
         panelClass: ['error-snackbar']
       });
-    } finally {
       this.isSubmitting = false;
     }
   }
@@ -384,9 +429,18 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
   private isAllFormsValid(): boolean {
     return this.personalDataForm.valid &&
            !!(this.appointmentForm.get('appointment_date')?.valid) &&
-           this.travelDetailsForm.valid &&
            this.messageForm.valid &&
            !!this.selectedTime;
+  }
+
+  isSlotBlocked(slot: string): boolean {
+    // A slot is blocked if it's in the blocked_slots table
+    return this.blockedSlots.includes(slot);
+  }
+
+  isSlotAvailable(slot: string): boolean {
+    // A slot is available if it's in the available slots from backend AND not blocked
+    return this.availableSlots.includes(slot) && !this.isSlotBlocked(slot);
   }
 
 }

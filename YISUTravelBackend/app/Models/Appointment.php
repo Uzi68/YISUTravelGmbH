@@ -16,9 +16,6 @@ class Appointment extends Model
         'appointment_date',
         'appointment_time',
         'service_type',
-        'travelers_count',
-        'destination',
-        'budget_range',
         'message',
         'status',
         'blocked_by_admin'
@@ -27,8 +24,7 @@ class Appointment extends Model
     protected $casts = [
         'appointment_date' => 'date',
         'appointment_time' => 'datetime:H:i',
-        'blocked_by_admin' => 'boolean',
-        'travelers_count' => 'integer'
+        'blocked_by_admin' => 'boolean'
     ];
 
     /**
@@ -69,6 +65,11 @@ class Appointment extends Model
     public function getServiceTypeLabelAttribute(): string
     {
         return match($this->service_type) {
+            'flight' => 'Flugbuchung',
+            'hotel' => 'Hotelbuchung',
+            'package' => 'Pauschalreise',
+            'custom' => 'Individuelle Reise',
+            'consultation' => 'Reiseberatung',
             'beratung' => 'Reiseberatung',
             'buchung' => 'Buchung',
             'visum' => 'Visum-Service',
@@ -100,4 +101,5 @@ class Appointment extends Model
         return "{$date} um {$time} Uhr";
     }
 }
+
 

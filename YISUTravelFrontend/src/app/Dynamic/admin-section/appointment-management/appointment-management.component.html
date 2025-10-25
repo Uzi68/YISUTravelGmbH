@@ -74,12 +74,30 @@
     </div>
     
     <div class="calendar-grid">
-      <!-- Calendar implementation would go here -->
-      <!-- For now, showing a placeholder -->
-      <div class="calendar-placeholder">
-        <mat-icon>calendar_month</mat-icon>
-        <p>Kalender-Ansicht wird hier implementiert</p>
-        <p>Termine für {{viewDate | date:'MMMM yyyy':'de'}}: {{appointments.length}}</p>
+      <div class="calendar-month">
+        <div class="calendar-weekdays">
+          <div class="weekday">Mo</div>
+          <div class="weekday">Di</div>
+          <div class="weekday">Mi</div>
+          <div class="weekday">Do</div>
+          <div class="weekday">Fr</div>
+          <div class="weekday">Sa</div>
+          <div class="weekday">So</div>
+        </div>
+        
+        <div class="calendar-days">
+          <div *ngFor="let day of getCalendarDays()" 
+               class="calendar-day"
+               [class.has-appointments]="getAppointmentsForDay(day).length > 0"
+               [class.today]="isToday(day)"
+               [class.other-month]="!isCurrentMonth(day)"
+               (click)="onDateClick({date: day})">
+            <div class="day-number">{{day.getDate()}}</div>
+            <div class="appointments-count" *ngIf="getAppointmentsForDay(day).length > 0">
+              {{getAppointmentsForDay(day).length}}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -196,4 +214,5 @@
     <p>Für den gewählten Zeitraum wurden keine Termine gefunden.</p>
   </div>
 </div>
+
 

@@ -372,6 +372,11 @@ Route::prefix('appointments')->group(function () {
         Route::get('/', [AppointmentController::class, 'index']);
         Route::post('/block', [AppointmentController::class, 'blockSlot']);
         Route::delete('/unblock/{id}', [AppointmentController::class, 'unblockSlot']);
+        Route::post('/unblock-by-datetime', [AppointmentController::class, 'unblockSlotByDateTime']);
+        Route::post('/unblock-multiple', [AppointmentController::class, 'unblockMultipleSlots']);
+        Route::get('/blocked-slots', [AppointmentController::class, 'getBlockedSlots']);
         Route::patch('/{id}/status', [AppointmentController::class, 'updateStatus']);
+        Route::post('/{id}/release', [AppointmentController::class, 'releaseAppointment']);
+        Route::post('/{id}/restore', [AppointmentController::class, 'restoreAppointment']);
     });
 });

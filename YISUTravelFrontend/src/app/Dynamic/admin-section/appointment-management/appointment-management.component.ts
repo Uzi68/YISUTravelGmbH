@@ -17,6 +17,10 @@ import { Appointment, AppointmentFilters } from '../../../Models/Appointment';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, isSameDay, addDays, subDays } from 'date-fns';
+import { AppointmentDetailsDialog } from './appointment-details-dialog.component';
+import { TimeSlotBlockingDialog } from './time-slot-blocking-dialog.component';
+import { AuthService } from '../../../Services/AuthService/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-appointment-management',
@@ -63,6 +67,10 @@ export class AppointmentManagementComponent implements OnInit {
 
   // Calendar
   viewDate: Date = new Date();
+  
+  // Cache for calendar days to prevent recalculation
+  private calendarDaysCache: Date[] = [];
+  private lastViewDateMonth: number = -1;
   calendarEvents: any[] = [];
 
   // Loading states
@@ -91,7 +99,9 @@ export class AppointmentManagementComponent implements OnInit {
   constructor(
     private appointmentService: AppointmentService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -126,9 +136,19 @@ export class AppointmentManagementComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading appointments:', error);
-        this.snackBar.open('Fehler beim Laden der Termine', 'Schließen', {
-          duration: 3000
-        });
+        
+        // Check if it's an authentication error
+        if (error.status === 401) {
+          this.snackBar.open('Sie sind nicht authentifiziert. Bitte loggen Sie sich erneut ein.', 'Schließen', {
+            duration: 5000
+          });
+          // Optionally redirect to login
+          // this.router.navigate(['/admin-login']);
+        } else {
+          this.snackBar.open('Fehler beim Laden der Termine', 'Schließen', {
+            duration: 3000
+          });
+        }
         this.isLoading = false;
       }
     });
@@ -192,14 +212,18 @@ export class AppointmentManagementComponent implements OnInit {
    */
   onDateClick(event: any): void {
     const clickedDate = event.date;
+    
+    // Create a proper date object without timezone issues
+    const localDate = new Date(clickedDate.getFullYear(), clickedDate.getMonth(), clickedDate.getDate());
+    
     const appointmentsForDate = this.appointments.filter(appointment => 
-      isSameDay(new Date(appointment.appointment_date), clickedDate)
+      isSameDay(new Date(appointment.appointment_date), localDate)
     );
     
     if (appointmentsForDate.length > 0) {
-      this.showAppointmentsForDate(appointmentsForDate, clickedDate);
+      this.showAppointmentsForDate(appointmentsForDate, localDate);
     } else {
-      this.showBlockSlotDialog(clickedDate);
+      this.showBlockSlotDialog(localDate);
     }
   }
 
@@ -207,16 +231,214 @@ export class AppointmentManagementComponent implements OnInit {
    * Show appointments for a specific date
    */
   private showAppointmentsForDate(appointments: Appointment[], date: Date): void {
-    // This would open a dialog showing appointments for the selected date
-    console.log('Appointments for', format(date, 'dd.MM.yyyy'), appointments);
+    const dialogRef = this.dialog.open(AppointmentDetailsDialog, {
+      width: '800px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      data: {
+        appointments: appointments,
+        date: date,
+        isDateView: true
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Date appointments dialog closed with result:', result);
+        
+        if (result.action === 'blockDay') {
+          this.handleBlockDay(result.date);
+        } else if (result.action === 'blockTimeSlots') {
+          this.handleBlockTimeSlots(result.date, result.slots);
+        }
+      }
+    });
   }
 
   /**
    * Show dialog to block a slot
    */
   private showBlockSlotDialog(date: Date): void {
-    // This would open a dialog to block a specific time slot
-    console.log('Block slot for', format(date, 'dd.MM.yyyy'));
+    // Open the same dialog as for appointments, but with empty appointments array
+    const dialogRef = this.dialog.open(AppointmentDetailsDialog, {
+      width: '800px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      data: {
+        appointments: [],
+        date: date,
+        isDateView: true
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('Block slot dialog closed with result:', result);
+        
+        if (result.action === 'refresh') {
+          this.loadAppointments();
+        }
+      }
+    });
+  }
+
+  /**
+   * Handle blocking entire day
+   */
+  private handleBlockDay(date: Date): void {
+    // Create date string without timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
+    const message = `Möchten Sie den gesamten Tag ${date.toLocaleDateString('de-DE')} blockieren?`;
+    
+    if (confirm(message)) {
+      // Block all available time slots for the day
+      this.blockAllTimeSlotsForDay(dateString);
+    }
+  }
+
+  /**
+   * Block all time slots for a day
+   */
+  private blockAllTimeSlotsForDay(dateString: string): void {
+    // Generate all possible time slots for the day
+    const slots = this.generateTimeSlotsForDay(dateString);
+    
+    // Block each slot
+    let blockedCount = 0;
+    slots.forEach(slot => {
+      this.appointmentService.blockSlot(dateString, slot).subscribe({
+        next: () => {
+          blockedCount++;
+          if (blockedCount === slots.length) {
+            this.snackBar.open(`Tag ${dateString} erfolgreich blockiert`, 'OK', {
+              duration: 3000
+            });
+            this.loadAppointments();
+          }
+        },
+        error: (error) => {
+          console.error('Error blocking slot:', error);
+        }
+      });
+    });
+  }
+
+  /**
+   * Generate time slots for a day
+   */
+  private generateTimeSlotsForDay(dateString: string): string[] {
+    const date = new Date(dateString);
+    const dayOfWeek = date.getDay();
+    
+    if (dayOfWeek === 0) return []; // Sunday - closed
+    
+    const isSaturday = dayOfWeek === 6;
+    const startTime = isSaturday ? '10:30' : '10:00';
+    const endTime = isSaturday ? '15:00' : '17:30';
+    
+    const slots: string[] = [];
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    let currentHour = startHour;
+    let currentMin = startMin;
+    
+    while (currentHour < endHour || (currentHour === endHour && currentMin < endMin)) {
+      const timeString = `${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`;
+      slots.push(timeString);
+      
+      currentMin += 30;
+      if (currentMin >= 60) {
+        currentMin = 0;
+        currentHour++;
+      }
+    }
+    
+    return slots;
+  }
+
+  /**
+   * Open dialog to select specific time slots to block
+   */
+  private openTimeSlotBlockingDialog(dateString: string): void {
+    const date = new Date(dateString);
+    console.log('Loading blocked slots for:', dateString);
+    
+    // Load blocked slots asynchronously
+    this.appointmentService.getBlockedSlots(dateString).subscribe({
+      next: (response: any) => {
+        const blockedSlots = response.blocked_slots || [];
+        console.log('Blocked slots loaded:', blockedSlots);
+        
+        const dialogRef = this.dialog.open(TimeSlotBlockingDialog, {
+          width: '700px',
+          data: {
+            date: date,
+            blockedSlots: blockedSlots
+          }
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+          if (result && result.action === 'blockTimeSlots') {
+            this.handleBlockTimeSlots(result.date, result.slots);
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error loading blocked slots:', error);
+        // Open dialog with empty blocked slots
+        const dialogRef = this.dialog.open(TimeSlotBlockingDialog, {
+          width: '700px',
+          data: {
+            date: date,
+            blockedSlots: []
+          }
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+          if (result && result.action === 'blockTimeSlots') {
+            this.handleBlockTimeSlots(result.date, result.slots);
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Handle blocking specific time slots
+   */
+  private handleBlockTimeSlots(date: Date, slots: string[]): void {
+    // Create date string without timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
+    // Block each selected slot
+    let blockedCount = 0;
+    slots.forEach(slot => {
+      this.appointmentService.blockSlot(dateString, slot).subscribe({
+        next: () => {
+          blockedCount++;
+          if (blockedCount === slots.length) {
+            this.snackBar.open(`${slots.length} Zeit-Slot(s) erfolgreich blockiert`, 'OK', {
+              duration: 3000
+            });
+            this.loadAppointments();
+          }
+        },
+        error: (error) => {
+          console.error('Error blocking slot:', error);
+          this.snackBar.open('Fehler beim Blockieren der Zeit-Slots', 'OK', {
+            duration: 3000
+          });
+        }
+      });
+    });
   }
 
   /**
@@ -287,8 +509,20 @@ export class AppointmentManagementComponent implements OnInit {
    * Show appointment details
    */
   showAppointmentDetails(appointment: Appointment): void {
-    // This would open a dialog with appointment details
-    console.log('Show details for appointment:', appointment);
+    // Create a simple dialog using MatDialog
+    const dialogRef = this.dialog.open(AppointmentDetailsDialog, {
+      width: '600px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      data: appointment
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Handle any actions after dialog closes
+        console.log('Dialog closed with result:', result);
+      }
+    });
   }
 
   /**
@@ -318,9 +552,6 @@ export class AppointmentManagementComponent implements OnInit {
       'E-Mail',
       'Telefon',
       'Service',
-      'Reisende',
-      'Reiseziel',
-      'Budget',
       'Status',
       'Nachricht'
     ];
@@ -332,9 +563,6 @@ export class AppointmentManagementComponent implements OnInit {
       appointment.customer_email,
       appointment.customer_phone,
       this.appointmentService.getServiceTypeLabel(appointment.service_type),
-      appointment.travelers_count,
-      appointment.destination || '',
-      appointment.budget_range ? this.appointmentService.getBudgetRangeLabel(appointment.budget_range) : '',
       this.appointmentService.getStatusLabel(appointment.status),
       appointment.message || ''
     ]);
@@ -379,9 +607,65 @@ export class AppointmentManagementComponent implements OnInit {
    */
   navigateCalendar(direction: 'prev' | 'next'): void {
     if (direction === 'prev') {
-      this.viewDate = subDays(this.viewDate, 1);
+      this.viewDate = subDays(startOfMonth(this.viewDate), 1);
     } else {
-      this.viewDate = addDays(this.viewDate, 1);
+      this.viewDate = addDays(endOfMonth(this.viewDate), 1);
     }
+    // Clear cache when navigating to force recalculation
+    this.calendarDaysCache = [];
+  }
+
+  /**
+   * Get calendar days for the current month view (with caching)
+   */
+  getCalendarDays(): Date[] {
+    const currentMonth = this.viewDate.getMonth();
+    
+    // Return cached days if month hasn't changed
+    if (this.lastViewDateMonth === currentMonth && this.calendarDaysCache.length > 0) {
+      return this.calendarDaysCache;
+    }
+    
+    const monthStart = startOfMonth(this.viewDate);
+    const monthEnd = endOfMonth(this.viewDate);
+    
+    // Get the first day of the week (Monday = 1)
+    const startOfWeek = monthStart.getDay() === 0 ? 6 : monthStart.getDay() - 1;
+    const calendarStart = subDays(monthStart, startOfWeek);
+    
+    // Generate 42 days (6 weeks)
+    const days: Date[] = [];
+    for (let i = 0; i < 42; i++) {
+      days.push(addDays(calendarStart, i));
+    }
+    
+    // Cache the result
+    this.calendarDaysCache = days;
+    this.lastViewDateMonth = currentMonth;
+    
+    return days;
+  }
+
+  /**
+   * Get appointments for a specific day
+   */
+  getAppointmentsForDay(day: Date): Appointment[] {
+    return this.appointments.filter(appointment => 
+      isSameDay(new Date(appointment.appointment_date), day)
+    );
+  }
+
+  /**
+   * Check if a day is today
+   */
+  isToday(day: Date): boolean {
+    return isSameDay(day, new Date());
+  }
+
+  /**
+   * Check if a day is in the current month
+   */
+  isCurrentMonth(day: Date): boolean {
+    return day.getMonth() === this.viewDate.getMonth();
   }
 }

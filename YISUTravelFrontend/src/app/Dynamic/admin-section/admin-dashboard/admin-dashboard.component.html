@@ -787,3 +787,16 @@
       <app-appointment-management></app-appointment-management>
     </div>
   </div>
+
+  <!-- Offer Management Overlay -->
+  <div class="staff-management-overlay" *ngIf="showOfferManagement" (click)="closeOfferManagement()">
+    <div class="staff-management-content" (click)="$event.stopPropagation()">
+      <div class="staff-management-header">
+        <h2>Angebote verwalten</h2>
+        <button mat-icon-button (click)="closeOfferManagement()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <app-offer-management></app-offer-management>
+    </div>
+  </div>
