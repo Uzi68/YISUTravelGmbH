@@ -2,7 +2,7 @@
 <section class="popular-destinations" *ngIf="isBrowser">
   <h2 class="section-title">Unsere schönsten Reiseziele</h2>
   <swiper-container
-    loop="true"
+    loop="false"
     slides-per-view="3"
     slides-per-group="1"
     speed="500"
@@ -47,7 +47,7 @@
 <!-- Mobile -->
 <swiper-container
   *ngIf="isBrowser"
-  loop="true"
+  loop="false"
   navigation="false"
   slides-per-view="1"
   slides-per-group="1"

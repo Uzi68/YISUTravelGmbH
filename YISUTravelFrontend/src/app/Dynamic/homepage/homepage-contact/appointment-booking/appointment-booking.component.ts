@@ -376,7 +376,7 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
           }, 2000);
         },
         error: (error: any) => {
-          console.error('Error booking appointment:', error);
+          // Error booking appointment
           
           let errorMessage = 'Fehler beim Buchen des Termins. Bitte versuchen Sie es erneut.';
           
@@ -402,7 +402,7 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
       });
 
     } catch (error: any) {
-      console.error('Error booking appointment:', error);
+      // Error booking appointment
       this.snackBar.open('Fehler beim Buchen des Termins. Bitte versuchen Sie es erneut.', 'OK', {
         duration: 5000,
         panelClass: ['error-snackbar']

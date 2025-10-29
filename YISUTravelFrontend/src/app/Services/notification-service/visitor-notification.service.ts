@@ -51,7 +51,6 @@ export class VisitorNotificationService {
       this.notificationSound.preload = 'auto';
       this.notificationSound.volume = 0.6;
     } catch (error) {
-      console.error('Error initializing notification sound:', error);
       this.notificationSound = new Audio();
     }
   }
@@ -60,7 +59,6 @@ export class VisitorNotificationService {
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         this.isTabVisible = !document.hidden;
-        console.log('Visitor tab visibility changed:', this.isTabVisible ? 'visible' : 'hidden');
       });
     }
   }
@@ -81,7 +79,7 @@ export class VisitorNotificationService {
     if (typeof document !== 'undefined') {
       const enableInteraction = () => {
         this.userInteracted = true;
-        console.log('Visitor interaction detected - audio enabled');
+        // Visitor interaction detected - audio enabled
         // ✅ ENTFERNT: Keine automatische Permission-Anfrage mehr
       };
 
@@ -109,12 +107,12 @@ export class VisitorNotificationService {
   // ✅ NEU: Explizite Aktivierung der Notifications
   async enableNotifications(): Promise<boolean> {
     if (!this.isSupported) {
-      console.warn('Browser does not support notifications');
+      // Browser does not support notifications
       return false;
     }
 
     if (!this.userInteracted) {
-      console.warn('Cannot request notifications without user interaction');
+      // Cannot request notifications without user interaction
       return false;
     }
 
@@ -126,14 +124,11 @@ export class VisitorNotificationService {
 
       if (this.notificationPermission === 'granted') {
         this.notificationsEnabled = true;
-        console.log('✅ Visitor notifications enabled');
         return true;
       } else {
-        console.log('❌ Visitor notifications denied');
         return false;
       }
     } catch (error) {
-      console.error('Notification permission request failed:', error);
       return false;
     }
   }
@@ -141,19 +136,15 @@ export class VisitorNotificationService {
   // ✅ KORRIGIERT: Sound nur wenn Tab inaktiv UND Notifications aktiviert
   private playNotificationSoundIfTabInactive(): void {
     if (!this.userInteracted) {
-      console.log('Visitor sound skipped - no user interaction yet');
       return;
     }
 
     if (!this.notificationsEnabled) {
-      console.log('Visitor sound skipped - notifications not enabled');
       return;
     }
 
     if (!this.isVisible) {
       this.playNotificationSound();
-    } else {
-      console.log('Visitor sound skipped - tab is active');
     }
   }
 
@@ -161,11 +152,10 @@ export class VisitorNotificationService {
     try {
       this.notificationSound.currentTime = 0;
       this.notificationSound.play().catch(e => {
-        console.log('Could not play visitor notification sound:', e);
+        // Could not play visitor notification sound
       });
-      console.log('Visitor notification sound played');
     } catch (error) {
-      console.error('Error playing visitor notification sound:', error);
+      // Error playing visitor notification sound
     }
   }
 
@@ -176,13 +166,11 @@ export class VisitorNotificationService {
     }
 
     if (!this.notificationsEnabled) {
-      console.log('Browser notification skipped - not enabled');
       return null;
     }
 
     // ✅ WICHTIG: Nur anzeigen wenn Tab nicht sichtbar
     if (this.isVisible) {
-      console.log('Browser notification skipped - visitor tab is active');
       return null;
     }
 
@@ -208,10 +196,9 @@ export class VisitorNotificationService {
         notification.close();
       }, 5000);
 
-      console.log('Visitor browser notification shown');
+      // Browser notification shown
       return notification;
     } catch (error) {
-      console.error('Error showing visitor notification:', error);
       return null;
     }
   }
@@ -220,16 +207,10 @@ export class VisitorNotificationService {
   async notifyAgentMessage(agentName: string, message: string): Promise<void> {
     // Nur wenn Notifications explizit aktiviert wurden
     if (!this.notificationsEnabled) {
-      console.log('Agent message notification skipped - not enabled');
       return;
     }
 
-    console.log('Processing agent message notification:', {
-      agentName,
-      message: message.substring(0, 30) + '...',
-      isVisible: this.isVisible,
-      notificationsEnabled: this.notificationsEnabled
-    });
+    // Processing agent message notification
 
     // Sound abspielen (nur wenn Tab inaktiv)
     this.playNotificationSoundIfTabInactive();
@@ -264,7 +245,7 @@ export class VisitorNotificationService {
       return;
     }
 
-    console.log('Agent assigned notification:', agentName);
+    // Processing agent assigned notification
 
     this.playNotificationSoundIfTabInactive();
 
@@ -323,6 +304,5 @@ export class VisitorNotificationService {
   // ✅ NEU: Notifications deaktivieren
   disableNotifications(): void {
     this.notificationsEnabled = false;
-    console.log('Visitor notifications disabled');
   }
 }

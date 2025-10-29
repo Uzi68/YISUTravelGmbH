@@ -61,17 +61,10 @@ export class NotificationSoundService {
       this.notificationSound.preload = 'auto';
       this.notificationSound.volume = 0.7;
 
-      this.transferSound = new Audio(`${environment.backendUrl}/storage/sounds/transfer.mp3`);
-      this.transferSound.preload = 'auto';
-      this.transferSound.volume = 0.8;
-
-      this.transferSound.addEventListener('error', () => {
-        console.log('Transfer sound not available, using notification sound as fallback');
-        this.transferSound = this.notificationSound;
-      });
+      // Transfer sound wird nicht mehr geladen - nur bei Bedarf
+      this.transferSound = this.notificationSound; // Fallback auf notification sound
 
     } catch (error) {
-      console.error('Error initializing audio sources:', error);
       this.notificationSound = new Audio();
       this.transferSound = new Audio();
     }
@@ -81,7 +74,6 @@ export class NotificationSoundService {
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         this.isTabVisible = !document.hidden;
-        console.log('Tab visibility changed:', this.isTabVisible ? 'visible' : 'hidden');
       });
     }
   }
@@ -90,12 +82,10 @@ export class NotificationSoundService {
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', () => {
         this.isWindowFocused = true;
-        console.log('Window focused');
       });
 
       window.addEventListener('blur', () => {
         this.isWindowFocused = false;
-        console.log('Window blurred');
       });
     }
   }
@@ -104,7 +94,7 @@ export class NotificationSoundService {
     if (typeof document !== 'undefined') {
       const enableInteraction = () => {
         this.userInteracted = true;
-        console.log('User interaction detected - audio enabled');
+        // User interaction detected - audio enabled
       };
 
       document.addEventListener('click', enableInteraction, { once: true });
@@ -132,7 +122,7 @@ export class NotificationSoundService {
 
   async requestPermission(): Promise<NotificationPermission> {
     if (typeof window === 'undefined' || !('Notification' in window)) {
-      console.warn('Browser unterstützt keine Benachrichtigungen');
+      // Browser unterstützt keine Benachrichtigungen
       return 'denied';
     }
 
@@ -140,14 +130,14 @@ export class NotificationSoundService {
     this.userInteracted = true;
 
     try {
-      console.log('🔔 Requesting notification permission...');
-      console.log('📊 Current permission before request:', Notification.permission);
+      // Requesting notification permission
+      // Current permission before request
 
       // ✅ WICHTIG: Warte auf Browser-Dialog
       const permission = await Notification.requestPermission();
 
-      console.log('📊 Permission after user decision:', permission);
-      console.log('📊 Notification.permission from browser:', Notification.permission);
+      // Permission after user decision
+      // Notification.permission from browser
 
       // ✅ Verwende immer den aktuellen Browser-Wert
       this.notificationPermission = Notification.permission;
@@ -155,16 +145,10 @@ export class NotificationSoundService {
       // ✅ WICHTIG: Permission Status sofort aktualisieren
       this.updatePermissionStatus();
 
-      console.log('✅ Final permission status:', {
-        servicePermission: this.notificationPermission,
-        browserPermission: Notification.permission,
-        hasPermission: this.hasPermission,
-        granted: this.notificationPermission === 'granted'
-      });
+      // Final permission status
 
       return this.notificationPermission;
     } catch (error) {
-      console.error('❌ Fehler beim Anfordern der Berechtigung:', error);
       this.notificationPermission = 'denied';
       this.updatePermissionStatus();
       return 'denied';
@@ -187,71 +171,63 @@ export class NotificationSoundService {
   // ✅ NEUE Methoden für kontextabhängige Sounds
   playNotificationSoundIfTabInactive(): void {
     if (!this.isTabVisible || !this.isWindowFocused) {
-      console.log('🔔 Tab inaktiv - spiele Sound ab');
+      // Tab inaktiv - spiele Sound ab
       this.playAudioNotification(this.notificationSound, 'notification-tab-inactive', true);
     } else {
-      console.log('Tab ist aktiv - Sound übersprungen');
+      // Tab ist aktiv - Sound übersprungen
     }
   }
 
   // ✅ KORRIGIERTE playAudioNotification mit expliziter forcePlay Option
   private playAudioNotification(audio: HTMLAudioElement, type: string, forcePlay: boolean = false): void {
     if (!this.userInteracted) {
-      console.warn(`${type} sound nicht abgespielt - keine Benutzerinteraktion`);
       return;
     }
 
     if (this.isCurrentlyMuted()) {
-      console.log(`${type} sound übersprungen - stummgeschaltet`);
       return;
     }
 
     // ✅ Nur prüfen wenn nicht forciert
     if (!forcePlay && this.isTabVisible && this.isWindowFocused) {
-      console.log(`${type} sound übersprungen - Tab ist aktiv und fokussiert`);
       return;
     }
 
     try {
       audio.currentTime = 0;
       audio.play().catch(e => {
-        console.warn(`${type} sound konnte nicht abgespielt werden:`, e);
         if (type === 'transfer' && this.notificationSound !== audio) {
           this.playAudioNotification(this.notificationSound, 'fallback', forcePlay);
         }
       });
-      console.log(`${type} sound abgespielt (force: ${forcePlay}, tabActive: ${this.isVisible})`);
     } catch (error) {
-      console.error(`Fehler beim Abspielen des ${type} sounds:`, error);
+      // Fehler beim Abspielen des sounds
     }
   }
 
   // ✅ KORRIGIERTE showNotification - explizite Kontrolle (PUBLIC für externe Aufrufe)
   public async showNotification(options: NotificationOptions, forceShow: boolean = false): Promise<Notification | null> {
     if (typeof window === 'undefined' || !('Notification' in window)) {
-      console.warn('Browser unterstützt keine Benachrichtigungen');
+      // Browser unterstützt keine Benachrichtigungen
       return null;
     }
 
     // ✅ WICHTIG: Permission Status nochmal checken (könnte sich geändert haben)
     if (Notification.permission !== 'granted') {
-      console.warn('Keine Berechtigung für Browser-Benachrichtigungen:', Notification.permission);
       return null;
     }
 
     if (this.isCurrentlyMuted()) {
-      console.log('Benachrichtigung übersprungen - stummgeschaltet');
       return null;
     }
 
     // ✅ GEÄNDERT: Wenn forceShow = true, IMMER anzeigen (auch bei aktivem Tab)
     if (!forceShow && this.isTabVisible && this.isWindowFocused) {
-      console.log('Tab ist sichtbar und fokussiert - Browser-Benachrichtigung übersprungen (nicht forciert)');
       return null;
     }
 
     try {
-      console.log('🔔 Creating notification:', options.title, '(force:', forceShow, ')');
+      // Creating notification
 
       const notification = new Notification(options.title, {
         body: options.body,
@@ -270,7 +246,7 @@ export class NotificationSoundService {
         notification.close();
 
         if (options.data?.route) {
-          console.log('Navigate to:', options.data.route);
+          // Navigate to route
         }
       };
 
@@ -280,22 +256,16 @@ export class NotificationSoundService {
         }, 5000);
       }
 
-      console.log(`✅ Browser notification erfolgreich angezeigt (force: ${forceShow}, tabActive: ${this.isVisible})`);
+      // Browser notification erfolgreich angezeigt
       return notification;
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Benachrichtigung:', error);
       return null;
     }
   }
 
   // ✅ KORRIGIERTE spezifische Notify-Methoden
   async notifyNewMessage(senderName: string, message: string, sessionId?: string): Promise<void> {
-    console.log('🔔 notifyNewMessage called with:', {
-      senderName,
-      messagePreview: message.substring(0, 50),
-      sessionId,
-      callStack: new Error().stack?.split('\n')[2]?.trim()
-    });
+    // Processing new message notification
 
     if (this.isCurrentlyMuted()) return;
 
@@ -305,14 +275,7 @@ export class NotificationSoundService {
     const lastNotificationTime = this.recentNotifications.get(dedupKey);
 
     if (lastNotificationTime && (now - lastNotificationTime) < this.NOTIFICATION_DEDUP_WINDOW_MS) {
-      console.warn('⚠️ Duplicate notification BLOCKED (same message within 3s):', {
-        sessionId,
-        senderName,
-        messagePreview: message.substring(0, 30),
-        timeSinceLastNotification: now - lastNotificationTime,
-        dedupWindow: this.NOTIFICATION_DEDUP_WINDOW_MS,
-        dedupKey
-      });
+      // Duplicate notification BLOCKED
       return; // Blockiere doppelte Benachrichtigung
     }
 
@@ -322,13 +285,7 @@ export class NotificationSoundService {
     // ✅ Cleanup: Entferne alte Einträge aus dem Cache (älter als Dedup-Fenster)
     this.cleanupNotificationCache();
 
-    console.log('✅ Sending notification (NOT blocked):', {
-      sessionId,
-      senderName,
-      messagePreview: message.substring(0, 30),
-      dedupKey,
-      cacheSize: this.recentNotifications.size
-    });
+    // Sending notification (NOT blocked)
 
     // ✅ Sound nur wenn Tab inaktiv
     this.playNotificationSoundIfTabInactive();
@@ -412,22 +369,20 @@ export class NotificationSoundService {
         break;
 
       default:
-        console.warn('Unbekannter Benachrichtigungstyp:', type);
+        // Unbekannter Benachrichtigungstyp
     }
   }
 
   closeNotificationsByTag(tag: string): void {
-    console.log('Closing notifications with tag:', tag);
+    // Closing notifications with tag
   }
 
   muteNotifications(durationInMinutes: number): void {
     this.mutedUntil = Date.now() + (durationInMinutes * 60 * 1000);
-    console.log(`Benachrichtigungen stumm für ${durationInMinutes} Minuten`);
   }
 
   unmuteNotifications(): void {
     this.mutedUntil = null;
-    console.log('Benachrichtigungen wieder aktiv');
   }
 
   private isCurrentlyMuted(): boolean {
@@ -453,7 +408,7 @@ export class NotificationSoundService {
     keysToDelete.forEach(key => this.recentNotifications.delete(key));
 
     if (keysToDelete.length > 0) {
-      console.log(`🧹 Cleaned up ${keysToDelete.length} old notification cache entries`);
+      // Cleaned up old notification cache entries
     }
   }
 

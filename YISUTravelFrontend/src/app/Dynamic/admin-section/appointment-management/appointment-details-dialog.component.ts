@@ -1019,7 +1019,7 @@ export class AppointmentDetailsDialog {
           this.dialogRef.close({ action: 'refresh' });
         },
         error: (error) => {
-          console.error('Error releasing appointment:', error);
+          // Error releasing appointment
           this.snackBar.open('Fehler beim Freigeben des Termins', 'OK', {
             duration: 3000
           });
@@ -1043,7 +1043,7 @@ export class AppointmentDetailsDialog {
           this.dialogRef.close({ action: 'refresh' });
         },
         error: (error) => {
-          console.error('Error restoring appointment:', error);
+          // Error restoring appointment
           this.snackBar.open('Fehler beim Wiederherstellen des Termins', 'OK', {
             duration: 3000
           });

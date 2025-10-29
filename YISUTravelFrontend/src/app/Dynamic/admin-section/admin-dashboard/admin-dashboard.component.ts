@@ -3449,7 +3449,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         this.isTabVisible = !document.hidden;
-        console.log('Admin Dashboard tab visibility changed:', this.isTabVisible ? 'visible' : 'hidden');
+        // Tab visibility changed silently
 
         // Tab-Titel aktualisieren wenn Tab wieder sichtbar wird
         if (this.isTabVisible) {

@@ -125,40 +125,6 @@ export class ChatUiComponent implements AfterViewInit {
     public visitorNotification: VisitorNotificationService
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
-
-    if (this.isBrowser) {
-      effect(() => {
-        const messages = this.messages();
-        const isTyping = this.isTyping();
-        const isOpen = this.isOpen();
-
-        if (isOpen && (messages.length > 0 || !isTyping)) {
-          queueMicrotask(() => {
-            this.scrollToBottom();
-            this.checkScrollPosition();
-          });
-        }
-
-        // ✅ Verbesserte Tab-Title Logik mit Null-Checks und Original-Titel
-        if (!isOpen && messages && messages.length > 0) {
-          const unreadCount = this.unreadMessages();
-          if (unreadCount > 0 && document) {
-            // ✅ Zeige Unread-Counter im Tab-Titel wenn Chat geschlossen
-            document.title = `(${unreadCount}) YISU Travel GmbH`;
-          } else if (document) {
-            // ✅ Kein Unread-Counter, zurück zum Original-Titel
-            document.title = 'YISU Travel GmbH';
-          }
-        } else if (isOpen && document) {
-          // ✅ Chat ist offen: Zeige "Chat - Yisu Travel" und reset Counter
-          document.title = 'Chat - Yisu Travel';
-          this.unreadMessages.set(0);
-        } else if (!isOpen && document) {
-          // ✅ Chat geschlossen, keine Nachrichten: Original-Titel
-          document.title = 'YISU Travel GmbH';
-        }
-      });
-    }
   }
 
   handleEscalationResponse(response: 'accept' | 'decline', metadata: any): void {
@@ -275,9 +241,7 @@ export class ChatUiComponent implements AfterViewInit {
 
   ngOnInit() {
     // ✅ Tab-Titel auf Original setzen beim Laden
-    if (this.isBrowser && document) {
-      document.title = 'YISU Travel GmbH';
-    }
+    this.updateTabTitle('YISU Travel GmbH');
 
     // Session ID initialisieren oder laden
     this.sessionId = localStorage.getItem('session_id');
@@ -721,10 +685,13 @@ export class ChatUiComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     if (this.isBrowser) {
-      const container = this.messageContainer()?.nativeElement;
-      if (container) {
-        container.addEventListener('scroll', () => this.checkScrollPosition());
-      }
+      // Wait for viewChild to be properly initialized
+      setTimeout(() => {
+        const container = this.messageContainer()?.nativeElement;
+        if (container) {
+          container.addEventListener('scroll', () => this.checkScrollPosition());
+        }
+      }, 0);
     }
   }
 
@@ -839,7 +806,7 @@ export class ChatUiComponent implements AfterViewInit {
         this.chatAssignmentStatus.set(null);
         this.assignedAgentName.set('');
         this.unreadMessages.set(0);
-        document.title = 'Chat - YISU Travel';
+        this.updateTabTitle('Chat - YISU Travel');
         this.scrollToBottom();
 
         console.log('✅ Chat ended, notifications disabled');
@@ -864,6 +831,25 @@ export class ChatUiComponent implements AfterViewInit {
     });
   }
 
+  private updateTabTitle(customTitle?: string): void {
+    if (!this.isBrowser || !document) return;
+
+    try {
+      if (customTitle) {
+        document.title = customTitle;
+      } else {
+        const unreadCount = this.unreadMessages();
+        if (unreadCount > 0) {
+          document.title = `(${unreadCount}) YISU Travel GmbH`;
+        } else {
+          document.title = 'YISU Travel GmbH';
+        }
+      }
+    } catch (error) {
+      console.warn('Error updating tab title:', error);
+    }
+  }
+
   toggleChat() {
     this.isOpen.update(v => !v);
     this.chatbotService.setChatOpenState(this.isOpen());
@@ -871,7 +857,7 @@ export class ChatUiComponent implements AfterViewInit {
     if (this.isOpen()) {
       // ✅ Chat öffnen
       this.unreadMessages.set(0);
-      document.title = 'Chat - Yisu Travel';
+      this.updateTabTitle('Chat - Yisu Travel');
       this.loadChatHistory();
 
       // ✅ FIX: Scroll sofort nach unten ohne Animation
@@ -880,13 +866,7 @@ export class ChatUiComponent implements AfterViewInit {
       }, 100);
     } else {
       // ✅ Chat schließen - Titel zurücksetzen
-      if (this.unreadMessages() > 0) {
-        // Mit Unread-Counter
-        document.title = `(${this.unreadMessages()}) YISU Travel GmbH`;
-      } else {
-        // Ohne Unread-Counter
-        document.title = 'YISU Travel GmbH';
-      }
+      this.updateTabTitle();
     }
   }
   testVisitorNotifications(): void {
@@ -1372,6 +1352,7 @@ export class ChatUiComponent implements AfterViewInit {
           // Unread Counter NUR wenn Chat nicht offen
           if (!this.isOpen()) {
             this.unreadMessages.update(count => count + 1);
+            this.updateTabTitle(); // Update tab title with unread count
             console.log('Unread count increased:', this.unreadMessages());
           }
 
@@ -1916,39 +1897,48 @@ export class ChatUiComponent implements AfterViewInit {
   public scrollToBottom(immediate: boolean = false) {
     if (!this.isBrowser) return;
 
-    const containerRef = this.messageContainer();
-    if (!containerRef) return;
+    try {
+      const containerRef = this.messageContainer();
+      if (!containerRef) return;
 
-    const container = containerRef.nativeElement;
-    if (!container) return;
+      const container = containerRef.nativeElement;
+      if (!container) return;
 
-    if (immediate) {
-      // ✅ Sofortiges Scrollen ohne Animation (für Chat öffnen/zu-toggeln)
-      requestAnimationFrame(() => {
+      if (immediate) {
+        // ✅ Sofortiges Scrollen ohne Animation (für Chat öffnen/zu-toggeln)
         requestAnimationFrame(() => {
-          container.scrollTop = container.scrollHeight;
-        });
-      });
-    } else {
-      // ✅ Smooth scroll (für neue Nachrichten)
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          container.scrollTo({
-            top: container.scrollHeight,
-            behavior: 'smooth'
+          requestAnimationFrame(() => {
+            container.scrollTop = container.scrollHeight;
           });
         });
-      });
+      } else {
+        // ✅ Smooth scroll (für neue Nachrichten)
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            container.scrollTo({
+              top: container.scrollHeight,
+              behavior: 'smooth'
+            });
+          });
+        });
+      }
+    } catch (error) {
+      console.warn('ScrollToBottom error - viewChild not ready:', error);
+      return;
     }
   }
 
   private checkScrollPosition() {
     if (!this.isBrowser) return;
 
-    const container = this.messageContainer()?.nativeElement;
-    if (container) {
-      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
-      this.showScrollButton.set(!isAtBottom);
+    try {
+      const container = this.messageContainer()?.nativeElement;
+      if (container) {
+        const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+        this.showScrollButton.set(!isAtBottom);
+      }
+    } catch (error) {
+      console.warn('CheckScrollPosition error - viewChild not ready:', error);
     }
   }
 

@@ -134,8 +134,8 @@ export class AppointmentManagementComponent implements OnInit {
         this.updateCalendarEvents();
         this.isLoading = false;
       },
-      error: (error: any) => {
-        console.error('Error loading appointments:', error);
+        error: (error: any) => {
+          // Error loading appointments
         
         // Check if it's an authentication error
         if (error.status === 401) {
