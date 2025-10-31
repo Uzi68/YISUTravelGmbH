@@ -1,4 +1,5 @@
-import {Injectable, NgZone} from '@angular/core';
+import {Injectable, Inject, NgZone, PLATFORM_ID} from '@angular/core';
+import {isPlatformBrowser} from '@angular/common';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import {NotificationSoundService} from "../notification-service/notification-sound.service";
@@ -23,18 +24,32 @@ export class PusherService {
   private visibilityChangeHandler: () => void = () => {};
 
 
-  constructor(private ngZone: NgZone, private notificationSound: NotificationSoundService) {
-    this.initializePusher();
-    this.setupTabVisibilityListener();
+  constructor(
+    private ngZone: NgZone,
+    private notificationSound: NotificationSoundService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.initializePusher();
+      this.setupTabVisibilityListener();
+    }
   }
 
 
   private setupTabVisibilityListener(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.visibilityChangeHandler = () => {
-      this.isTabActive = !document.hidden;
+      if (typeof document !== 'undefined') {
+        this.isTabActive = !document.hidden;
+      }
     };
 
-    document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+    }
   }
 
 
@@ -217,17 +232,23 @@ export class PusherService {
   }
 
   private async showBrowserNotification(data: any): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     const permission = await this.requestNotificationPermission();
 
     if (permission !== 'granted') return;
 
     const messageInfo = this.extractMessageInfo(data);
 
-    new Notification(messageInfo.title, {
-      body: messageInfo.body,
-      icon: messageInfo.icon,
-      tag: 'chat-notification'
-    });
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      new Notification(messageInfo.title, {
+        body: messageInfo.body,
+        icon: messageInfo.icon,
+        tag: 'chat-notification'
+      });
+    }
   }
 
   private extractMessageInfo(data: any): { title: string; body: string; icon: string } {
@@ -239,7 +260,9 @@ export class PusherService {
   }
 
   ngOnDestroy(): void {
-    document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+    if (isPlatformBrowser(this.platformId) && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+    }
     this.cleanupPusherSubscriptions();
   }
 
@@ -252,7 +275,12 @@ export class PusherService {
 
   requestNotificationPermission(): Promise<NotificationPermission> {
     return new Promise((resolve) => {
-      if (!('Notification' in window)) {
+      if (!isPlatformBrowser(this.platformId)) {
+        resolve('denied');
+        return;
+      }
+
+      if (typeof window === 'undefined' || !('Notification' in window)) {
         resolve('denied');
         return;
       }

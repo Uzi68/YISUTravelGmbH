@@ -128,6 +128,10 @@ export class ChatUiComponent implements AfterViewInit {
   }
 
   handleEscalationResponse(response: 'accept' | 'decline', metadata: any): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
     const sessionId = localStorage.getItem('session_id');
     if (!sessionId) {
       console.error('No session ID found for escalation response');
@@ -243,6 +247,11 @@ export class ChatUiComponent implements AfterViewInit {
     // ✅ Tab-Titel auf Original setzen beim Laden
     this.updateTabTitle('YISU Travel GmbH');
 
+    // Nur im Browser weiter machen
+    if (!this.isBrowser) {
+      return;
+    }
+
     // Session ID initialisieren oder laden
     this.sessionId = localStorage.getItem('session_id');
     if (!this.sessionId) {
@@ -283,6 +292,10 @@ export class ChatUiComponent implements AfterViewInit {
     // Nicht bei jeder Nachricht neu setzen
   }
   private checkRegistrationStatus(): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
     if (!this.sessionId) {
       this.sessionId = this.generateSessionId();
       localStorage.setItem('session_id', this.sessionId);

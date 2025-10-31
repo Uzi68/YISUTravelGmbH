@@ -86,8 +86,9 @@ import { CommonModule } from '@angular/common';
     }
 
     .dialog-header {
-      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
-      color: white;
+      background: #afdef8;
+      color: #0d2b3a;
+      font-weight: 600;
       margin: -24px -24px 24px -24px;
       padding: 24px;
       border-radius: 8px 8px 0 0;
@@ -219,19 +220,19 @@ import { CommonModule } from '@angular/common';
       align-items: center;
       gap: 12px;
       padding: 20px;
-      background-color: #fff3cd;
+      background-color: #e3f2fd;
       border-radius: 8px;
-      border-left: 4px solid #ffc107;
+      border-left: 4px solid #2196f3;
       margin-top: 16px;
     }
 
     .no-slots-message mat-icon {
-      color: #ffc107;
+      color: #2196f3;
     }
 
     .no-slots-message p {
       margin: 0;
-      color: #856404;
+      color: #0d47a1;
       font-weight: 500;
     }
 

@@ -116,7 +116,7 @@ body {
   }
 
   .news-card:hover .news-card__title {
-    color: yellow;
+    color: var(--yisu-primary);
   }
 
   .news-card:hover .news-card__image {
@@ -158,6 +158,6 @@ body {
 
 .news-card__read-more:hover i {
   left: 0.5rem;
-  color: yellow;
+  color: var(--yisu-primary);
 }
 

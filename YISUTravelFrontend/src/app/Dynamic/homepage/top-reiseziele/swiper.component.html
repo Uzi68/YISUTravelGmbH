@@ -1,93 +1,85 @@
 <!-- Desktop -->
 <section class="popular-destinations" *ngIf="isBrowser">
   <h2 class="section-title">Unsere schönsten Reiseziele</h2>
-  <swiper-container
-    loop="false"
-    slides-per-view="3"
-    slides-per-group="1"
-    speed="500"
-    space-between="15"
-    class="desktop custom-swiper"
-    autoplay-delay="2500"
-    autoplay-disable-on-interaction="false"
-  >
-    <swiper-slide>
-      <div class="slider-wrapper">
-        <img src="/reiseziele/turkey.jpg" alt="Türkei" class="slider-img">
-        <div class="slider-caption">Türkei</div>
+  <div id="destinationsCarouselDesktop" class="carousel slide desktop custom-swiper" data-bs-ride="carousel" data-bs-interval="2500" appCarouselSwipe>
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="slider-wrapper">
+              <img src="/reiseziele/turkey.jpg" alt="Türkei" class="slider-img w-100">
+              <div class="slider-caption">Türkei</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="slider-wrapper">
+              <img src="/reiseziele/dubai.jpg" alt="Dubai" class="slider-img w-100">
+              <div class="slider-caption">Dubai</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="slider-wrapper">
+              <img src="/reiseziele/thailand.jpg" alt="Thailand" class="slider-img w-100">
+              <div class="slider-caption">Thailand</div>
+            </div>
+          </div>
+        </div>
       </div>
-    </swiper-slide>
-    <swiper-slide>
-      <div class="slider-wrapper">
-        <img src="/reiseziele/dubai.jpg" alt="Dubai" class="slider-img">
-        <div class="slider-caption">Dubai</div>
+      <div class="carousel-item">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="slider-wrapper">
+              <img src="/reiseziele/agyptan.jpg" alt="Ägypten" class="slider-img w-100">
+              <div class="slider-caption">Ägypten</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="slider-wrapper">
+              <img src="/reiseziele/domrepublik.jpg" alt="Dominikanische Republik" class="slider-img w-100">
+              <div class="slider-caption">Dominikanische Republik</div>
+            </div>
+          </div>
+        </div>
       </div>
-    </swiper-slide>
-    <swiper-slide>
-      <div class="slider-wrapper">
-        <img src="/reiseziele/thailand.jpg" alt="Thailand" class="slider-img">
-        <div class="slider-caption">Thailand</div>
-      </div>
-    </swiper-slide>
-    <swiper-slide>
-      <div class="slider-wrapper">
-        <img src="/reiseziele/agyptan.jpg" alt="Ägypten" class="slider-img">
-        <div class="slider-caption">Ägypten</div>
-      </div>
-    </swiper-slide>
-    <swiper-slide>
-      <div class="slider-wrapper">
-        <img src="/reiseziele/domrepublik.jpg" alt="Dominikanische Republik" class="slider-img">
-        <div class="slider-caption">Dominikanische Republik</div>
-      </div>
-    </swiper-slide>
-  </swiper-container>
+    </div>
+  </div>
 </section>
 
 <!-- Mobile -->
-<swiper-container
-  *ngIf="isBrowser"
-  loop="false"
-  navigation="false"
-  slides-per-view="1"
-  slides-per-group="1"
-  speed="500"
-  space-between="15"
-  class="custom-swiper mobile"
-  autoplay-delay="2500"
-  autoplay-disable-on-interaction="false"
->
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/reiseziele/turkey.jpg" alt="Türkei" class="slider-img">
-      <div class="slider-caption">Türkei</div>
+<div id="destinationsCarouselMobile" class="carousel slide custom-swiper mobile" data-bs-ride="carousel" data-bs-interval="2500" *ngIf="isBrowser" appCarouselSwipe>
+  <div class="carousel-inner">
+    <div class="carousel-item active">
+      <div class="slider-wrapper">
+        <img src="/reiseziele/turkey.jpg" alt="Türkei" class="slider-img w-100">
+        <div class="slider-caption">Türkei</div>
+      </div>
     </div>
-  </swiper-slide>
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/reiseziele/dubai.jpg" alt="Dubai" class="slider-img">
-      <div class="slider-caption">Dubai</div>
+    <div class="carousel-item">
+      <div class="slider-wrapper">
+        <img src="/reiseziele/dubai.jpg" alt="Dubai" class="slider-img w-100">
+        <div class="slider-caption">Dubai</div>
+      </div>
     </div>
-  </swiper-slide>
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/reiseziele/thailand.jpg" alt="Thailand" class="slider-img">
-      <div class="slider-caption">Thailand</div>
+    <div class="carousel-item">
+      <div class="slider-wrapper">
+        <img src="/reiseziele/thailand.jpg" alt="Thailand" class="slider-img w-100">
+        <div class="slider-caption">Thailand</div>
+      </div>
     </div>
-  </swiper-slide>
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/reiseziele/agyptan.jpg" alt="Ägypten" class="slider-img">
-      <div class="slider-caption">Ägypten</div>
+    <div class="carousel-item">
+      <div class="slider-wrapper">
+        <img src="/reiseziele/agyptan.jpg" alt="Ägypten" class="slider-img w-100">
+        <div class="slider-caption">Ägypten</div>
+      </div>
     </div>
-  </swiper-slide>
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/reiseziele/domrepublik.jpg" alt="Dominikanische Republik" class="slider-img">
-      <div class="slider-caption">Dominikanische Republik</div>
+    <div class="carousel-item">
+      <div class="slider-wrapper">
+        <img src="/reiseziele/domrepublik.jpg" alt="Dominikanische Republik" class="slider-img w-100">
+        <div class="slider-caption">Dominikanische Republik</div>
+      </div>
     </div>
-  </swiper-slide>
-</swiper-container>
+  </div>
+</div>
 
 
 

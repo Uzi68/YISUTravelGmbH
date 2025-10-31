@@ -217,19 +217,19 @@ li strong {
 }
 
 .btn-primary {
-  background: var(--yisu-navbar-top) !important;
-  color: #2c3e50 !important;
+  background: #afdef8 !important;
+  color: #0d2b3a !important;
   border: none !important;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
+  box-shadow: 0 2px 8px rgba(175, 222, 248, 0.3);
 }
 
 .btn-primary:hover {
-  background: #f59e0b !important;
-  color: #2c3e50 !important;
+  background: #90d0f0 !important;
+  color: #0a1f2a !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
+  box-shadow: 0 4px 12px rgba(175, 222, 248, 0.4);
 }
 
 .btn-outline-secondary {

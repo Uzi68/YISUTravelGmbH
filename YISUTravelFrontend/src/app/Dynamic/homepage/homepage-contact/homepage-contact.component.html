@@ -1,64 +1,58 @@
 <div class="container mt-5">
   <div class="row">
-    <!-- Left Side Swiper Slider -->
+    <!-- Left Side Bootstrap Carousel -->
     <div class="col-lg-6 col-md-12">
-      <!-- Desktop Swiper -->
-      <swiper-container
-        loop="false"
-        pagination="true"
-        pagination-clickable="true"
-        slides-per-view="1"
-        slides-per-group="1"
-        speed="500"
-        class="desktop contact-images-swiper"
-        autoplay-delay="3000"
-        autoplay-disable-on-interaction="false"
-      >
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact1.jpg" class="slider-img" alt="YISU Travel Office 1">
+      <!-- Desktop Carousel -->
+      <div id="contactImagesDesktopCarousel" class="carousel slide desktop contact-images-swiper" data-bs-ride="carousel" data-bs-interval="3000" appCarouselSwipe>
+        <div class="carousel-indicators">
+          <button type="button" data-bs-target="#contactImagesDesktopCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+          <button type="button" data-bs-target="#contactImagesDesktopCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+          <button type="button" data-bs-target="#contactImagesDesktopCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        </div>
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact1.jpg" class="slider-img w-100" alt="YISU Travel Office 1">
+            </div>
           </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact2.jpg" class="slider-img" alt="YISU Travel Office 2">
+          <div class="carousel-item">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact2.jpg" class="slider-img w-100" alt="YISU Travel Office 2">
+            </div>
           </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact3.jpg" class="slider-img" alt="YISU Travel Office 3">
+          <div class="carousel-item">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact3.jpg" class="slider-img w-100" alt="YISU Travel Office 3">
+            </div>
           </div>
-        </swiper-slide>
-      </swiper-container>
+        </div>
+      </div>
 
-      <!-- Mobile Swiper -->
-      <swiper-container
-        loop="false"
-        pagination="true"
-        pagination-clickable="true"
-        slides-per-view="1"
-        slides-per-group="1"
-        speed="500"
-        class="mobile contact-images-swiper"
-        autoplay-delay="3000"
-        autoplay-disable-on-interaction="false"
-      >
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact1.jpg" class="slider-img" alt="YISU Travel Office 1">
+      <!-- Mobile Carousel -->
+      <div id="contactImagesMobileCarousel" class="carousel slide mobile contact-images-swiper" data-bs-ride="carousel" data-bs-interval="3000" appCarouselSwipe>
+        <div class="carousel-indicators">
+          <button type="button" data-bs-target="#contactImagesMobileCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+          <button type="button" data-bs-target="#contactImagesMobileCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+          <button type="button" data-bs-target="#contactImagesMobileCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        </div>
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact1.jpg" class="slider-img w-100" alt="YISU Travel Office 1">
+            </div>
           </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact2.jpg" class="slider-img" alt="YISU Travel Office 2">
+          <div class="carousel-item">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact2.jpg" class="slider-img w-100" alt="YISU Travel Office 2">
+            </div>
           </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact3.jpg" class="slider-img" alt="YISU Travel Office 3">
+          <div class="carousel-item">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact3.jpg" class="slider-img w-100" alt="YISU Travel Office 3">
+            </div>
           </div>
-        </swiper-slide>
-      </swiper-container>
+        </div>
+      </div>
     </div>
 
     <!-- Right Side Contact Info -->

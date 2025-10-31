@@ -491,14 +491,14 @@ body.dark-mode .profile-container .password-btn {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: #fff3cd;
+  background: #e3f2fd;
   border-radius: 12px;
-  border-left: 4px solid #ffc107;
+  border-left: 4px solid #2196f3;
   margin-bottom: 1.5rem;
 }
 
 .password-info-banner mat-icon {
-  color: #856404;
+  color: #0d47a1;
   font-size: 1.5rem;
   width: 1.5rem;
   height: 1.5rem;
@@ -506,7 +506,7 @@ body.dark-mode .profile-container .password-btn {
 
 .password-info-banner p {
   margin: 0;
-  color: #856404;
+  color: #0d47a1;
   font-size: 0.9rem;
   font-weight: 500;
 }
@@ -1127,7 +1127,7 @@ body.dark-mode .error-container {
 }
 
 body.dark-mode .password-info-banner {
-  background: #4a3c00;
+  background: #0b2540;
 }
 
 /* Animationen */

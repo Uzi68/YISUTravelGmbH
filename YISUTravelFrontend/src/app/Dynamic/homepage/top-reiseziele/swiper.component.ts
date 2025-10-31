@@ -1,33 +1,20 @@
-import {Component, Inject, PLATFORM_ID, OnInit} from '@angular/core';
-import { CUSTOM_ELEMENTS_SCHEMA } from "@angular/core";
+import {Component, Inject, PLATFORM_ID} from '@angular/core';
 import { isPlatformBrowser, NgIf } from '@angular/common';
+import { CarouselSwipeDirective } from '../../../Directives/carousel-swipe.directive';
 
 @Component({
   selector: 'app-swiper',
   standalone: true,
-  imports: [NgIf],
+  imports: [NgIf, CarouselSwipeDirective],
   templateUrl: './swiper.component.html',
   styleUrl: './swiper.component.css',
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
-export class SwiperComponent implements OnInit {
+export class SwiperComponent {
   isBrowser: boolean;
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
-  }
-
-  async ngOnInit() {
-    if (this.isBrowser) {
-      // Initialize Swiper elements
-      try {
-        const { register } = await import('swiper/element/bundle');
-        register();
-      } catch (error) {
-        console.error('Swiper initialization failed:', error);
-      }
-    }
   }
 }

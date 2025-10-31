@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -19,7 +20,7 @@ export class VisitorNotificationService {
   private notificationPermission: NotificationPermission = 'default';
   private isTabVisible = true;
   private isWindowFocused = true;
-  private notificationSound!: HTMLAudioElement;
+  private notificationSound?: HTMLAudioElement;
   private userInteracted = false;
   private permissionRequested = false;
   private notificationsEnabled = false; // ✅ NEU: Nur aktivieren wenn explizit gewünscht
@@ -33,8 +34,10 @@ export class VisitorNotificationService {
 
   public permissionStatus = this.permissionStatus$.asObservable();
 
-  constructor() {
-    this.initializeService();
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.initializeService();
+    }
   }
 
   private initializeService(): void {
@@ -46,6 +49,10 @@ export class VisitorNotificationService {
   }
 
   private setupAudioSource(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     try {
       this.notificationSound = new Audio(`${environment.backendUrl}/storage/sounds/notification.mp3`);
       this.notificationSound.preload = 'auto';
@@ -56,6 +63,10 @@ export class VisitorNotificationService {
   }
 
   private setupVisibilityTracking(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         this.isTabVisible = !document.hidden;
@@ -64,6 +75,10 @@ export class VisitorNotificationService {
   }
 
   private setupFocusTracking(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', () => {
         this.isWindowFocused = true;
@@ -76,6 +91,10 @@ export class VisitorNotificationService {
   }
 
   private setupUserInteractionListener(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (typeof document !== 'undefined') {
       const enableInteraction = () => {
         this.userInteracted = true;
@@ -90,6 +109,10 @@ export class VisitorNotificationService {
   }
 
   private async initializePermissions(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (typeof window !== 'undefined' && 'Notification' in window) {
       this.notificationPermission = Notification.permission;
       this.updatePermissionStatus();
@@ -149,6 +172,18 @@ export class VisitorNotificationService {
   }
 
   private playNotificationSound(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    if (!this.notificationSound) {
+      this.setupAudioSource();
+    }
+
+    if (!this.notificationSound) {
+      return;
+    }
+
     try {
       this.notificationSound.currentTime = 0;
       this.notificationSound.play().catch(e => {

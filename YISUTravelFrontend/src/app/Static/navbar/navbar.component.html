@@ -66,6 +66,10 @@
       <a mat-button routerLink="/" routerLinkActive="active-list-item" [routerLinkActiveOptions]="{exact: true}">Startseite</a>
       <a mat-button routerLink="/ueber-uns" routerLinkActive="active-list-item">Über Uns</a>
       <a mat-button routerLink="/dienstleistung" routerLinkActive="active-list-item">Dienstleistungen</a>
+      <a mat-button routerLink="/termin-buchen" routerLinkActive="active-list-item" class="cta">
+        <i class="fas fa-calendar-alt" style="margin-right: 6px;"></i>
+        Termin buchen
+      </a>
       <a mat-button routerLink="/kontakt" routerLinkActive="active-list-item">Kontakt</a>
 
 
@@ -132,6 +136,9 @@
       </a>
       <a mat-list-item routerLink="/dienstleistung" (click)="sidenav.close(); closeSidenav()">
         <i class="fas fa-cog sidenav-icon"></i> <span class="sidenav-text">Dienstleistungen</span>
+      </a>
+      <a mat-list-item routerLink="/termin-buchen" (click)="sidenav.close(); closeSidenav()">
+        <i class="fas fa-calendar-alt sidenav-icon"></i> <span class="sidenav-text">Termin buchen</span>
       </a>
       <a mat-list-item routerLink="/kontakt" (click)="sidenav.close(); closeSidenav()">
         <i class="fas fa-envelope sidenav-icon"></i> <span class="sidenav-text">Kontakt</span>

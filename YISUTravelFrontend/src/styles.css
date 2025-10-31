@@ -105,8 +105,8 @@ body.dark-mode {
 /* Default (Light Mode) - Flyer-basiertes Travel Farbschema */
 :root {
   /* === Flyer Travel Agency Farbschema === */
-  --yisu-primary: #1976d2;          /* Modernes Blau - Logo/Text */
-  --yisu-secondary: #fbbf24;        /* Sonniges Gelb - Banner/Akzente */
+  --yisu-primary: #afdef8;          /* Vorgabe Blau - Logo/Text */
+  --yisu-secondary: #1565c0;        /* Sekundäres Blau - Banner/Akzente */
   --yisu-nav-items: #1976d2;
   --yisu-nav-items-hover: #1976d2;
   --yisu-nav-items-hover-background: #ffffff;
@@ -128,12 +128,12 @@ body.dark-mode {
   /* === UI Elemente === */
   --yisu-navbar-bg: #ffffff;        /* Weiß - Navbar Background */
   --yisu-navbar-text: #333333;      /* Dunkles Grau - Navbar Text */
-  --yisu-navbar-hover: #fbbf24;     /* Gelb - Hover */
-  --yisu-navbar-top: #fbbf24;       /* Sonniges Gelb - Top Bar */
+  --yisu-navbar-hover: #1565c0;     /* Blau - Hover */
+  --yisu-navbar-top: #1565c0;       /* Blau - Top Bar */
   
   /* === Buttons & Links === */
-  --yisu-button-primary: #fbbf24;   /* Sonniges Gelb - CTA Button */
-  --yisu-button-primary-hover: #f59e0b;
+  --yisu-button-primary: #afdef8;   /* Vorgabe Blau - CTA Button */
+  --yisu-button-primary-hover: #90d0f0;
   --yisu-button-secondary: #87ceeb; /* Himmelblau - Akzent Button */
   --yisu-button-secondary-hover: #7dd3fc;
   
@@ -145,7 +145,7 @@ body.dark-mode {
   
   /* === Borders & Shadows === */
   --yisu-border-light: #e0f2fe;
-  --yisu-border-medium: #fbbf24;    /* Sonniges Gelb - Border */
+  --yisu-border-medium: #90caf9;    /* Mittleres Blau - Border */
   --yisu-shadow-sm: 0 2px 8px rgba(30, 58, 138, 0.08);
   --yisu-shadow-md: 0 4px 16px rgba(30, 58, 138, 0.12);
   --yisu-shadow-lg: 0 8px 24px rgba(30, 58, 138, 0.15);
@@ -165,16 +165,16 @@ body.dark-mode {
   --offershadow-background-color: var(--yisu-shadow-md);
   --primary-color: var(--yisu-primary);
   --secondary-color: var(--yisu-secondary);
-  --link-color: var(--yisu-primary);
+  --link-color: #1976d2;
   --box-color: var(--yisu-bg-section);
   --dropdown-color: var(--yisu-white);
-  --header-color: var(--yisu-primary);
+  --header-color: #1976d2;
   --lc-block-color: var(--yisu-white);
   --lc-block-text-color: var(--yisu-text-medium);
   --lc-block-header-color: var(--yisu-text-dark);
   --lc-block-hover1-color: #f8f9fa;
   --lc-block-hover2-color: var(--yisu-white);
-  --lc-block-hover3-color: rgba(255, 215, 94, 0.08);
+  --lc-block-hover3-color: rgba(25, 118, 210, 0.08);
   --amt-section-color: var(--yisu-primary);
   --ueber-uns-color: rgba(142, 209, 220, 0.1);
   --customer-ratings-color: var(--yisu-bg-section);
@@ -190,13 +190,13 @@ body.dark-mode {
 body.dark-mode {
   /* === Flyer-basiertes Travel Agency Dark Mode === */
   --yisu-primary: #60a5fa;          /* Helleres Blau - Dark Mode */
-  --yisu-secondary: #fbbf24;        /* Sonniges Gelb - bleibt gleich */
-  --yisu-nav-items: #fbbf24;        /* Sonniges Gelb - bleibt gleich */
-  --yisu-nav-items-hover: #fbbf24;
-  --yisu-nav-items-hover-background: #fbbf240f;
-  --yisu-nav-items-active: #0f172a; /*#f59e0b*/
+  --yisu-secondary: #3b82f6;        /* Sekundäres Blau - Dark Mode */
+  --yisu-nav-items: #60a5fa;        /* Blau - Nav Items */
+  --yisu-nav-items-hover: #3b82f6;
+  --yisu-nav-items-hover-background: #1e293b;
+  --yisu-nav-items-active: #0f172a; /* aktiv */
   --yisu-nav-items-active-hover: #1e293b;
-  --yisu-nav-items-active-hover-background: #facc15;
+  --yisu-nav-items-active-hover-background: #1d4ed8;
   --yisu-accent: #7dd3fc;           /* Helleres Himmelblau - Dark Mode */
   --yisu-light: #0f172a;            /* Dunkler Hintergrund */
   --yisu-white: #ffffff;            /* Pure White */
@@ -210,12 +210,12 @@ body.dark-mode {
   /* === UI Elemente Dark Mode === */
   --yisu-navbar-bg: #87ceeb;        /* Himmelblau - Navbar Background */
   --yisu-navbar-text: #1e3a8a;      /* Dunkles Blau - Navbar Text */
-  --yisu-navbar-hover: #fbbf24;     /* Sonniges Gelb - Hover */
-  --yisu-navbar-top: #fbbf24;       /* Sonniges Gelb - Top Bar */
+  --yisu-navbar-hover: #3b82f6;     /* Blau - Hover */
+  --yisu-navbar-top: #3b82f6;       /* Blau - Top Bar */
   
   /* === Buttons & Links Dark Mode === */
-  --yisu-button-primary: #fbbf24;   /* Sonniges Gelb - CTA Button */
-  --yisu-button-primary-hover: #f59e0b;
+  --yisu-button-primary: #afdef8;   /* Vorgabe Blau - CTA Button */
+  --yisu-button-primary-hover: #90d0f0;
   --yisu-button-secondary: #7dd3fc; /* Helleres Himmelblau - Akzent */
   --yisu-button-secondary-hover: #60a5fa;
   
@@ -227,7 +227,7 @@ body.dark-mode {
   
   /* === Borders & Shadows Dark Mode === */
   --yisu-border-light: #475569;
-  --yisu-border-medium: #fbbf24;    /* Sonniges Gelb - Border */
+  --yisu-border-medium: #3b82f6;    /* Blau - Border */
   --yisu-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --yisu-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --yisu-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -247,10 +247,10 @@ body.dark-mode {
   --offershadow-background-color: var(--yisu-shadow-md);
   --primary-color: var(--yisu-primary);
   --secondary-color: var(--yisu-secondary);
-  --link-color: var(--yisu-secondary);
+  --link-color: #60a5fa;
   --box-color: var(--yisu-bg-section);
   --dropdown-color: var(--yisu-bg-card);
-  --header-color: var(--yisu-secondary);
+  --header-color: #60a5fa;
   --lc-block-color: var(--yisu-bg-card);
   --lc-block-text-color: var(--yisu-text-dark);
   --lc-block-header-color: var(--yisu-text-white);
@@ -380,7 +380,7 @@ body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-error {
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-focus-overlay {
-  background-color: rgba(251, 191, 36, 0.04) !important;
+  background-color: rgba(25, 118, 210, 0.06) !important;
 }
 
 /* Additional Material Design Overrides */
@@ -497,16 +497,16 @@ body.dark-mode .mat-mdc-row:nth-child(odd) {
 
 /* Material Icon Dark Mode */
 body.dark-mode mat-icon {
-  color: var(--yisu-secondary) !important;
+  color: #60a5fa !important;
 }
 
 /* Material Button Dark Mode */
 body.dark-mode .mat-mdc-icon-button {
-  color: var(--yisu-secondary) !important;
+  color: #60a5fa !important;
 }
 
 body.dark-mode .mat-mdc-icon-button:hover {
-  background: rgba(251, 191, 36, 0.1) !important;
+  background: rgba(25, 118, 210, 0.12) !important;
 }
 
 

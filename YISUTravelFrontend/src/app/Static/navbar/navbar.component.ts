@@ -124,6 +124,10 @@ export class NavbarComponent {
 
 
   toggleDarkMode() {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.darkMode = !this.darkMode;
 
     // Use requestAnimationFrame for smoother transitions
@@ -139,9 +143,7 @@ export class NavbarComponent {
     });
 
     // Save the state in localStorage if running in the browser
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('dark-mode', JSON.stringify(this.darkMode));
-    }
+    localStorage.setItem('dark-mode', JSON.stringify(this.darkMode));
   }
 
 

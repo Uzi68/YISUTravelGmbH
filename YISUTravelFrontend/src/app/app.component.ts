@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import {ActivatedRoute, NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {NavbarComponent} from "./Static/navbar/navbar.component";
-import {HomepageFirstviewComponent} from "./Dynamic/homepage/homepage-cover/homepage-firstview.component";
 import {filter, mergeMap, Subscription} from "rxjs";
 import {WindowService} from "./Services/window-service/window.service";
 import {SEOService} from "./Services/SEOServices/seo.service";
@@ -15,7 +14,7 @@ import {ChatbotService} from "./Services/chatbot-service/chatbot.service";
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, NavbarComponent, HomepageFirstviewComponent, LivechatComponent, ScrolltopComponent, ChatUiComponent, NgIf],
+  imports: [RouterOutlet, NavbarComponent, LivechatComponent, ScrolltopComponent, ChatUiComponent, NgIf],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -25,6 +24,7 @@ export class AppComponent {
   private subscription: Subscription | undefined;
   isAuthenticated: boolean | undefined;
   isChatOpen = false
+  private isInitialNavigation = true; // Track if this is the first navigation
 
   constructor(private router: Router, private windowRef: WindowService,
               private seoService: SEOService,
@@ -41,14 +41,21 @@ export class AppComponent {
     });
   }
   ngOnInit() {
-    // Scrolling to top logic
+    // Scrolling to top logic - skip initial navigation to prevent double-load effect
     this.subscription = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe(() => {
-        const window = this.windowRef.nativeWindow; // Safely access the window object
-        if (window) {
-    //      console.log('Scrolling to top');
-          window.scrollTo(0, 0);
+      .subscribe((event: NavigationEnd) => {
+        const window = this.windowRef.nativeWindow;
+        // Skip scrolling on initial navigation to avoid visual glitches during hydration
+        if (window && !this.isInitialNavigation) {
+          // Use requestAnimationFrame for smoother scrolling and to avoid layout issues
+          requestAnimationFrame(() => {
+            window.scrollTo(0, 0);
+          });
+        }
+        // Mark that initial navigation is complete
+        if (this.isInitialNavigation) {
+          this.isInitialNavigation = false;
         }
       });
 

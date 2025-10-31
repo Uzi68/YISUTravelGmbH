@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -25,8 +26,8 @@ export class NotificationSoundService {
   private notificationPermission: NotificationPermission = 'default';
   private isTabVisible = true;
   private isWindowFocused = true;
-  private notificationSound!: HTMLAudioElement;
-  private transferSound!: HTMLAudioElement;
+  private notificationSound?: HTMLAudioElement;
+  private transferSound?: HTMLAudioElement;
   private userInteracted = false;
   private permissionStatus$ = new BehaviorSubject<NotificationPermissionStatus>({
     granted: false,
@@ -43,8 +44,10 @@ export class NotificationSoundService {
   // Öffentliche Observable für Komponenten
   public permissionStatus = this.permissionStatus$.asObservable();
 
-  constructor() {
-    this.initializeService();
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.initializeService();
+    }
   }
 
   private initializeService(): void {
@@ -56,6 +59,10 @@ export class NotificationSoundService {
   }
 
   private setupAudioSources(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     try {
       this.notificationSound = new Audio(`${environment.backendUrl}/storage/sounds/notification.mp3`);
       this.notificationSound.preload = 'auto';
@@ -71,6 +78,10 @@ export class NotificationSoundService {
   }
 
   private setupVisibilityTracking(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         this.isTabVisible = !document.hidden;
@@ -79,6 +90,10 @@ export class NotificationSoundService {
   }
 
   private setupFocusTracking(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', () => {
         this.isWindowFocused = true;
@@ -91,6 +106,10 @@ export class NotificationSoundService {
   }
 
   private setupUserInteractionListener(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (typeof document !== 'undefined') {
       const enableInteraction = () => {
         this.userInteracted = true;
@@ -104,6 +123,10 @@ export class NotificationSoundService {
   }
 
   private async initializePermissions(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (typeof window !== 'undefined' && 'Notification' in window) {
       this.notificationPermission = Notification.permission;
       this.updatePermissionStatus();
@@ -157,22 +180,42 @@ export class NotificationSoundService {
 
   // ✅ KORRIGIERTE Sound-Methoden - jetzt mit expliziter Kontrolle
   playNotificationSound(): void {
-    this.playAudioNotification(this.notificationSound, 'notification', false);
+    if (!this.notificationSound) {
+      this.setupAudioSources();
+    }
+    if (this.notificationSound) {
+      this.playAudioNotification(this.notificationSound, 'notification', false);
+    }
   }
 
   playTransferSound(): void {
-    this.playAudioNotification(this.transferSound, 'transfer', true); // Transfer immer abspielen
+    if (!this.transferSound) {
+      this.setupAudioSources();
+    }
+    if (this.transferSound) {
+      this.playAudioNotification(this.transferSound, 'transfer', true); // Transfer immer abspielen
+    }
   }
 
   playNotificationSoundForce(): void {
-    this.playAudioNotification(this.notificationSound, 'forced-notification', true);
+    if (!this.notificationSound) {
+      this.setupAudioSources();
+    }
+    if (this.notificationSound) {
+      this.playAudioNotification(this.notificationSound, 'forced-notification', true);
+    }
   }
 
   // ✅ NEUE Methoden für kontextabhängige Sounds
   playNotificationSoundIfTabInactive(): void {
+    if (!this.notificationSound) {
+      this.setupAudioSources();
+    }
     if (!this.isTabVisible || !this.isWindowFocused) {
       // Tab inaktiv - spiele Sound ab
-      this.playAudioNotification(this.notificationSound, 'notification-tab-inactive', true);
+      if (this.notificationSound) {
+        this.playAudioNotification(this.notificationSound, 'notification-tab-inactive', true);
+      }
     } else {
       // Tab ist aktiv - Sound übersprungen
     }
@@ -180,6 +223,10 @@ export class NotificationSoundService {
 
   // ✅ KORRIGIERTE playAudioNotification mit expliziter forcePlay Option
   private playAudioNotification(audio: HTMLAudioElement, type: string, forcePlay: boolean = false): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     if (!this.userInteracted) {
       return;
     }
@@ -196,7 +243,7 @@ export class NotificationSoundService {
     try {
       audio.currentTime = 0;
       audio.play().catch(e => {
-        if (type === 'transfer' && this.notificationSound !== audio) {
+        if (type === 'transfer' && this.notificationSound && this.notificationSound !== audio) {
           this.playAudioNotification(this.notificationSound, 'fallback', forcePlay);
         }
       });

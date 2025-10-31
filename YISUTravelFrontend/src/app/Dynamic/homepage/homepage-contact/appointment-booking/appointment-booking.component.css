@@ -7,8 +7,8 @@
 
 /* Page Header */
 .page-header {
-  background: linear-gradient(135deg, var(--yisu-primary) 0%, var(--yisu-secondary) 100%);
-  color: var(--yisu-white);
+  background: #afdef8;
+  color: var(--yisu-text-black);
   padding: 2rem 0;
   position: relative;
   overflow: hidden;
@@ -393,15 +393,17 @@
 }
 
 .mat-raised-button.mat-primary {
-  background-color: var(--yisu-button-primary);
-  color: var(--yisu-text-black);
-  box-shadow: var(--yisu-shadow-md);
+  background-color: #afdef8;
+  color: #0d2b3a;
+  box-shadow: 0 4px 12px rgba(175, 222, 248, 0.4);
+  font-weight: 600;
 }
 
 .mat-raised-button.mat-primary:hover {
-  background-color: var(--yisu-button-primary-hover);
+  background-color: #90d0f0;
+  color: #0a1f2a;
   transform: translateY(-2px);
-  box-shadow: var(--yisu-shadow-lg);
+  box-shadow: 0 6px 16px rgba(175, 222, 248, 0.5);
 }
 
 .mat-raised-button.mat-primary:disabled {

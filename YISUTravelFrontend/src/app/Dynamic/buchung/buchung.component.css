@@ -1,0 +1,65 @@
+.container {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 15px;
+  margin-bottom: 80px;
+  margin-top: 80px;
+}
+
+.text-center {
+  text-align: unset!important;
+}
+
+.title {
+  color: var(--text-color);
+}
+
+.lead {
+  color: var(--text-color);
+}
+
+p {
+  color: var(--text-color);
+}
+
+.img-fluid {
+  max-width: 100%;
+  height: auto;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.statistics-section {
+  margin-bottom: 80px;
+}
+
+.card-body {
+  background-color: var(--background-color);
+}
+
+.counterb {
+  color: var(--yisu-text-dark);
+}
+
+.svgs {
+  fill: var(--yisu-primary);
+}
+
+/* Dark Mode SVG Icons */
+body.dark-mode .svgs {
+  fill: var(--yisu-secondary);
+}
+
+.lead {
+  text-align: center;
+  font-family: Roboto, "Helvetica Neue";
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--yisu-text-dark);
+}
+
+.title {
+  color: var(--yisu-text-dark);
+}
+

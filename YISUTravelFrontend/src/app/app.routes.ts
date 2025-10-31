@@ -27,6 +27,7 @@ import { PasswordResetComponent } from "./Dynamic/password-reset/password-reset.
 import { CustomerRegistrationComponent } from "./Dynamic/customer-registration/customer-registration.component";
 import { CustomerDashboardComponent } from "./Dynamic/customer-dashboard/customer-dashboard.component";
 import { AppointmentBookingComponent } from "./Dynamic/homepage/homepage-contact/appointment-booking/appointment-booking.component";
+import { BuchungComponent } from "./Dynamic/buchung/buchung.component";
 
 
 export const routes: Routes = [
@@ -189,6 +190,18 @@ export const routes: Routes = [
       ogUrl: 'https://yisu-travel.de/termin-buchen',
       author: 'YISU Travel GmbH',
       canonical: 'https://yisu-travel.de/termin-buchen'
+    }
+  },
+  {
+    path: 'buchung',
+    component: BuchungComponent,
+    data: {
+      title: 'Buchung & Statistiken - YISU Travel GmbH',
+      description: 'Entdecken Sie die Welt mit YISU Travel GmbH! Erfahren Sie mehr über unsere täglich aktualisierten Buchungsstatistiken, zufriedene Kunden und Rechnungen. Wir bieten maßgeschneiderte Reiseangebote, individuelle Beratung von Reiseexperten und höchste Flexibilität bei jeder Buchung. Mit über 15 Jahren Erfahrung in der Tourismusbranche sind wir Ihr vertrauensvoller Partner für unvergessliche Reisen. Exklusive Angebote, persönliche Beratung und Rundum-Service in Hanau.',
+      keywords: 'YISU Travel GmbH,buchung,buchungsstatistiken,reisebüro,hanau,reiseangebote,individualreisen,reiseberatung,kundenzufriedenheit,tourismus,urlaub',
+      ogUrl: 'https://yisu-travel.de/buchung',
+      author: 'YISU Travel GmbH',
+      canonical: 'https://yisu-travel.de/buchung'
     }
   },
   {

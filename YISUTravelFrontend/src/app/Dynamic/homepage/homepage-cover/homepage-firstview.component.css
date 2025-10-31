@@ -99,8 +99,8 @@
   font-size: 2.4rem;
   font-weight: 600;
   margin-bottom: 1.2rem;
-  color: var(--yisu-secondary);
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+  color: #1976d2;
+  text-shadow: 2px 2px 8px rgba(255, 255, 255, 0.3);
   animation: slideInDown 1s ease-out 0.6s both;
 }
 
@@ -156,16 +156,16 @@
 }
 
 .hero-btn-primary {
-  background: var(--yisu-navbar-top);
-  color: #2c3e50;
-  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
-  font-weight: 500;
+  background: #afdef8;
+  color: #0d2b3a;
+  box-shadow: 0 8px 20px rgba(175, 222, 248, 0.4);
+  font-weight: 600;
   
   &:hover {
-    background: #f59e0b;
-    color: #2c3e50;
+    background: #90d0f0;
+    color: #0a1f2a;
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
+    box-shadow: 0 8px 25px rgba(175, 222, 248, 0.5);
   }
 }
 
@@ -213,9 +213,9 @@
 .unique-title {
   font-size: 3.5rem;
   font-weight: 700;
-  color: var(--yisu-secondary);
+  color: #1976d2;
   margin-bottom: 0.75rem;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+  text-shadow: 2px 2px 8px rgba(255, 255, 255, 0.3);
   animation: fadeInUp 1s ease-out 0.3s both;
 }
 
