@@ -253,7 +253,7 @@
 
 .sidebar-header {
   padding: 20px;
-  background: var(--yisu-primary);
+  background: var(--yisu-secondary);
   color: var(--yisu-white);
 }
 
@@ -319,9 +319,10 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 10px;
   padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .search-bar mat-icon {
@@ -354,7 +355,7 @@
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .filter-controls mat-button-toggle {
@@ -378,11 +379,17 @@
 .section-header {
   padding: 12px 20px;
   font-weight: 600;
-  color: var(--yisu-primary);
+  color: var(--yisu-secondary);
   font-size: 0.85rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: var(--yisu-bg-card);
+  border-bottom: 1px solid var(--yisu-border-light);
+}
+
+body.dark-mode .section-header {
+  color: var(--yisu-secondary);
   background: var(--yisu-bg-section);
 }
 
@@ -406,26 +413,26 @@
 
 /* Hover states for assigned-to-me chats */
 .chat-item.assigned-to-me:hover {
-  background-color: var(--yisu-bg-section);
+  background-color: var(--yisu-bg-card);
   box-shadow: var(--yisu-shadow-sm);
 }
 
 /* Hover states for assigned-to-other chats */
 .chat-item.assigned-to-other:hover {
-  background-color: var(--yisu-bg-section);
+  background-color: var(--yisu-bg-card);
   box-shadow: var(--yisu-shadow-sm);
 }
 
 /* Hover states for unassigned chats (chat requests) */
 .chat-item.unassigned:hover {
-  background-color: var(--yisu-bg-section);
+  background-color: var(--yisu-bg-card);
   box-shadow: var(--yisu-shadow-sm);
   border-left: 3px solid var(--yisu-secondary);
 }
 
 .chat-item.active {
-  background: var(--yisu-bg-section);
-  border-left: 10px solid var(--yisu-primary);
+  background: var(--yisu-bg-card);
+  border-left: 10px solid var(--yisu-secondary);
   box-shadow: var(--yisu-shadow-sm);
 }
 
@@ -433,15 +440,20 @@
 .chat-item.active:hover {
   background: var(--yisu-bg-card);
   transform: none;
+  box-shadow: var(--yisu-shadow-md);
 }
 
 .chat-item.unread {
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
 }
 
 .chat-item.unread .chat-preview {
   font-weight: 500;
-  color: #1e293b;
+  color: var(--yisu-text-dark);
+}
+
+body.dark-mode .chat-item.unread .chat-preview {
+  color: var(--yisu-text-dark);
 }
 
 .avatar-container {
@@ -516,6 +528,10 @@
   text-overflow: ellipsis;
 }
 
+body.dark-mode .chat-name {
+  color: var(--yisu-text-dark);
+}
+
 .chat-preview {
   font-size: 0.85rem;
   color: var(--yisu-text-medium);
@@ -523,6 +539,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: 6px;
+}
+
+body.dark-mode .chat-preview {
+  color: var(--yisu-text-medium);
 }
 
 .chat-status-container {
@@ -540,13 +560,13 @@
 }
 
 .status-bot {
-  background-color: var(--yisu-bg-section);
-  color: var(--yisu-primary);
+  background-color: var(--yisu-bg-card);
+  color: var(--yisu-secondary);
   border: 1px solid var(--yisu-border-light);
 }
 
 .status-human {
-  background-color: var(--yisu-bg-section);
+  background-color: var(--yisu-bg-card);
   color: var(--yisu-secondary);
   border: 1px solid var(--yisu-border-light);
 }
@@ -558,7 +578,7 @@
 }
 
 .status-closed {
-  background-color: var(--yisu-bg-section);
+  background-color: var(--yisu-bg-card);
   color: var(--yisu-text-light);
   border: 1px solid var(--yisu-border-light);
 }
@@ -568,7 +588,11 @@
   align-items: center;
   gap: 4px;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--yisu-text-medium);
+}
+
+body.dark-mode .assignment-info {
+  color: var(--yisu-text-medium);
 }
 
 .assignment-icon {
@@ -630,6 +654,18 @@
   text-align: center;
 }
 
+body.dark-mode .no-chats {
+  color: var(--yisu-text-light);
+}
+
+.no-chats span {
+  color: var(--yisu-text-light);
+}
+
+body.dark-mode .no-chats span {
+  color: var(--yisu-text-light);
+}
+
 .no-chats mat-icon {
   font-size: 48px;
   width: 48px;
@@ -669,6 +705,10 @@
   color: var(--yisu-text-dark);
   margin-bottom: 2px;
   font-size: 0.9rem;
+}
+
+body.dark-mode .profile-name {
+  color: var(--yisu-text-dark);
 }
 
 .profile-status {
@@ -740,6 +780,8 @@
   background: var(--yisu-bg-main);
   position: relative;
   overflow: hidden;
+  /* Fix für Bootstrap box-sizing: border-box */
+  box-sizing: border-box;
 }
 
 .chat-header {
@@ -794,6 +836,10 @@
   color: var(--yisu-text-dark);
 }
 
+body.dark-mode .user-name {
+  color: var(--yisu-text-dark);
+}
+
 .status-container {
   display: flex;
   align-items: center;
@@ -833,6 +879,10 @@
   color: var(--yisu-text-medium);
 }
 
+body.dark-mode .detail-item {
+  color: var(--yisu-text-medium);
+}
+
 .detail-icon {
   font-size: 16px;
   width: 16px;
@@ -863,13 +913,13 @@
 }
 
 .assigned-to-me {
-  background-color: var(--yisu-bg-section);
-  color: var(--yisu-primary);
+  background-color: var(--yisu-bg-card);
+  color: var(--yisu-secondary);
   border: 1px solid var(--yisu-border-light);
 }
 
 .assigned-to-other {
-  background-color: var(--yisu-bg-section);
+  background-color: var(--yisu-bg-card);
   color: var(--yisu-secondary);
   border: 1px solid var(--yisu-border-light);
 }
@@ -992,6 +1042,9 @@ mat-slide-toggle {
   background-size: 20px 20px;
   transition: opacity 0.1s ease;
   max-height: calc(100vh - 200px);
+  /* Fix für Bootstrap box-sizing: border-box */
+  box-sizing: border-box;
+  min-height: 0; /* Wichtig für Flexbox, damit overflow funktioniert */
 }
 
 /* ✅ Verstecke Chat während des Ladens um Flickern zu vermeiden */
@@ -1032,9 +1085,18 @@ mat-slide-toggle {
 }
 
 .message.agent .message-content {
-  background: var(--yisu-primary);
-  color: var(--yisu-white);
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-white) !important;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .message.agent .message-content {
+  background: #2563eb !important; /* Dunkleres Blau für bessere Lesbarkeit */
+  color: var(--yisu-white) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .message.customer .message-content {
@@ -1045,22 +1107,37 @@ mat-slide-toggle {
   border: 1px solid var(--yisu-border-light);
 }
 
-.message.bot .message-content {
-  background: var(--yisu-bg-section);
-  color: var(--yisu-primary);
+body.dark-mode .message.customer .message-content {
+  background: var(--yisu-bg-card);
+  color: var(--yisu-text-dark);
+  box-shadow: var(--yisu-shadow-sm);
   border: 1px solid var(--yisu-border-light);
+}
+
+.message.bot .message-content {
+  background: var(--yisu-bg-card);
+  color: var(--yisu-text-dark);
+  border: 1.5px solid var(--yisu-border-medium);
   border-bottom-right-radius: 4px;
   border-bottom-left-radius: 18px;
+  box-shadow: 0 2px 8px rgba(21, 101, 192, 0.2);
+}
+
+body.dark-mode .message.bot .message-content {
+  background: var(--yisu-bg-card);
+  color: var(--yisu-text-dark);
+  border: 1.5px solid var(--yisu-border-medium) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .message.system .message-content {
-  background: var(--yisu-bg-section) !important;
-  color: var(--yisu-primary) !important;
+  background: var(--yisu-bg-card) !important;
+  color: var(--yisu-secondary) !important;
   font-style: normal !important;
   font-weight: 500 !important;
   font-size: 0.875rem !important;
   border: 1px solid var(--yisu-border-light) !important;
-  border-left: 4px solid var(--yisu-primary) !important;
+  border-left: 4px solid var(--yisu-secondary) !important;
   box-shadow: var(--yisu-shadow-sm) !important;
   max-width: 85% !important;
   text-align: center !important;
@@ -1113,7 +1190,7 @@ mat-slide-toggle {
 
 /* Escalation Message Styling */
 .message.escalation .message-content {
-  background: var(--yisu-bg-section) !important;
+  background: var(--yisu-bg-card) !important;
   color: var(--yisu-secondary) !important;
   border: 1px solid var(--yisu-border-light) !important;
   border-left: 4px solid var(--yisu-secondary) !important;
@@ -1125,7 +1202,7 @@ mat-slide-toggle {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
   border-radius: 8px;
   margin-bottom: 8px;
   font-weight: 600;
@@ -1147,7 +1224,7 @@ mat-slide-toggle {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
   border: 1px solid var(--yisu-border-light);
   border-radius: 8px;
   color: var(--yisu-secondary);
@@ -1180,6 +1257,32 @@ mat-slide-toggle {
   word-wrap: break-word;
 }
 
+.message.customer .message-text {
+  color: var(--yisu-text-dark);
+}
+
+.message.agent .message-text {
+  color: var(--yisu-white);
+}
+
+.message.bot .message-text {
+  color: var(--yisu-text-dark);
+  font-weight: 500;
+}
+
+body.dark-mode .message.customer .message-text {
+  color: var(--yisu-text-dark);
+}
+
+body.dark-mode .message.agent .message-text {
+  color: var(--yisu-white);
+}
+
+body.dark-mode .message.bot .message-text {
+  color: var(--yisu-text-dark);
+  font-weight: 500;
+}
+
 .message-meta {
   display: flex;
   justify-content: space-between;
@@ -1193,6 +1296,11 @@ mat-slide-toggle {
   opacity: 0.8;
 }
 
+.message.bot .message-badge::before {
+  content: '🤖 ';
+  margin-right: 2px;
+}
+
 .message-time {
   font-size: 0.7rem;
   display: flex;
@@ -1200,12 +1308,25 @@ mat-slide-toggle {
   gap: 4px;
 }
 
-.message.agent .message-time,
-.message.bot .message-time {
+.message.agent .message-time {
   color: rgba(255, 255, 255, 0.8);
 }
 
+.message.bot .message-time {
+  color: var(--yisu-text-medium);
+  font-weight: 500;
+}
+
+body.dark-mode .message.bot .message-time {
+  color: var(--yisu-text-medium);
+  font-weight: 500;
+}
+
 .message.customer .message-time {
+  color: var(--yisu-text-light);
+}
+
+body.dark-mode .message.customer .message-time {
   color: var(--yisu-text-light);
 }
 
@@ -1223,6 +1344,10 @@ mat-slide-toggle {
   position: sticky;
   bottom: 0;
   z-index: 10;
+  /* Fix für Bootstrap box-sizing: border-box */
+  box-sizing: border-box;
+  margin-top: auto; /* Stellt sicher, dass es am Ende des Flex-Containers ist */
+  flex-shrink: 0; /* Verhindert, dass es schrumpft */
 }
 
 .assignment-required-info,
@@ -1238,23 +1363,27 @@ mat-slide-toggle {
 }
 
 .assignment-required-info {
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
   color: var(--yisu-secondary);
+  border: 1px solid var(--yisu-border-light);
 }
 
 .input-disabled-info {
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
   color: var(--yisu-text-light);
+  border: 1px solid var(--yisu-border-light);
 }
 
 .bot-status-info {
-  background: var(--yisu-bg-section);
-  color: var(--yisu-primary);
+  background: var(--yisu-bg-card);
+  color: var(--yisu-secondary);
+  border: 1px solid var(--yisu-border-light);
 }
 
 .closed-chat-info {
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
   color: var(--yisu-text-light);
+  border: 1px solid var(--yisu-border-light);
 }
 
 .info-content {
@@ -1267,6 +1396,11 @@ mat-slide-toggle {
 
 .info-content span {
   flex: 1;
+  color: var(--yisu-text-dark);
+}
+
+body.dark-mode .info-content span {
+  color: var(--yisu-text-dark);
 }
 
 .info-content button {
@@ -1299,6 +1433,10 @@ mat-slide-toggle {
   transition: all 0.2s ease;
 }
 
+body.dark-mode .input-container textarea {
+  color: var(--yisu-text-dark);
+}
+
 .input-container textarea:focus {
   border-color: var(--yisu-primary);
   box-shadow: 0 0 0 3px var(--yisu-primary-hover);
@@ -1312,6 +1450,10 @@ mat-slide-toggle {
   color: var(--yisu-text-light);
   background: var(--yisu-bg-card);
   padding: 0 4px;
+}
+
+body.dark-mode .char-counter {
+  color: var(--yisu-text-light);
 }
 
 .send-button {
@@ -1378,7 +1520,7 @@ mat-slide-toggle {
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid var(--yisu-border-light);
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
 }
 
 .dialog-header h3 {
@@ -1386,6 +1528,10 @@ mat-slide-toggle {
   color: var(--yisu-text-dark);
   font-size: 1.25rem;
   font-weight: 600;
+}
+
+body.dark-mode .dialog-header h3 {
+  color: var(--yisu-text-dark);
 }
 
 .dialog-header button {
@@ -1402,6 +1548,10 @@ mat-slide-toggle {
   font-size: 0.95rem;
 }
 
+body.dark-mode .dialog-content p {
+  color: var(--yisu-text-medium);
+}
+
 .full-width {
   width: 100%;
   margin-bottom: 16px;
@@ -1412,7 +1562,7 @@ mat-slide-toggle {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background-color: var(--yisu-bg-section);
+  background-color: var(--yisu-bg-card);
   border-radius: 8px;
   color: var(--yisu-secondary);
   margin-top: 16px;
@@ -1433,7 +1583,7 @@ mat-slide-toggle {
   gap: 12px;
   padding: 16px 24px;
   border-top: 1px solid var(--yisu-border-light);
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
 }
 
 .dialog-actions button {
@@ -1462,7 +1612,7 @@ mat-slide-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
   border-radius: 50%;
   margin: 0 auto 24px;
   border: 1px solid var(--yisu-border-light);
@@ -1472,7 +1622,7 @@ mat-slide-toggle {
   font-size: 40px;
   width: 40px;
   height: 40px;
-  color: var(--yisu-primary);
+  color: var(--yisu-secondary);
 }
 
 .empty-content h3 {
@@ -1482,10 +1632,18 @@ mat-slide-toggle {
   color: var(--yisu-text-dark);
 }
 
+body.dark-mode .empty-content h3 {
+  color: var(--yisu-text-dark);
+}
+
 .empty-content p {
   margin: 0;
   color: var(--yisu-text-medium);
   line-height: 1.5;
+}
+
+body.dark-mode .empty-content p {
+  color: var(--yisu-text-medium);
 }
 
 /* Animations */
@@ -1690,7 +1848,7 @@ mat-slide-toggle {
   text-align: center;
   padding: 32px 24px 16px;
   border-bottom: none;
-  background: var(--yisu-primary);
+  background: var(--yisu-secondary);
   color: var(--yisu-white);
 }
 
@@ -1734,6 +1892,10 @@ mat-slide-toggle {
   line-height: 1.6;
 }
 
+body.dark-mode .permission-description {
+  color: var(--yisu-text-medium);
+}
+
 .permission-description strong {
   color: var(--yisu-text-dark);
   font-size: 16px;
@@ -1750,7 +1912,7 @@ mat-slide-toggle {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
   border-radius: 10px;
   margin-bottom: 10px;
   transition: all 0.2s ease;
@@ -1776,12 +1938,16 @@ mat-slide-toggle {
   line-height: 1.4;
 }
 
+body.dark-mode .permission-features span {
+  color: var(--yisu-text-dark);
+}
+
 .permission-note {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 14px;
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
   border-radius: 8px;
   border-left: 3px solid var(--yisu-secondary);
   border: 1px solid var(--yisu-border-light);
@@ -1802,12 +1968,16 @@ mat-slide-toggle {
   line-height: 1.5;
 }
 
+body.dark-mode .permission-note span {
+  color: var(--yisu-text-medium);
+}
+
 .permission-actions {
   display: flex;
   gap: 12px;
   padding: 16px 24px 24px;
   border-top: 1px solid var(--yisu-border-light);
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
 }
 
 .permission-actions button {
@@ -1833,7 +2003,7 @@ mat-slide-toggle {
 }
 
 .accept-button {
-  background: var(--yisu-primary);
+  background: var(--yisu-secondary);
   box-shadow: var(--yisu-shadow-sm);
 }
 
@@ -1931,9 +2101,13 @@ mat-slide-toggle {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #666;
+  color: var(--yisu-text-medium);
   margin-top: 2px;
   font-family: 'Roboto Mono', monospace;
+}
+
+body.dark-mode .whatsapp-number {
+  color: var(--yisu-text-medium);
 }
 
 .whatsapp-number .number-icon {
@@ -1946,7 +2120,11 @@ mat-slide-toggle {
 .whatsapp-number-display {
   font-family: 'Roboto Mono', monospace;
   font-size: 13px;
-  color: #555;
+  color: var(--yisu-text-medium);
+}
+
+body.dark-mode .whatsapp-number-display {
+  color: var(--yisu-text-medium);
 }
 
 /* WhatsApp Message Type Indicator */
@@ -2297,7 +2475,11 @@ mat-slide-toggle {
 
 .staff-management-header h2 {
   margin: 0;
-  color: #333;
+  color: var(--yisu-text-dark);
+}
+
+body.dark-mode .staff-management-header h2 {
+  color: var(--yisu-text-dark);
 }
 
 .header-actions {

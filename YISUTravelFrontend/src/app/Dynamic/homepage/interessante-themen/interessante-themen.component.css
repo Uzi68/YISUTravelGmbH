@@ -1,8 +1,14 @@
 section {
-  margin-top: 50px;
+  margin-top: 15px;
   position: relative;
   overflow: hidden;
   background-color: var(--amt-section-color)!important;
+}
+
+@media (max-width: 768px) {
+  section {
+    margin-top: 10px;
+  }
 }
 
 img {
@@ -27,10 +33,8 @@ lead {
   opacity: 0.1;
 }
 
-.btn-primary {
-  background-color: #ffffff; /* Button primary color */
-  border-color: #ffffff; /* Button border color */
-}
+/* Button styles werden jetzt global in styles.css verwaltet */
+/* Für Konsistenz mit dem Rest der Seite */
 
 .mat-mdc-unelevated-button {
   border-radius: 6px; /* Example: new border radius */

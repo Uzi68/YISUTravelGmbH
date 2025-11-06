@@ -112,11 +112,11 @@
             <!-- Quick Action Buttons in der Chat-Liste -->
             <div class="quick-action" *ngIf="chat.status === 'human' && !chat.assigned_to">
               <button
-                *ngIf="selectedChat && canAssignChat(selectedChat)"
+                *ngIf="canAssignChat(chat)"
                 mat-raised-button
                 color="primary"
                 class="action-btn assign-btn"
-                (click)="handleChatAssignment(selectedChat)"
+                (click)="assignChat(chat); $event.stopPropagation()"
                 matTooltip="Chat übernehmen">
                 <mat-icon>person_add</mat-icon>
                 Übernehmen
@@ -296,7 +296,8 @@
               </div>
               <div *ngIf="!selectedChat.isOnline" class="user-status offline">
                 <mat-icon class="status-icon">circle</mat-icon>
-                <span>Zuletzt online {{selectedChat.lastOnline | date:'shortTime'}}</span>
+                <span *ngIf="selectedChat.lastOnline">Zuletzt online {{selectedChat.lastOnline | date:'HH:mm'}}</span>
+                <span *ngIf="!selectedChat.lastOnline">Zuletzt online unbekannt</span>
               </div>
             </div>
           </div>

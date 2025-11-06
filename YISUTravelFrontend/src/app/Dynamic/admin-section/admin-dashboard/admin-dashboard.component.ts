@@ -26,7 +26,7 @@ import {UserManagementService} from "../../../Services/user-management-service.s
 import {OfferManagementComponent} from "../offer-management/offer-management.component";
 import {User} from "../../../Models/User";
 import {Visitor} from "../../../Models/Visitor";
-import {catchError} from "rxjs/operators";
+import {catchError, timeout} from "rxjs/operators";
 import { MessageFilterPipe } from "./message-filter.pipe";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatButtonToggle, MatButtonToggleGroup} from "@angular/material/button-toggle";
@@ -110,6 +110,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   activeChats: Chat[] = [];
   user!: User;
   visitor!: Visitor;
+  // ✅ FIX: Track welche Chat-ID aktuell für Visitor-Details geladen wird (verhindert Race Conditions)
+  private currentVisitorChatId: string | null = null;
+  // ✅ FIX: Cache für Visitor-Emails (verhindert Verzögerung beim Chat-Wechsel)
+  private visitorEmailCache = new Map<string, string>();
   closeDialogForm: FormGroup;
   selectedChat: Chat | null = null;
   selectedChatForEscalation: Chat | null = null;
@@ -580,18 +584,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       lastMessageTime: new Date(chat.last_message_time),
       unreadCount: 0,
       isOnline: chat.is_online,
-      messages: chat.messages.map((msg: any) => ({
-        id: msg.id,
-        content: msg.text,
-        timestamp: new Date(msg.timestamp),
-        isAgent: msg.from === 'agent',
-        isBot: msg.from === 'bot',
-        read: true,
-        from: msg.from,
-        message_type: msg.message_type,
-        metadata: msg.metadata, // ✅ WICHTIG: Metadata speichern (enthält agent_name)
-        attachment: msg.has_attachment ? msg.attachment : undefined
-      })),
+      messages: chat.messages
+        .map((msg: any) => ({
+          id: msg.id,
+          content: msg.text,
+          timestamp: new Date(msg.timestamp),
+          isAgent: msg.from === 'agent',
+          isBot: msg.from === 'bot',
+          read: true,
+          from: msg.from,
+          message_type: msg.message_type,
+          metadata: msg.metadata, // ✅ WICHTIG: Metadata speichern (enthält agent_name)
+          attachment: msg.has_attachment ? msg.attachment : undefined
+        }))
+        .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()), // ✅ Sortiere nach Timestamp (chronologisch)
       status: chat.status,
       assigned_agent: chat.assigned_agent,
       isNew: false
@@ -1041,14 +1047,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
         this.assignmentStatuses.delete(sessionId);
 
-        // 🔔 NOTIFICATION: Nur wenn verfügbar für alle
+        // 🔔 NOTIFICATION: Nur wenn verfügbar für alle (Toast entfernt - wird nicht mehr angezeigt)
         if (!wasMyChat || this.isAdmin) {
           this.notificationSound.notify('message', {
             senderName: 'System',
             message: 'Chat-Zuweisung aufgehoben - wartet auf Übernahme',
             sessionId: sessionId
           });
-          this.showToast('ℹ️ Chat-Zuweisung aufgehoben - verfügbar für Übernahme', 'info');
+          // ✅ Toast entfernt: Keine Benachrichtigung mehr beim Aufheben
         }
 
         this.sortActiveChats();
@@ -1419,22 +1425,98 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     console.log('📤 Final payload:', payload);
 
+    // ✅ OPTIMISTIC UPDATE: Sofort UI aktualisieren
+    const chatToCloseId = this.chatToClose.id.toString();
+    const originalChatState = this.getChatStateForRevert(chatToCloseId);
+
+    // ✅ Dialog sofort schließen
+    this.showCloseChatDialog.set(false);
+    const chatToCloseCopy = this.chatToClose;
+    this.chatToClose = null;
+    this.closeDialogForm.reset();
+
+    // ✅ Chat-Status sofort auf "closed" setzen
+    const chatIndex = this.activeChats.findIndex(c => c.id.toString() === chatToCloseId);
+    if (chatIndex !== -1) {
+      this.activeChats[chatIndex] = {
+        ...this.activeChats[chatIndex],
+        status: 'closed',
+        assigned_to: null,
+        assigned_agent: '',
+        lastMessage: 'Chat beendet',
+        lastMessageTime: new Date()
+      };
+
+      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id.toString() === chatToCloseId);
+      if (filteredIndex !== -1) {
+        this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
+      }
+    }
+
+    // ✅ Wenn aktueller Chat geschlossen wird, auswählen aufheben
+    if (this.selectedChat?.id.toString() === chatToCloseId) {
+      this.selectedChat = null;
+    }
+
+    // ✅ OPTIMISTIC TOAST: Sofort anzeigen
+    this.showToast('Chat wurde erfolgreich beendet', 'success');
+    this.cdRef.detectChanges(); // ✅ Sofort UI aktualisieren
+
     this.chatbotService.closeChatByAgent(payload).subscribe({
       next: (response) => {
         console.log('✅ Response:', response);
 
-        if (response.success) {
-          this.showCloseChatDialog.set(false);
-          this.chatToClose = null;
-          this.closeDialogForm.reset();  // Form zurücksetzen
-          this.showToast('Chat wurde erfolgreich beendet', 'success');
+        if (!response.success) {
+          // ✅ Bei Fehler: Änderungen rückgängig machen
+          this.revertChatClose(chatToCloseId, originalChatState, chatToCloseCopy);
+          this.showError('Chat konnte nicht beendet werden');
         }
+        // ✅ Bei Erfolg: Toast bereits angezeigt, Pusher-Event kommt zur Bestätigung
       },
       error: (err) => {
         console.error('❌ Error:', err);
+        // ✅ Bei Fehler: Änderungen rückgängig machen
+        this.revertChatClose(chatToCloseId, originalChatState, chatToCloseCopy);
         this.showError('Chat konnte nicht beendet werden');
       }
     });
+  }
+
+  // ✅ Helper-Methode um Chat-State für Revert zu speichern
+  private getChatStateForRevert(chatId: string): { chat: Chat | null, selectedChat: Chat | null } {
+    const chat = this.activeChats.find(c => c.id.toString() === chatId);
+    const selectedChat = this.selectedChat?.id.toString() === chatId ? this.selectedChat : null;
+    return {
+      chat: chat ? { ...chat } : null,
+      selectedChat: selectedChat ? { ...selectedChat } : null
+    };
+  }
+
+  // ✅ Helper-Methode um Chat-Close-Änderungen rückgängig zu machen
+  private revertChatClose(chatId: string, originalState: { chat: Chat | null, selectedChat: Chat | null }, originalChatToClose: Chat): void {
+    // ✅ Dialog wieder öffnen
+    this.chatToClose = originalChatToClose;
+    this.showCloseChatDialog.set(true);
+
+    // ✅ Chat-Status wiederherstellen
+    if (originalState.chat) {
+      const chatIndex = this.activeChats.findIndex(c => c.id.toString() === chatId);
+      if (chatIndex !== -1) {
+        this.activeChats[chatIndex] = originalState.chat;
+
+        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id.toString() === chatId);
+        if (filteredIndex !== -1) {
+          this.filteredActiveChats[filteredIndex] = originalState.chat;
+        }
+      }
+    }
+
+    // ✅ Selected Chat wiederherstellen
+    if (originalState.selectedChat) {
+      this.selectedChat = originalState.selectedChat;
+    }
+
+    this.cdRef.detectChanges();
   }
 
 // ✅ Close-Chat Dialog schließen
@@ -1949,7 +2031,40 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       // ✅ OPTIMIERT: Immutable Update für smooth UI ohne Flicker
       const activeChatIndex = this.activeChats.findIndex(c => c.id === sessionId);
-      if (activeChatIndex !== -1 && !this.activeChats[activeChatIndex].messages.some(m => m.id === newMessage.id)) {
+      if (activeChatIndex !== -1) {
+        // ✅ WICHTIG: Prüfe ob optimistische Nachricht ersetzt werden muss
+        const existingMessages = this.activeChats[activeChatIndex].messages;
+        const optimisticMessageIndex = existingMessages.findIndex(
+          m => m.isOptimistic && 
+               m.content.trim() === newMessage.content.trim() && 
+               m.from === newMessage.from &&
+               Math.abs(m.timestamp.getTime() - newMessage.timestamp.getTime()) < 5000 // Innerhalb von 5 Sekunden
+        );
+
+        // ✅ Prüfe ob Nachricht bereits existiert (duplikat)
+        const isDuplicate = existingMessages.some(m => m.id === newMessage.id && !m.isOptimistic);
+        if (isDuplicate) {
+          console.log('✅ Message already exists, skipping');
+          return;
+        }
+
+        // ✅ Wenn optimistische Nachricht gefunden, ersetze sie statt neue hinzuzufügen
+        let updatedMessages: Message[];
+        if (optimisticMessageIndex !== -1) {
+          console.log('✅ Replacing optimistic message with real message:', {
+            optimisticId: existingMessages[optimisticMessageIndex].id,
+            realId: newMessage.id,
+            content: newMessage.content.substring(0, 30)
+          });
+          updatedMessages = [
+            ...existingMessages.slice(0, optimisticMessageIndex),
+            newMessage,
+            ...existingMessages.slice(optimisticMessageIndex + 1)
+          ];
+        } else {
+          // ✅ Normale Nachricht hinzufügen (keine optimistische vorhanden)
+          updatedMessages = [...existingMessages, newMessage];
+        }
         const isCurrentChat = this.selectedChat?.id === sessionId;
 
         // ✅ UnreadCount berechnen
@@ -1986,7 +2101,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
         const updatedChat = {
           ...this.activeChats[activeChatIndex],
-          messages: [...this.activeChats[activeChatIndex].messages, newMessage],
+          messages: updatedMessages,
           lastMessage: newMessage.content,
           lastMessageTime: newMessage.timestamp,
           unreadCount: newUnreadCount,
@@ -1998,7 +2113,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           channel: data.channel || this.activeChats[activeChatIndex].channel,
           whatsapp_number: data.whatsapp_number || this.activeChats[activeChatIndex].whatsapp_number,
           // ✅ Last Activity für Zuletzt-Online-Status
-          last_activity: data.last_activity || this.activeChats[activeChatIndex].last_activity
+          last_activity: data.last_activity || this.activeChats[activeChatIndex].last_activity,
+          lastOnline: (data.last_activity ? new Date(data.last_activity) : this.activeChats[activeChatIndex].last_activity ? new Date(this.activeChats[activeChatIndex].last_activity) : undefined) // ✅ FIX: lastOnline auch bei Updates aktualisieren
         };
 
         console.log('✅ Chat updated with new customer data:', {
@@ -2027,11 +2143,29 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
         // ✅ selectedChat updaten falls ausgewählt
         if (this.selectedChat && this.selectedChat.id === sessionId) {
-          const isDuplicate = this.selectedChat.messages.some(m => m.id === newMessage.id);
+          // ✅ Auch im selectedChat optimistische Nachricht ersetzen
+          const selectedOptimisticIndex = this.selectedChat.messages.findIndex(
+            m => m.isOptimistic && 
+                 m.content.trim() === newMessage.content.trim() && 
+                 m.from === newMessage.from
+          );
+          
+          const isDuplicate = this.selectedChat.messages.some(m => m.id === newMessage.id && !m.isOptimistic);
           if (!isDuplicate) {
+            let selectedMessages: Message[];
+            if (selectedOptimisticIndex !== -1) {
+              selectedMessages = [
+                ...this.selectedChat.messages.slice(0, selectedOptimisticIndex),
+                newMessage,
+                ...this.selectedChat.messages.slice(selectedOptimisticIndex + 1)
+              ];
+            } else {
+              selectedMessages = [...this.selectedChat.messages, newMessage];
+            }
+            
             this.selectedChat = {
               ...updatedChat,
-              messages: updatedChat.messages.map(m => ({ ...m, read: true }))
+              messages: selectedMessages.map(m => ({ ...m, read: true }))
             };
 
             // ✅ FIX: Setze shouldScrollToBottom=true für garantiertes Auto-Scroll
@@ -2095,6 +2229,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           can_user_write: true
         });
 
+        // ✅ Toast entfernt: Keine Benachrichtigung mehr beim Aufheben
         this.notificationSound.notify('message', {
           senderName: 'System',
           message: 'Chat-Zuweisung aufgehoben - verfügbar für Übernahme',
@@ -2381,6 +2516,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
 
         // Nur Visitor-Daten abrufen, wenn immer noch kein Name vorhanden ist (nur für Website-Chats)
+        // ✅ FIX: Auch Email im Cache speichern wenn Visitor-Daten geladen werden
         if (customerName === 'Anonymer Benutzer' && !chat.customer_first_name && !chat.customer_last_name && chat.channel !== 'whatsapp') {
           try {
             const visitor = await firstValueFrom(
@@ -2392,10 +2528,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
               customerName = visitor.first_name && visitor.last_name
                 ? `${visitor.first_name} ${visitor.last_name}`
                 : customerName;
+              // ✅ Email im Cache speichern für sofortige Anzeige
+              if (visitor.email && chat.session_id) {
+                this.visitorEmailCache.set(chat.session_id.toString(), visitor.email);
+              }
             }
           } catch (error) {
             console.error('Error loading visitor name:', error);
           }
+        }
+        
+        // ✅ FIX: Email auch direkt aus Chat-Daten prüfen (falls vorhanden)
+        // Manche Backend-Responses könnten die Email direkt im Chat-Objekt haben
+        if (chat.customer_email && chat.session_id) {
+          this.visitorEmailCache.set(chat.session_id.toString(), chat.customer_email);
+        }
+        // ✅ FIX: Auch visitor.email prüfen und cachen
+        if (chat.visitor?.email && chat.session_id) {
+          this.visitorEmailCache.set(chat.session_id.toString(), chat.visitor.email);
         }
 
         // ✅ Escalation-Prompt wiederherstellen falls vorhanden
@@ -2414,12 +2564,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           customerFirstName: chat.customer_first_name || '',
           customerLastName: chat.customer_last_name || '',
           customerPhone: chat.customer_phone || '',
+          customerEmail: chat.customer_email || chat.visitor?.email || '',  // ✅ FIX: Email direkt im Chat-Objekt speichern
           customerAvatar: chat.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
           lastMessage: chat.last_message || '',
           lastMessageTime: new Date(chat.last_message_time || Date.now()),
           unreadCount: isSelected ? 0 : (chat.unread_count || 0),
           isOnline: chat.is_online || false,
           last_activity: chat.last_activity || null,
+          lastOnline: chat.last_activity ? new Date(chat.last_activity) : undefined, // ✅ FIX: Konvertiere last_activity zu Date für Anzeige
           messages: Array.isArray(chat.messages)
             ? chat.messages.map((msg: any) => {
                 return {
@@ -2441,8 +2593,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           assigned_to: chat.assigned_to,
           channel: chat.channel || 'website',
           whatsapp_number: chat.whatsapp_number || null,
-          isNew: isNew
+          isNew: isNew,
+          visitor: chat.visitor ? {
+            first_name: chat.visitor.first_name,
+            last_name: chat.visitor.last_name,
+            email: chat.visitor.email || '',
+            phone: chat.visitor.phone || ''
+          } : undefined
         };
+        
+        // ✅ FIX: Email im Cache speichern wenn sie im Chat-Objekt vorhanden ist (für sofortige Anzeige)
+        const sessionIdStr = chat.session_id?.toString() || '';
+        if (chat.visitor?.email && sessionIdStr) {
+          this.visitorEmailCache.set(sessionIdStr, chat.visitor.email);
+        }
       }));
 
       // ✅ Filtere und sortiere
@@ -2621,52 +2785,88 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // ✅ OPTIMISTIC UPDATE: Sofort UI aktualisieren
+    const originalAdminChat = { ...adminChat };
+    const originalAssignmentStatus = this.assignmentStatuses.get(sessionId);
+
+    // ✅ Admin-Chat in der Liste sofort aktualisieren
+    const chatIndex = this.allAdminChats.findIndex(c => c.session_id === sessionId);
+    if (chatIndex !== -1) {
+      this.allAdminChats[chatIndex] = {
+        ...this.allAdminChats[chatIndex],
+        assigned_to: this.currentAgent.id,
+        assigned_agent: this.currentAgent.name,
+        status: 'in_progress'
+      };
+
+      // Auch filteredAdminChats aktualisieren
+      const filteredIndex = this.filteredAdminChats.findIndex(c => c.session_id === sessionId);
+      if (filteredIndex !== -1) {
+        this.filteredAdminChats[filteredIndex] = { ...this.allAdminChats[chatIndex] };
+      }
+    }
+
+    // ✅ KORRIGIERT: Typ-sichere selectedChat Aktualisierung
+    if (this.selectedChat?.id === sessionId) {
+      this.selectedChat = {
+        ...this.selectedChat,
+        assigned_to: this.currentAgent.id,
+        assigned_agent: this.currentAgent.name,
+        status: 'in_progress'
+      } as Chat; // Expliziter Cast
+    }
+
+    // ✅ Assignment Status lokal sofort speichern
+    this.assignmentStatuses.set(sessionId, {
+      is_assigned: true,
+      assigned_to: this.currentAgent.id,
+      can_user_write: true
+    });
+
+    // ✅ OPTIMISTIC TOAST: Sofort anzeigen
+    this.showToast('✅ Admin-Chat erfolgreich übernommen', 'success');
+    this.cdRef.detectChanges();
+
     this.chatbotService.assignChatToAgent(sessionId).subscribe({
       next: (response) => {
         if (response.success) {
-          // Admin-Chat in der Liste aktualisieren
-          const chatIndex = this.allAdminChats.findIndex(c => c.session_id === sessionId);
-          if (chatIndex !== -1) {
-            this.allAdminChats[chatIndex] = {
-              ...this.allAdminChats[chatIndex],
-              assigned_to: this.currentAgent.id,
-              assigned_agent: this.currentAgent.name,
-              status: 'in_progress'
-            };
-
-            // Auch filteredAdminChats aktualisieren
-            const filteredIndex = this.filteredAdminChats.findIndex(c => c.session_id === sessionId);
-            if (filteredIndex !== -1) {
-              this.filteredAdminChats[filteredIndex] = { ...this.allAdminChats[chatIndex] };
-            }
-          }
-
-          // ✅ KORRIGIERT: Typ-sichere selectedChat Aktualisierung
-          if (this.selectedChat?.id === sessionId) {
-            this.selectedChat = {
-              ...this.selectedChat,
-              assigned_to: this.currentAgent.id,
-              assigned_agent: this.currentAgent.name,
-              status: 'in_progress'
-            } as Chat; // Expliziter Cast
-          }
-
-          // Assignment Status lokal speichern
-          this.assignmentStatuses.set(sessionId, {
-            is_assigned: true,
-            assigned_to: this.currentAgent.id,
-            can_user_write: true
-          });
-
+          // ✅ Bestätigung via Pusher wird kommen - UI ist bereits aktualisiert
+          console.log('Admin chat erfolgreich zugewiesen:', sessionId);
           // Aktive Chats auch neu laden für Konsistenz
           this.loadActiveChats();
-
-          console.log('Admin chat erfolgreich zugewiesen:', sessionId);
+        } else {
+          // ✅ Bei Fehler: Änderungen rückgängig machen
+          if (chatIndex !== -1) {
+            this.allAdminChats[chatIndex] = originalAdminChat;
+            const filteredIndex = this.filteredAdminChats.findIndex(c => c.session_id === sessionId);
+            if (filteredIndex !== -1) {
+              this.filteredAdminChats[filteredIndex] = originalAdminChat;
+            }
+          }
+          if (originalAssignmentStatus) {
+            this.assignmentStatuses.set(sessionId, originalAssignmentStatus);
+          } else {
+            this.assignmentStatuses.delete(sessionId);
+          }
+          this.showError('Admin-Chat konnte nicht zugewiesen werden');
         }
       },
       error: (err) => {
         console.error('Fehler beim Zuweisen des Admin-Chats:', err);
-        this.showError('Chat konnte nicht zugewiesen werden');
+        // ✅ Bei Fehler: Änderungen rückgängig machen
+        if (chatIndex !== -1) {
+          this.allAdminChats[chatIndex] = originalAdminChat;
+          const filteredIndex = this.filteredAdminChats.findIndex(c => c.session_id === sessionId);
+          if (filteredIndex !== -1) {
+            this.filteredAdminChats[filteredIndex] = originalAdminChat;
+          }
+        }
+        if (originalAssignmentStatus) {
+          this.assignmentStatuses.set(sessionId, originalAssignmentStatus);
+        } else {
+          this.assignmentStatuses.delete(sessionId);
+        }
+        this.showError('Admin-Chat konnte nicht zugewiesen werden: ' + (err.error?.message || err.message));
       }
     });
   }
@@ -2677,6 +2877,54 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.ngZone.run(() => {
       // ✅ FIX: Setze Loading-State um Flickern zu vermeiden
       this.isLoadingChat = true;
+
+      // ✅ BUGFIX: Visitor-Info SOFORT aktualisieren (optimistisch) - verhindert dass alter WhatsApp-Name stehen bleibt
+      if (this.isWhatsAppChat(chat)) {
+        // Für WhatsApp-Chats: Visitor-Info aus Chat-Daten erstellen
+        this.visitor = {
+          first_name: chat.customerFirstName || 'WhatsApp',
+          last_name: chat.customerLastName || 'Kunde',
+          phone: chat.customerPhone || '',
+          email: '', // Email wird vom Backend geladen (WhatsApp hat keine Email)
+          agb_accepted: false
+        };
+      } else {
+        // ✅ OPTIMISTIC UPDATE: Sofort Visitor-Info aus Chat-Daten setzen (bevor API-Call kommt)
+        // ✅ FIX: Email direkt aus Chat-Objekt verwenden (Backend sendet sie jetzt direkt mit!)
+        const chatIdStr = chat.id.toString();
+        const cachedEmail = this.visitorEmailCache.get(chatIdStr) || '';
+        const emailFromChat = chat.customerEmail || '';
+        const emailFromVisitor = chat.visitor?.email || '';
+        // ✅ Priorität: 1. customerEmail (direkt im Chat vom Backend), 2. visitor.email, 3. Cache
+        const emailToUse = emailFromChat || emailFromVisitor || cachedEmail;
+        
+        // ✅ Email im Cache speichern falls sie im Chat-Objekt vorhanden ist (für zukünftige Wechsel)
+        if (emailToUse && !cachedEmail) {
+          this.visitorEmailCache.set(chatIdStr, emailToUse);
+        }
+        
+        // ✅ DEBUG: Log für Troubleshooting
+        if (!emailToUse) {
+          console.log('⚠️ Keine Email gefunden für Chat', chatIdStr, {
+            hasVisitor: !!chat.visitor,
+            customerEmail: chat.customerEmail,
+            visitorEmail: chat.visitor?.email,
+            cachedEmail: cachedEmail,
+            customerName: chat.customerName
+          });
+        }
+        
+        this.visitor = {
+          first_name: chat.customerFirstName || '',
+          last_name: chat.customerLastName || '',
+          phone: chat.customerPhone || '',
+          email: emailToUse, // ✅ Email sofort verfügbar (direkt vom Backend im Chat-Objekt!)
+          agb_accepted: false
+        };
+      }
+      
+      // ✅ SOFORT UI aktualisieren damit Name/Email/Phone sofort angezeigt werden
+      this.cdRef.detectChanges();
 
       // Setze unreadCount = 0 und alle Nachrichten auf read = true
       this.activeChats = this.activeChats.map(c =>
@@ -2719,21 +2967,69 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.markMessagesAsRead(chat.chatId, chat.id.toString());
       }
 
-      // Besucher laden (nur für Website-Chats, nicht für WhatsApp)
+      // ✅ Besucher-Details vom Backend nachladen (nur für Website-Chats)
+      // Dies aktualisiert die Visitor-Info mit vollständigen/aktuellen Daten
       if (!this.isWhatsAppChat(chat)) {
-        this.chatbotService.getVisitorDetails(chat.id.toString()).subscribe({
-          next: (visitor) => (this.visitor = visitor),
-          error: (err) => console.error('Error fetching visitor details:', err)
+        // ✅ FIX: Track welche Chat-ID aktuell geladen wird
+        const requestedChatId = chat.id.toString();
+        this.currentVisitorChatId = requestedChatId;
+
+        this.chatbotService.getVisitorDetails(requestedChatId).subscribe({
+          next: (visitor) => {
+            // ✅ WICHTIG: Prüfe ob diese API-Antwort noch für den aktuell ausgewählten Chat ist
+            // Verhindert dass alte API-Antworten die Visitor-Info überschreiben wenn User schnell zwischen Chats wechselt
+            if (this.currentVisitorChatId !== requestedChatId) {
+              console.log('⚠️ Ignoriere Visitor-Details für Chat', requestedChatId, '- aktueller Chat:', this.currentVisitorChatId);
+              return; // Diese Antwort ist veraltet, ignoriere sie
+            }
+
+            // ✅ Überschreibe nur wenn Backend-Daten vorhanden sind UND noch der richtige Chat ausgewählt ist
+            if (visitor && (visitor.first_name || visitor.last_name || visitor.email || visitor.phone)) {
+              // ✅ Doppelte Prüfung: Ist der zurückgekommene Chat noch der aktuell ausgewählte?
+              if (this.selectedChat?.id.toString() === requestedChatId) {
+                this.visitor = visitor;
+                // ✅ FIX: Email im Cache speichern für zukünftige Chat-Wechsel (instant Updates)
+                if (visitor.email) {
+                  this.visitorEmailCache.set(requestedChatId, visitor.email);
+                  // ✅ FIX: Email auch im selectedChat-Objekt aktualisieren für instant Anzeige
+                  this.selectedChat = {
+                    ...this.selectedChat,
+                    customerEmail: visitor.email
+                  };
+                  // ✅ FIX: Email auch im activeChats Array aktualisieren für Konsistenz
+                  const chatIndex = this.activeChats.findIndex(c => c.id.toString() === requestedChatId);
+                  if (chatIndex !== -1) {
+                    this.activeChats[chatIndex] = {
+                      ...this.activeChats[chatIndex],
+                      customerEmail: visitor.email
+                    };
+                  }
+                  const filteredIndex = this.filteredActiveChats.findIndex(c => c.id.toString() === requestedChatId);
+                  if (filteredIndex !== -1) {
+                    this.filteredActiveChats[filteredIndex] = {
+                      ...this.filteredActiveChats[filteredIndex],
+                      customerEmail: visitor.email
+                    };
+                  }
+                }
+                this.cdRef.detectChanges();
+              } else {
+                console.log('⚠️ Chat wurde gewechselt während API-Call lief - ignoriere Visitor-Details');
+                // ✅ Email trotzdem im Cache speichern (könnte später nützlich sein)
+                if (visitor.email) {
+                  this.visitorEmailCache.set(requestedChatId, visitor.email);
+                }
+              }
+            }
+          },
+          error: (err) => {
+            console.error('Error fetching visitor details:', err);
+            // ✅ Bei Fehler: Visitor-Info bleibt aus Chat-Daten (optimistisch gesetzt)
+          }
         });
       } else {
-        // Für WhatsApp-Chats: Visitor-Info aus Chat-Daten erstellen
-        this.visitor = {
-          first_name: chat.customerFirstName || 'WhatsApp',
-          last_name: chat.customerLastName || 'Kunde',
-          phone: chat.customerPhone || '',
-          email: '',
-          agb_accepted: false
-        };
+        // ✅ Für WhatsApp-Chats: Keine API-Call notwendig, Visitor-Info bereits gesetzt
+        this.currentVisitorChatId = chat.id.toString();
       }
 
       // ✅ NEU: Tab-Titel aktualisieren nach Chat-Auswahl
@@ -2921,71 +3217,109 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // ✅ OPTIMISTIC UPDATE: Sofort UI aktualisieren
     const originalChat = { ...chat };
+    const originalSelectedChat = this.selectedChat ? { ...this.selectedChat } : null;
+    const originalAssignmentStatus = this.assignmentStatuses.get(chat.id.toString());
+
+    // ✅ Sofort im UI anzeigen
+    const chatIndex = this.activeChats.findIndex(c => c.id === chat.id);
+    if (chatIndex !== -1) {
+      this.activeChats[chatIndex] = {
+        ...this.activeChats[chatIndex],
+        assigned_to: this.currentAgent.id,
+        assigned_agent: this.currentAgent.name,
+        status: 'in_progress',
+        isNew: false
+      };
+
+      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chat.id);
+      if (filteredIndex !== -1) {
+        this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
+      }
+    }
+
+    if (this.selectedChat?.id === chat.id) {
+      this.selectedChat = {
+        ...this.selectedChat,
+        assigned_to: this.currentAgent.id,
+        assigned_agent: this.currentAgent.name,
+        status: 'in_progress'
+      };
+    }
+
+    this.assignmentStatuses.set(chat.id.toString(), {
+      is_assigned: true,
+      assigned_to: this.currentAgent.id,
+      can_user_write: true,
+      assigned_agent_name: this.currentAgent.name
+    });
+
+    // ✅ OPTIMISTIC TOAST: Sofort anzeigen (nicht warten auf API-Response)
+    this.showToast('✅ Chat erfolgreich übernommen', 'success');
+    this.cdRef.detectChanges(); // ✅ Sofort UI aktualisieren
+
+    // ✅ FIX: Chat direkt nach Übernahme öffnen
+    const updatedChat = this.activeChats.find(c => c.id === chat.id);
+    if (updatedChat) {
+      // ✅ Chat direkt auswählen und öffnen
+      this.selectChat(updatedChat);
+    }
 
     this.chatbotService.assignChatToAgent(chat.id.toString()).subscribe({
       next: (response) => {
         console.log('Chat assignment successful:', response);
 
-        if (response.success) {
-          const chatIndex = this.activeChats.findIndex(c => c.id === chat.id);
-          if (chatIndex !== -1) {
-            this.activeChats[chatIndex] = {
-              ...this.activeChats[chatIndex],
-              assigned_to: this.currentAgent.id,
-              assigned_agent: this.currentAgent.name,
-              status: 'in_progress',
-              isNew: false
-            };
-
-            const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chat.id);
-            if (filteredIndex !== -1) {
-              this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
-            }
-          }
-
-          if (this.selectedChat?.id === chat.id) {
-            this.selectedChat = {
-              ...this.selectedChat,
-              assigned_to: this.currentAgent.id,
-              assigned_agent: this.currentAgent.name,
-              status: 'in_progress'
-            };
-          }
-
-          this.assignmentStatuses.set(chat.id.toString(), {
-            is_assigned: true,
-            assigned_to: this.currentAgent.id,
-            can_user_write: true,
-            assigned_agent_name: this.currentAgent.name
-          });
-
-          // ✅ ENTFERNT: Kein Sound-Feedback beim Chat-Assignment
-          this.showToast('✅ Chat erfolgreich übernommen', 'success');
-          this.cdRef.detectChanges();
+        if (!response.success) {
+          // ✅ Bei Fehler: Änderungen rückgängig machen
+          this.revertChatAssignment(chat.id.toString(), originalChat, originalSelectedChat, originalAssignmentStatus);
+          this.showError('Chat konnte nicht zugewiesen werden');
         }
+        // ✅ Bei Erfolg: Toast bereits angezeigt, Pusher-Event kommt zur Bestätigung
+        // Chat ist bereits geöffnet durch selectChat oben
       },
       error: (err) => {
         console.error('Chat assignment failed:', err);
 
-        const chatIndex = this.activeChats.findIndex(c => c.id === chat.id);
-        if (chatIndex !== -1) {
-          this.activeChats[chatIndex] = originalChat;
+        // ✅ Bei Fehler: Änderungen rückgängig machen
+        this.revertChatAssignment(chat.id.toString(), originalChat, originalSelectedChat, originalAssignmentStatus);
 
-          const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chat.id);
-          if (filteredIndex !== -1) {
-            this.filteredActiveChats[filteredIndex] = originalChat;
-          }
-        }
-
-        if (this.selectedChat?.id === chat.id) {
-          this.selectedChat = originalChat;
-        }
-
-        this.cdRef.detectChanges();
         this.showError('Chat konnte nicht zugewiesen werden: ' + (err.error?.message || err.message));
       }
     });
+  }
+
+  // ✅ Helper-Methode um Assignment-Änderungen rückgängig zu machen
+  private revertChatAssignment(
+    chatId: string | number,
+    originalChat: Chat,
+    originalSelectedChat: Chat | null,
+    originalAssignmentStatus: any
+  ): void {
+    const chatIndex = this.activeChats.findIndex(c => c.id === chatId);
+    if (chatIndex !== -1) {
+      this.activeChats[chatIndex] = originalChat;
+
+      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chatId);
+      if (filteredIndex !== -1) {
+        this.filteredActiveChats[filteredIndex] = originalChat;
+      }
+    }
+
+    if (originalSelectedChat && this.selectedChat?.id === chatId) {
+      this.selectedChat = originalSelectedChat;
+    }
+
+    if (originalAssignmentStatus !== undefined) {
+      const chatIdStr = chatId.toString();
+      if (originalAssignmentStatus === null) {
+        this.assignmentStatuses.delete(chatIdStr);
+      } else {
+        this.assignmentStatuses.set(chatIdStr, originalAssignmentStatus);
+      }
+    }
+
+    this.cdRef.detectChanges();
   }
 
 
@@ -3095,53 +3429,108 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       reason: finalReason
     });
 
+    // ✅ OPTIMISTIC UPDATE: Sofort UI aktualisieren
+    const chatToTransfer = this.selectedChatForTransfer;
+    const originalChat = { ...chatToTransfer };
+    const originalSelectedChat = this.selectedChat ? { ...this.selectedChat } : null;
+    const originalAssignmentStatus = this.assignmentStatuses.get(chatToTransfer.id.toString());
+
+    // ✅ Sofort im UI aktualisieren
+    const chatIndex = this.activeChats.findIndex(c => c.id === chatToTransfer.id);
+    if (chatIndex !== -1) {
+      this.activeChats[chatIndex] = {
+        ...this.activeChats[chatIndex],
+        assigned_to: toAgentId,
+        assigned_agent: selectedAgent.name,
+        lastMessage: `Chat übertragen an ${selectedAgent.name}`,
+        lastMessageTime: new Date()
+      };
+
+      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chatToTransfer.id);
+      if (filteredIndex !== -1) {
+        this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
+      }
+    }
+
+    if (this.selectedChat?.id === chatToTransfer.id) {
+      this.selectedChat = {
+        ...this.selectedChat,
+        assigned_to: toAgentId,
+        assigned_agent: selectedAgent.name
+      };
+    }
+
+    this.assignmentStatuses.set(chatToTransfer.id.toString(), {
+      is_assigned: true,
+      assigned_to: toAgentId,
+      can_user_write: true,
+      assigned_agent_name: selectedAgent.name
+    });
+
+    // ✅ Dialog sofort schließen
+    this.closeTransferDialog();
+
+    // ✅ OPTIMISTIC TOAST: Sofort anzeigen
+    this.showToast(`✅ Chat erfolgreich an ${selectedAgent.name} übertragen`, 'success');
+    this.cdRef.detectChanges(); // ✅ Sofort UI aktualisieren
+
     this.chatbotService.transferChatToAgent(
-      this.selectedChatForTransfer.id.toString(),
+      chatToTransfer.id.toString(),
       toAgentId,
       finalReason
     ).subscribe({
       next: (response) => {
         console.log('Transfer response:', response);
 
-        if (response.success && this.selectedChatForTransfer) {
-          const chatIndex = this.activeChats.findIndex(c => c.id === this.selectedChatForTransfer!.id);
-          if (chatIndex !== -1) {
-            this.activeChats[chatIndex] = {
-              ...this.activeChats[chatIndex],
-              assigned_to: toAgentId,
-              assigned_agent: selectedAgent.name,
-              lastMessage: `Chat übertragen an ${selectedAgent.name}`,
-              lastMessageTime: new Date()
-            };
-
-            const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === this.selectedChatForTransfer!.id);
-            if (filteredIndex !== -1) {
-              this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
-            }
-          }
-
-          if (this.selectedChat?.id === this.selectedChatForTransfer.id) {
-            this.selectedChat = {
-              ...this.selectedChat,
-              assigned_to: toAgentId,
-              assigned_agent: selectedAgent.name
-            };
-          }
-
-          this.closeTransferDialog();
-
-          // ✅ ENTFERNT: Kein Sound beim Transfer durch eigene Aktion
-          this.showToast(`✅ Chat erfolgreich an ${selectedAgent.name} übertragen`, 'success');
+        if (response.success) {
+          // ✅ Toast bereits angezeigt, Liste aktualisieren
           this.loadActiveChats();
         } else {
+          // ✅ Bei Fehler: Änderungen rückgängig machen
+          this.revertChatTransfer(chatToTransfer.id, originalChat, originalSelectedChat, originalAssignmentStatus);
           this.showError('Transfer fehlgeschlagen: ' + (response.message || 'Unbekannter Fehler'));
         }
       },
       error: (err) => {
         console.error('Transfer error:', err);
+        // ✅ Bei Fehler: Änderungen rückgängig machen
+        this.revertChatTransfer(chatToTransfer.id, originalChat, originalSelectedChat, originalAssignmentStatus);
         this.showError('Chat konnte nicht übertragen werden: ' + (err.error?.message || err.message));
       }
     });
+  }
+
+  // ✅ Helper-Methode um Transfer-Änderungen rückgängig zu machen
+  private revertChatTransfer(
+    chatId: string | number,
+    originalChat: Chat,
+    originalSelectedChat: Chat | null,
+    originalAssignmentStatus: any
+  ): void {
+    const chatIndex = this.activeChats.findIndex(c => c.id === chatId);
+    if (chatIndex !== -1) {
+      this.activeChats[chatIndex] = originalChat;
+
+      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chatId);
+      if (filteredIndex !== -1) {
+        this.filteredActiveChats[filteredIndex] = originalChat;
+      }
+    }
+
+    if (originalSelectedChat && this.selectedChat?.id === chatId) {
+      this.selectedChat = originalSelectedChat;
+    }
+
+    const chatIdStr = chatId.toString();
+    if (originalAssignmentStatus !== undefined) {
+      if (originalAssignmentStatus === null) {
+        this.assignmentStatuses.delete(chatIdStr);
+      } else {
+        this.assignmentStatuses.set(chatIdStr, originalAssignmentStatus);
+      }
+    }
+
+    this.cdRef.detectChanges();
   }
 
   /**
@@ -3166,27 +3555,100 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   unassignChat(chat: Chat): void {
     if (!chat.assigned_to || !this.isAdmin) return;
 
+    // ✅ OPTIMISTIC UPDATE: Sofort UI aktualisieren
+    const originalChat = { ...chat };
+    const originalAssignmentStatus = this.assignmentStatuses.get(chat.id.toString());
+
+    // ✅ Sofort im UI aktualisieren
+    const chatIndex = this.activeChats.findIndex(c => c.id === chat.id);
+    if (chatIndex !== -1) {
+      this.activeChats[chatIndex] = {
+        ...this.activeChats[chatIndex],
+        assigned_to: null,
+        assigned_agent: '',
+        status: 'human'
+      };
+
+      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chat.id);
+      if (filteredIndex !== -1) {
+        this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
+      }
+    }
+
+    if (this.selectedChat?.id === chat.id) {
+      this.selectedChat = {
+        ...this.selectedChat,
+        assigned_to: null,
+        assigned_agent: '',
+        status: 'human'
+      };
+    }
+
+    this.assignmentStatuses.set(chat.id.toString(), {
+      is_assigned: false,
+      assigned_to: null,
+      can_user_write: false
+    });
+
+    // ✅ OPTIMISTIC TOAST: Sofort anzeigen
+    this.showToast('✅ Zuweisung erfolgreich aufgehoben', 'success');
+    this.cdRef.detectChanges(); // ✅ Sofort UI aktualisieren
+
     this.chatbotService.unassignChat(chat.id.toString()).subscribe({
       next: (response) => {
         if (response.success) {
-          chat.assigned_to = null;
-          chat.assigned_agent = '';
-          chat.status = 'human';
-
-          this.assignmentStatuses.set(chat.id.toString(), {
-            is_assigned: false,
-            assigned_to: null,
-            can_user_write: false
-          });
-
+          // ✅ Toast bereits angezeigt, Liste aktualisieren
           this.loadActiveChats();
+        } else {
+          // ✅ Bei Fehler: Änderungen rückgängig machen
+          this.revertChatUnassignment(chat.id, originalChat, originalAssignmentStatus);
+          this.showError('Zuweisung konnte nicht aufgehoben werden');
         }
       },
       error: (err) => {
         console.error('Fehler beim Aufheben der Zuweisung:', err);
+        // ✅ Bei Fehler: Änderungen rückgängig machen
+        this.revertChatUnassignment(chat.id, originalChat, originalAssignmentStatus);
         this.showError('Zuweisung konnte nicht aufgehoben werden');
       }
     });
+  }
+
+  // ✅ Helper-Methode um Unassignment-Änderungen rückgängig zu machen
+  private revertChatUnassignment(
+    chatId: string | number,
+    originalChat: Chat,
+    originalAssignmentStatus: any
+  ): void {
+    const chatIndex = this.activeChats.findIndex(c => c.id === chatId);
+    if (chatIndex !== -1) {
+      this.activeChats[chatIndex] = originalChat;
+
+      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chatId);
+      if (filteredIndex !== -1) {
+        this.filteredActiveChats[filteredIndex] = originalChat;
+      }
+    }
+
+    if (this.selectedChat?.id === chatId) {
+      this.selectedChat = {
+        ...this.selectedChat,
+        assigned_to: originalChat.assigned_to,
+        assigned_agent: originalChat.assigned_agent,
+        status: originalChat.status
+      };
+    }
+
+    const chatIdStr = chatId.toString();
+    if (originalAssignmentStatus !== undefined) {
+      if (originalAssignmentStatus === null) {
+        this.assignmentStatuses.delete(chatIdStr);
+      } else {
+        this.assignmentStatuses.set(chatIdStr, originalAssignmentStatus);
+      }
+    }
+
+    this.cdRef.detectChanges();
   }
 
   /**
@@ -3202,40 +3664,64 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       session_id: chat.id,
     };
 
+    // ✅ OPTIMISTIC UPDATE: Sofort UI aktualisieren
+    const originalEscalationPrompt = this.escalationPrompts.get(chat.id.toString());
+
+    // ✅ Chat in der Liste sofort aktualisieren
+    const chatIndex = this.activeChats.findIndex(c => c.id === chat.id);
+    if (chatIndex !== -1) {
+      this.activeChats[chatIndex] = {
+        ...this.activeChats[chatIndex],
+        lastMessage: 'Escalation-Anfrage gesendet',
+        lastMessageTime: new Date(),
+        unreadCount: 0
+      };
+
+      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chat.id);
+      if (filteredIndex !== -1) {
+        this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
+      }
+    }
+
+    // ✅ Escalation-Prompts Map sofort aktualisieren (mit temp ID)
+    this.escalationPrompts.set(chat.id.toString(), {
+      prompt_id: 'temp-pending',
+      sent_at: new Date(),
+      sent_by: this.currentAgent.name
+    });
+
+    // ✅ OPTIMISTIC TOAST: Sofort anzeigen
+    this.showToast(`✅ Escalation-Anfrage erfolgreich an ${chat.customerName} gesendet`, 'success');
+    this.cdRef.detectChanges();
+
     this.chatbotService.sendEscalationPrompt(chat.id.toString(), payload).subscribe({
       next: (response) => {
         if (response.success) {
-          this.showToast(`✅ Escalation-Anfrage erfolgreich an ${chat.customerName} gesendet`, 'success');
-
-          // Chat in der Liste aktualisieren
-          const chatIndex = this.activeChats.findIndex(c => c.id === chat.id);
-          if (chatIndex !== -1) {
-            this.activeChats[chatIndex] = {
-              ...this.activeChats[chatIndex],
-              lastMessage: 'Escalation-Anfrage gesendet',
-              lastMessageTime: new Date(),
-              unreadCount: 0
-            };
-
-            const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chat.id);
-            if (filteredIndex !== -1) {
-              this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
-            }
-          }
-
-          // Escalation-Prompts Map aktualisieren
+          // ✅ Echte Prompt-ID setzen
           this.escalationPrompts.set(chat.id.toString(), {
             prompt_id: response.prompt_id,
             sent_at: new Date(),
             sent_by: response.sent_by || this.currentAgent.name
           });
-
-          // UI-Updates
           this.cdRef.detectChanges();
+        } else {
+          // ✅ Bei Fehler: Änderungen rückgängig machen
+          if (originalEscalationPrompt) {
+            this.escalationPrompts.set(chat.id.toString(), originalEscalationPrompt);
+          } else {
+            this.escalationPrompts.delete(chat.id.toString());
+          }
+          this.showError('Escalation konnte nicht gesendet werden');
         }
       },
       error: (err) => {
         console.error('Fehler beim Senden der Escalation:', err);
+        // ✅ Bei Fehler: Änderungen rückgängig machen
+        if (originalEscalationPrompt) {
+          this.escalationPrompts.set(chat.id.toString(), originalEscalationPrompt);
+        } else {
+          this.escalationPrompts.delete(chat.id.toString());
+        }
         this.showError('Escalation konnte nicht gesendet werden: ' + (err.error?.message || err.message));
       }
     });
@@ -3266,22 +3752,99 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // ✅ OPTIMISTIC UPDATE: Nachricht sofort hinzufügen für sofortiges Feedback
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const trimmedContent = content.trim();
+    
+    const optimisticMessage: Message = {
+      id: tempId,
+      content: trimmedContent,
+      timestamp: new Date(),
+      isAgent: true,
+      isBot: false,
+      read: true,
+      from: 'agent',
+      isOptimistic: true // Markiere als optimistische Nachricht
+    };
+
+    // ✅ Sofort im UI anzeigen
+    if (this.selectedChat) {
+      this.selectedChat = {
+        ...this.selectedChat,
+        messages: [...this.selectedChat.messages, optimisticMessage],
+        lastMessage: trimmedContent,
+        lastMessageTime: new Date()
+      };
+
+      // ✅ Auch in activeChats aktualisieren
+      const chatIndex = this.activeChats.findIndex(c => c.id === this.selectedChat!.id);
+      if (chatIndex !== -1) {
+        this.activeChats[chatIndex] = {
+          ...this.activeChats[chatIndex],
+          messages: [...this.activeChats[chatIndex].messages, optimisticMessage],
+          lastMessage: trimmedContent,
+          lastMessageTime: new Date()
+        };
+
+        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === this.selectedChat!.id);
+        if (filteredIndex !== -1) {
+          this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
+        }
+      }
+
+      // ✅ Textfeld sofort leeren
+      inputElement.value = '';
+      inputElement.focus();
+
+      // ✅ Sofort scrollen
+      this.shouldScrollToBottom = true;
+      this.cdRef.detectChanges();
+      this.scrollToBottom(false);
+    }
+
+    // ✅ API-Call im Hintergrund
     const newMessagePayload = {
       chat_id: this.selectedChat.chatId,
-      content: content.trim(),
+      content: trimmedContent,
       isAgent: true
     };
 
     this.chatbotService.sendAgentMessage(newMessagePayload).subscribe({
-      next: () => {
-        // Textfeld leeren
-        inputElement.value = '';
-        inputElement.focus();
-
+      next: (response) => {
+        // ✅ Nachricht wird durch Pusher-Event aktualisiert (mit echter ID)
+        // Optimistische Nachricht wird durch echte ersetzt wenn Pusher-Event kommt
+        console.log('Message sent successfully, will be updated via Pusher');
       },
       error: (err) => {
         console.error('Error sending message:', err);
+        
+        // ✅ Bei Fehler: Optimistische Nachricht entfernen oder als fehlgeschlagen markieren
+        if (this.selectedChat) {
+          const chatIndex = this.activeChats.findIndex(c => c.id === this.selectedChat!.id);
+          if (chatIndex !== -1) {
+            this.activeChats[chatIndex] = {
+              ...this.activeChats[chatIndex],
+              messages: this.activeChats[chatIndex].messages.filter(m => m.id !== tempId)
+            };
+
+            const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === this.selectedChat!.id);
+            if (filteredIndex !== -1) {
+              this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
+            }
+          }
+
+          this.selectedChat = {
+            ...this.selectedChat,
+            messages: this.selectedChat.messages.filter(m => m.id !== tempId)
+          };
+
+          // ✅ Text wieder ins Input-Feld setzen
+          inputElement.value = trimmedContent;
+          inputElement.focus();
+        }
+
         this.showError('Nachricht konnte nicht gesendet werden');
+        this.cdRef.detectChanges();
       }
     });
   }
@@ -3341,16 +3904,19 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const sessionId = this.selectedChat.id;
     const chatId = this.selectedChat.chatId;
 
-    this.showToast(`Datei wird hochgeladen: ${file.name}`, 'info');
+    // ✅ OPTIMISTIC TOAST: Sofort anzeigen (Datei wird via Pusher angezeigt)
+    this.showToast(`📤 Datei wird hochgeladen: ${file.name}`, 'info', 3000);
+    // ✅ Success-Toast wird erst nach erfolgreichem Upload angezeigt (oder via Pusher)
 
     this.chatbotService.uploadAttachment(file, chatId, sessionId.toString(), 'agent').subscribe({
       next: (response) => {
         console.log('File uploaded successfully:', response);
-        this.showToast('Datei erfolgreich gesendet', 'success');
+        // ✅ Toast wird via Pusher-Event angezeigt wenn Datei empfangen wird
+        // Zusätzlicher Success-Toast ist optional (kann zu viele Toasts geben)
       },
       error: (err) => {
         console.error('File upload error:', err);
-        this.showError('Fehler beim Hochladen der Datei');
+        this.showError('Fehler beim Hochladen der Datei: ' + (err.error?.message || err.message));
       }
     });
   }
@@ -3575,19 +4141,94 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   sendWhatsAppMessage(message: string, textarea: HTMLTextAreaElement): void {
     if (!this.selectedChat) return;
 
+    // ✅ OPTIMISTIC UPDATE: Nachricht sofort hinzufügen für sofortiges Feedback
+    const tempId = `temp-whatsapp-${Date.now()}-${Math.random()}`;
+    const trimmedContent = message.trim();
+    
+    const optimisticMessage: Message = {
+      id: tempId,
+      content: trimmedContent,
+      timestamp: new Date(),
+      isAgent: true,
+      isBot: false,
+      read: true,
+      from: 'agent',
+      isOptimistic: true // Markiere als optimistische Nachricht
+    };
+
+    // ✅ Sofort im UI anzeigen
+    if (this.selectedChat) {
+      this.selectedChat = {
+        ...this.selectedChat,
+        messages: [...this.selectedChat.messages, optimisticMessage],
+        lastMessage: trimmedContent,
+        lastMessageTime: new Date()
+      };
+
+      // ✅ Auch in activeChats aktualisieren
+      const chatIndex = this.activeChats.findIndex(c => c.id === this.selectedChat!.id);
+      if (chatIndex !== -1) {
+        this.activeChats[chatIndex] = {
+          ...this.activeChats[chatIndex],
+          messages: [...this.activeChats[chatIndex].messages, optimisticMessage],
+          lastMessage: trimmedContent,
+          lastMessageTime: new Date()
+        };
+
+        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === this.selectedChat!.id);
+        if (filteredIndex !== -1) {
+          this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
+        }
+      }
+
+      // ✅ Textfeld sofort leeren
+      textarea.value = '';
+      textarea.focus();
+
+      // ✅ Sofort scrollen
+      this.shouldScrollToBottom = true;
+      this.cdRef.detectChanges();
+      this.scrollToBottom(false);
+    }
+
     // ✅ FIX: Verwende chatId für WhatsApp API Calls, nicht id (session_id)
     const chatId = this.isWhatsAppChat(this.selectedChat) ? Number(this.selectedChat.chatId) : Number(this.selectedChat.id);
-    this.whatsappService.sendTextMessage(chatId, message).subscribe({
+    this.whatsappService.sendTextMessage(chatId, trimmedContent).subscribe({
       next: (response) => {
         if (response.success) {
-          this.snackBar.open('✅ WhatsApp-Nachricht gesendet', 'OK', { duration: 3000 });
-          textarea.value = '';
-          // Message wird via Pusher aktualisiert
+          // ✅ Nachricht wird durch Pusher-Event aktualisiert (mit echter ID)
+          // Optimistische Nachricht wird durch echte ersetzt wenn Pusher-Event kommt
+          console.log('WhatsApp message sent successfully, will be updated via Pusher');
         }
       },
       error: (error) => {
         console.error('Fehler beim Senden der WhatsApp-Nachricht:', error);
         this.snackBar.open('❌ Fehler beim Senden der Nachricht', 'OK', { duration: 5000 });
+        
+        // ✅ Bei Fehler: Optimistische Nachricht entfernen
+        if (this.selectedChat) {
+          const chatIndex = this.activeChats.findIndex(c => c.id === this.selectedChat!.id);
+          if (chatIndex !== -1) {
+            this.activeChats[chatIndex] = {
+              ...this.activeChats[chatIndex],
+              messages: this.activeChats[chatIndex].messages.filter(m => m.id !== tempId)
+            };
+
+            const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === this.selectedChat!.id);
+            if (filteredIndex !== -1) {
+              this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
+            }
+          }
+
+          this.selectedChat = {
+            ...this.selectedChat,
+            messages: this.selectedChat.messages.filter(m => m.id !== tempId)
+          };
+
+          // ✅ Text wieder ins Input-Feld setzen
+          textarea.value = trimmedContent;
+          textarea.focus();
+        }
       }
     });
   }
@@ -3616,7 +4257,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     // ✅ Keine Caption-Abfrage - verwende einfach den Dateinamen
     const caption = file.name;
 
-    this.snackBar.open('📤 Wird hochgeladen...', '', { duration: 2000 });
+    // ✅ OPTIMISTIC TOAST: Sofort anzeigen
+    const fileTypeLabel = isImage ? 'Bild' : (isVideo ? 'Video' : 'Dokument');
+    this.showToast(`📤 ${fileTypeLabel} wird hochgeladen: ${file.name}`, 'info', 3000);
 
     // ✅ Sende basierend auf automatisch erkanntem Typ
     if (isImage) {
@@ -3637,12 +4280,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.whatsappService.sendImage(chatId, file, caption || undefined).subscribe({
         next: (response) => {
           if (response.success) {
-            this.snackBar.open('✅ Bild erfolgreich gesendet', 'OK', { duration: 3000 });
+            // ✅ Success-Toast - Datei wird via Pusher angezeigt
+            this.showToast('✅ Bild erfolgreich gesendet', 'success', 3000);
+          } else {
+            this.showError('Bild konnte nicht gesendet werden');
           }
         },
         error: (error) => {
           console.error('Fehler beim Senden des Bildes:', error);
-          this.snackBar.open('❌ Fehler beim Senden des Bildes', 'OK', { duration: 5000 });
+          this.showError('Fehler beim Senden des Bildes: ' + (error.error?.message || error.message));
         }
       });
     } else if (isVideo) {
@@ -3652,12 +4298,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.whatsappService.sendDocument(chatId, file, caption || undefined).subscribe({
         next: (response) => {
           if (response.success) {
-            this.snackBar.open('✅ Video erfolgreich gesendet', 'OK', { duration: 3000 });
+            this.showToast('✅ Video erfolgreich gesendet', 'success', 3000);
+          } else {
+            this.showError('Video konnte nicht gesendet werden');
           }
         },
         error: (error) => {
           console.error('Fehler beim Senden des Videos:', error);
-          this.snackBar.open('❌ Fehler beim Senden des Videos', 'OK', { duration: 5000 });
+          this.showError('Fehler beim Senden des Videos: ' + (error.error?.message || error.message));
         }
       });
     } else {
@@ -3667,12 +4315,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.whatsappService.sendDocument(chatId, file, caption || undefined).subscribe({
         next: (response) => {
           if (response.success) {
-            this.snackBar.open('✅ Dokument erfolgreich gesendet', 'OK', { duration: 3000 });
+            this.showToast('✅ Dokument erfolgreich gesendet', 'success', 3000);
+          } else {
+            this.showError('Dokument konnte nicht gesendet werden');
           }
         },
         error: (error) => {
           console.error('Fehler beim Senden des Dokuments:', error);
-          this.snackBar.open('❌ Fehler beim Senden des Dokuments', 'OK', { duration: 5000 });
+          this.showError('Fehler beim Senden des Dokuments: ' + (error.error?.message || error.message));
         }
       });
     }
@@ -3887,6 +4537,7 @@ interface Chat {
   customerFirstName: string;
   customerLastName: string;
   customerPhone?: string;
+  customerEmail?: string;  // ✅ FIX: Email direkt im Chat-Objekt für instant Anzeige
   customerAvatar: string;
   lastMessage: string;
   lastMessageTime: Date;
@@ -3928,6 +4579,7 @@ interface Message {
     file_size: number;
     download_url: string;
   };
+  isOptimistic?: boolean; // ✅ Markierung für optimistische Nachrichten
 }
 
 interface Agent {

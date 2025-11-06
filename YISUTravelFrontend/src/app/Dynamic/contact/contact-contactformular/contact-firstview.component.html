@@ -47,7 +47,7 @@
 
     <div *ngIf="!mapLoaded" class="map-placeholder">
       <p class="info-maps">Durch das Laden der Karte stimmen Sie der Datenschutzerklärung von Google zu.</p>
-      <button mat-fab extended (click)="loadMap()" style="background-color: #0077b6;color:white;font-family: Roboto,sans-serif;font-size: 14px">Google Maps laden</button>
+      <button mat-fab extended (click)="loadMap()" class="google-maps-button">Google Maps laden</button>
     </div>
 
     <div *ngIf="mapLoaded">

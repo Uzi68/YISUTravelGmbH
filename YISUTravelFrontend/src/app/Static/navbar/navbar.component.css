@@ -114,11 +114,13 @@ body.dark-mode .logo-img {
 
 .instagram-btn {
   background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
-  color: white;
+  color: white !important;
   border: none;
   border-radius: 50%; /* Makes it circular */
   font-size: 20px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.3s ease;
 }
 
@@ -127,7 +129,13 @@ body.dark-mode .logo-img {
 }
 
 .instagram-btn i {
-  margin-right: 0; /* Remove margin inside icon */
+  margin: 0;
+  color: white !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
 }
 .logo-wrapper {
   width: 50px;              /* gleiche Höhe wie dein Bild */
@@ -305,44 +313,110 @@ mat-slide-toggle {
 /* Emphasized CTA for Termin buchen */
 .desktop-menu a.cta {
   background: var(--yisu-secondary);
-  color: var(--yisu-text-black);
+  color: var(--yisu-text-white);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35);
+  transition: all 0.3s ease;
+  
+  &::after {
+    background: rgba(255, 255, 255, 0.8) !important; /* Helle Linie auf blauem Hintergrund */
+  }
 }
 
 .desktop-menu a.cta:hover {
-  background: #f59e0b;
-  color: var(--yisu-text-black);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.45);
+  background: var(--yisu-nav-items);
+  color: var(--yisu-text-white);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.45);
+  transform: translateY(-1px);
+  
+  &::after {
+    background: rgba(255, 255, 255, 0.9) !important;
+  }
+}
+
+.desktop-menu a.cta.active-list-item {
+  &::after {
+    background: rgba(255, 255, 255, 0.9) !important; /* Sehr helle Linie wenn aktiv */
+    width: 80%;
+  }
+  
+  &:hover::after {
+    background: rgba(255, 255, 255, 1) !important;
+  }
 }
 
 body.dark-mode .desktop-menu a.cta {
   background: var(--yisu-secondary);
-  color: var(--yisu-text-black);
+  color: var(--yisu-text-white);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+  
+  &::after {
+    background: rgba(255, 255, 255, 0.8) !important;
+  }
+}
+
+body.dark-mode .desktop-menu a.cta:hover {
+  background: var(--yisu-nav-items);
+  color: var(--yisu-text-white);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45);
+  
+  &::after {
+    background: rgba(255, 255, 255, 0.9) !important;
+  }
+}
+
+body.dark-mode .desktop-menu a.cta.active-list-item {
+  &::after {
+    background: rgba(255, 255, 255, 0.9) !important;
+    width: 80%;
+  }
+  
+  &:hover::after {
+    background: rgba(255, 255, 255, 1) !important;
+  }
 }
 
 /* Dark Mode Navigation Styles */
 body.dark-mode .desktop-menu a {
-  color: var(--yisu-secondary);
-  background: transparent;
-  
-  &:hover {
-    color: var(--yisu-text-black);
-    background: var(--yisu-secondary);
-    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
-  }
-  
-  &.active-list-item {
-    background: var(--yisu-secondary);
-    color: var(--yisu-text-black);
-    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
-    
-    &:hover {
-      background: #f59e0b;
-      color: var(--yisu-text-black);
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
-    }
-  }
+  color: #90c5f8 !important; /* Helleres Blau für bessere Lesbarkeit */
+  background: transparent !important;
+}
+
+body.dark-mode .desktop-menu a:hover {
+  color: #ffffff !important; /* Weißer Text beim Hover */
+  background: rgba(59, 130, 246, 0.25) !important; /* Helles Blau mit Transparenz */
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .desktop-menu a::after {
+  background: rgba(144, 197, 248, 0.6) !important; /* Helle Linie im Dark Mode */
+}
+
+body.dark-mode .desktop-menu a:hover::after {
+  background: rgba(255, 255, 255, 0.9) !important; /* Sehr helle Linie beim Hover */
+  width: 75% !important;
+}
+
+body.dark-mode .desktop-menu a.active-list-item {
+  background: var(--yisu-secondary) !important;
+  color: #ffffff !important; /* Weißer Text wenn aktiv */
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .desktop-menu a.active-list-item::after {
+  background: rgba(255, 255, 255, 0.9) !important;
+  width: 80% !important;
+}
+
+body.dark-mode .desktop-menu a.active-list-item:hover {
+  background: var(--yisu-nav-items) !important;
+  color: #ffffff !important; /* Weißer Text beim Hover wenn aktiv */
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5) !important;
+}
+
+body.dark-mode .desktop-menu a.active-list-item:hover::after {
+  background: rgba(255, 255, 255, 1) !important;
+  width: 90% !important;
 }
 
 /* Dark Mode Quick Access Buttons */
@@ -496,13 +570,18 @@ svg {
     cursor: default;
     
     &:hover {
-      color: var(--yisu-accent);
+      color: var(--yisu-nav-items);
     }
   }
   
   @media (max-width: 940px) {
     display: none;
   }
+}
+
+/* Dark Mode Hover Color für Additional Info */
+body.dark-mode .additional-info span:hover {
+  color: var(--yisu-secondary);
 }
 
 #additiona-info-left {
@@ -571,18 +650,23 @@ svg {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  color: #1976d2;
+  color: white !important;
   text-decoration: none;
   transition: all 0.3s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   
   i {
     font-size: 20px;
+    color: white !important;
   }
   
   &:hover {
     transform: translateY(-3px) scale(1.1);
     box-shadow: var(--yisu-shadow-md);
+    
+    i {
+      color: white !important;
+    }
   }
 }
 
@@ -655,12 +739,24 @@ svg {
 
 /* Dark Mode Sidenav Styles */
 body.dark-mode .sidenav-icon {
-  color: var(--yisu-accent);
+  color: #90c5f8; /* Helleres Blau für bessere Lesbarkeit */
 }
 
 body.dark-mode .sidenav-header {
-  color: var(--yisu-accent);
-  border-bottom: 2px solid var(--yisu-accent);
+  color: #90c5f8; /* Helleres Blau */
+  border-bottom: 2px solid #90c5f8;
+}
+
+body.dark-mode .sidenav-text {
+  color: #cbd5e1; /* Hellerer Text für bessere Lesbarkeit */
+}
+
+body.dark-mode .mat-nav-list a:hover .sidenav-text {
+  color: #ffffff; /* Sehr heller Text beim Hover */
+}
+
+body.dark-mode .mat-nav-list a:hover .sidenav-icon {
+  color: #ffffff; /* Sehr helles Icon beim Hover */
 }
 
 .mat-nav-list a {
@@ -676,6 +772,10 @@ body.dark-mode .sidenav-header {
       transform: scale(1.15);
     }
   }
+}
+
+body.dark-mode .mat-nav-list a:hover {
+  background: rgba(59, 130, 246, 0.2); /* Helleres Blau mit Transparenz für besseren Kontrast */
 }
 
 .sidenav-text {

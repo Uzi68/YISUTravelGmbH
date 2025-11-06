@@ -118,6 +118,7 @@
 /* Bootstrap Carousel Indicators */
 .carousel-indicators {
   bottom: 20px;
+  z-index: 10;
 }
 
 .carousel-indicators [data-bs-target] {
@@ -128,12 +129,14 @@
   border: none;
   margin: 0 5px;
   transition: all 0.3s ease;
+  z-index: 10;
 }
 
 .carousel-indicators .active {
-  background-color: #fbbf24;
+  background-color: #1976d2;
   width: 30px;
   border-radius: 6px;
+  z-index: 10;
 }
 
 /* Animations */

@@ -2,7 +2,13 @@ body {
   background: #374E59;
   color: #0077b6;
   font-family: 'Sen', sans-serif;
-  margin-bottom: 200px;
+  margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+  body {
+    margin-bottom: 10px;
+  }
 }
 
 /* ====================================
@@ -155,7 +161,13 @@ span {
 
 
 .menu-container:nth-child(3) {
-  margin-top: 200px;
+  margin-top: 15px;
+}
+
+@media (max-width: 768px) {
+  .menu-container:nth-child(3) {
+    margin-top: 10px;
+  }
 }
 
 nav {
@@ -216,21 +228,7 @@ li strong {
   margin-right: 10px; /* Space between buttons */
 }
 
-.btn-primary {
-  background: #afdef8 !important;
-  color: #0d2b3a !important;
-  border: none !important;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(175, 222, 248, 0.3);
-}
-
-.btn-primary:hover {
-  background: #90d0f0 !important;
-  color: #0a1f2a !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(175, 222, 248, 0.4);
-}
+/* Button styles werden jetzt global in styles.css verwaltet */
 
 .btn-outline-secondary {
   color: #0077b6; /* Button outline color */

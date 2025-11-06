@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import {ActivatedRoute, NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {NavbarComponent} from "./Static/navbar/navbar.component";
-import {filter, mergeMap, Subscription} from "rxjs";
+import {filter, mergeMap, Subject, takeUntil} from "rxjs";
 import {WindowService} from "./Services/window-service/window.service";
 import {SEOService} from "./Services/SEOServices/seo.service";
 import {map} from "rxjs/operators";
@@ -18,47 +18,55 @@ import {ChatbotService} from "./Services/chatbot-service/chatbot.service";
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent {
+export class AppComponent implements OnInit, OnDestroy {
   isAdminDashboardRoute = false;
-  //Scroll instantly to the top after a routerLink is clicked
-  private subscription: Subscription | undefined;
   isAuthenticated: boolean | undefined;
   isChatOpen = false
   private isInitialNavigation = true; // Track if this is the first navigation
+  private readonly destroy$ = new Subject<void>(); // For automatic cleanup of all subscriptions
 
-  constructor(private router: Router, private windowRef: WindowService,
-              private seoService: SEOService,
-              private activatedRoute: ActivatedRoute,
-              private chatbot: ChatbotService
-              ) {
-    this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe((event: NavigationEnd) => {
-        this.isAdminDashboardRoute = event.url.includes('/admin-dashboard');
+  constructor(
+    private router: Router, 
+    private windowRef: WindowService,
+    private seoService: SEOService,
+    private activatedRoute: ActivatedRoute,
+    private chatbot: ChatbotService
+  ) {
+    // Subscribe to chat open state
+    this.chatbot.isChatOpen$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isOpen => {
+        this.isChatOpen = isOpen;
       });
-    this.chatbot.isChatOpen$.subscribe(isOpen => {
-      this.isChatOpen = isOpen;
-    });
   }
+
   ngOnInit() {
-    // Scrolling to top logic - skip initial navigation to prevent double-load effect
-    this.subscription = this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
+    // Single optimized subscription to router events - handles all navigation logic
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
       .subscribe((event: NavigationEnd) => {
+        // Update admin dashboard route flag
+        this.isAdminDashboardRoute = event.url.includes('/admin-dashboard');
+        
+        // Handle scrolling - skip initial navigation to prevent double-load effect
         const window = this.windowRef.nativeWindow;
-        // Skip scrolling on initial navigation to avoid visual glitches during hydration
         if (window && !this.isInitialNavigation) {
           // Use requestAnimationFrame for smoother scrolling and to avoid layout issues
           requestAnimationFrame(() => {
             window.scrollTo(0, 0);
           });
         }
+        
         // Mark that initial navigation is complete
         if (this.isInitialNavigation) {
           this.isInitialNavigation = false;
         }
       });
 
+    // SEO updates - separate subscription but shared filter
     this.router.events
       .pipe(
         filter((event) => event instanceof NavigationEnd),
@@ -68,7 +76,8 @@ export class AppComponent {
           return route;
         }),
         filter((route) => route.outlet === 'primary'),
-        mergeMap((route) => route.data)
+        mergeMap((route) => route.data),
+        takeUntil(this.destroy$)
       )
       .subscribe((data) => {
         const { title, description, keywords, ogUrl, author, canonical } = data;
@@ -83,9 +92,9 @@ export class AppComponent {
   }
 
   ngOnDestroy() {
-    if (this.subscription) {
-      this.subscription.unsubscribe(); // Clean up subscription
-    }
+    // Clean up all subscriptions automatically
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   /* In styles.css add to skip animation:

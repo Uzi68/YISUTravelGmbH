@@ -7,9 +7,9 @@
 
 /* Page Header */
 .page-header {
-  background: #afdef8;
-  color: var(--yisu-text-black);
-  padding: 2rem 0;
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.95) 0%, rgba(30, 58, 138, 0.98) 100%);
+  color: var(--yisu-white);
+  padding: 4rem 0 3rem 0;
   position: relative;
   overflow: hidden;
 }
@@ -21,8 +21,20 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  opacity: 0.3;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+  opacity: 1;
+}
+
+.page-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
 }
 
 .page-header .container {
@@ -35,31 +47,55 @@
 
 .back-button {
   color: var(--yisu-white);
-  margin-bottom: 1rem;
-  background-color: rgba(255, 255, 255, 0.1);
+  margin-bottom: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
   border-radius: 50%;
   transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+}
+
+.back-button mat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  line-height: 1;
 }
 
 .back-button:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: translateX(-2px);
+  background-color: rgba(255, 255, 255, 0.25);
+  transform: translateX(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .page-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 2.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 3rem;
   font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 0 0 1rem 0;
+  letter-spacing: -0.02em;
+  color: var(--yisu-white);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  line-height: 1.2;
 }
 
 .page-subtitle {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   margin: 0;
-  opacity: 0.9;
-  font-weight: 300;
+  opacity: 0.95;
+  font-weight: 400;
+  font-family: 'Open Sans', sans-serif;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.95);
+  max-width: 600px;
 }
 
 /* Page Content */
@@ -385,33 +421,8 @@
   border-top: 1px solid var(--yisu-border-light);
 }
 
-.mat-button, .mat-raised-button {
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.mat-raised-button.mat-primary {
-  background-color: #afdef8;
-  color: #0d2b3a;
-  box-shadow: 0 4px 12px rgba(175, 222, 248, 0.4);
-  font-weight: 600;
-}
-
-.mat-raised-button.mat-primary:hover {
-  background-color: #90d0f0;
-  color: #0a1f2a;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(175, 222, 248, 0.5);
-}
-
-.mat-raised-button.mat-primary:disabled {
-  background-color: var(--yisu-text-light);
-  color: var(--yisu-text-medium);
-  transform: none;
-  box-shadow: none;
-}
+/* Button styles werden jetzt global in styles.css verwaltet */
+/* Alte spezifische Styles wurden entfernt für Konsistenz */
 
 .button-spinner {
   margin-right: 0.5rem;
@@ -498,16 +509,20 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .page-header {
+    padding: 3rem 0 2rem 0;
+  }
+
   .page-header .container {
     padding: 0 1rem;
   }
 
   .page-title {
-    font-size: 2rem;
+    font-size: 2.25rem;
   }
 
   .page-subtitle {
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
 
   .page-content .container {
@@ -550,8 +565,16 @@
 }
 
 @media (max-width: 480px) {
+  .page-header {
+    padding: 2.5rem 0 1.5rem 0;
+  }
+
   .page-title {
-    font-size: 1.75rem;
+    font-size: 1.875rem;
+  }
+
+  .page-subtitle {
+    font-size: 1rem;
   }
 
   .time-slots-grid {
@@ -629,4 +652,43 @@
 
 .mat-raised-button.mat-primary:not(:disabled) {
   animation: successPulse 2s infinite;
+}
+
+/* Disabled Button Styles - Better Readability */
+::ng-deep .mat-raised-button.mat-primary:disabled,
+::ng-deep .mat-raised-button.mat-primary[disabled] {
+  background-color: #e0e0e0 !important;
+  color: #616161 !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+  border: 1px solid #bdbdbd !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+::ng-deep .mat-raised-button.mat-primary:disabled .mat-button-wrapper,
+::ng-deep .mat-raised-button.mat-primary[disabled] .mat-button-wrapper {
+  color: #616161 !important;
+}
+
+::ng-deep .mat-raised-button.mat-primary:disabled mat-icon,
+::ng-deep .mat-raised-button.mat-primary[disabled] mat-icon {
+  color: #616161 !important;
+}
+
+/* Dark Mode Disabled Button */
+body.dark-mode ::ng-deep .mat-raised-button.mat-primary:disabled,
+body.dark-mode ::ng-deep .mat-raised-button.mat-primary[disabled] {
+  background-color: #424242 !important;
+  color: #bdbdbd !important;
+  border: 1px solid #616161 !important;
+}
+
+body.dark-mode ::ng-deep .mat-raised-button.mat-primary:disabled .mat-button-wrapper,
+body.dark-mode ::ng-deep .mat-raised-button.mat-primary[disabled] .mat-button-wrapper {
+  color: #bdbdbd !important;
+}
+
+body.dark-mode ::ng-deep .mat-raised-button.mat-primary:disabled mat-icon,
+body.dark-mode ::ng-deep .mat-raised-button.mat-primary[disabled] mat-icon {
+  color: #bdbdbd !important;
 }

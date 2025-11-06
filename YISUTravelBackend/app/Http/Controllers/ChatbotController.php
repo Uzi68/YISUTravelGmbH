@@ -442,6 +442,11 @@ class ChatbotController extends Controller
                 'is_escalation_trigger' => false
             ]);
 
+            // ✅ FIX: Aktualisiere last_activity für Website-Besucher
+            $chat->update(['last_activity' => now()]);
+            // ✅ WICHTIG: Chat neu laden damit last_activity im Event verfügbar ist
+            $chat->refresh();
+
             // Assignment-Daten für Broadcasting
             $assignmentData = null;
             if ($chat->assigned_to) {
@@ -496,6 +501,11 @@ class ChatbotController extends Controller
             'from' => 'user',
             'text' => $originalInput,
         ]);
+
+        // ✅ FIX: Aktualisiere last_activity für Website-Besucher beim Senden einer Nachricht
+        $chat->update(['last_activity' => now()]);
+        // ✅ WICHTIG: Chat neu laden damit last_activity im Event verfügbar ist
+        $chat->refresh();
 
         /*
         $botMessage = Message::create([
@@ -1134,6 +1144,7 @@ class ChatbotController extends Controller
                     'customer_last_name' => $customerLastName,
                     'customer_name' => $customerName, // ✅ NEU: Vollständiger Name
                     'customer_phone' => $chat->visitor ? $chat->visitor->phone : ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
+                    'customer_email' => $chat->visitor ? ($chat->visitor->email ?? '') : '', // ✅ FIX: Email direkt im Response für instant Anzeige
                     'customer_avatar' => $chat->user ? $chat->user->avatar : asset('storage/images/user.png'),
                     'last_message' => $lastMessage ? $lastMessage->text : 'No messages yet',
                     'last_message_time' => $lastMessage ? $lastMessage->created_at : $chat->updated_at,
@@ -1151,7 +1162,7 @@ class ChatbotController extends Controller
                     'last_activity' => $chat->last_activity ? $chat->last_activity->toIso8601String() : null, // ✅ Zuletzt-Online-Status
                     'assigned_to' => $chat->assigned_to,
                     'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
-                    'messages' => $chat->messages->map(function ($message) use ($user) {
+                    'messages' => $chat->messages->sortBy('created_at')->map(function ($message) use ($user) {
                         $messageData = [
                             'id' => $message->id,
                             'text' => $message->text,
@@ -2227,6 +2238,33 @@ class ChatbotController extends Controller
             ]
         );
 
+        // ✅ Willkommensnachricht erstellen und speichern
+        $welcomeMessage = Message::create([
+            'chat_id' => $chat->id,
+            'from' => 'bot',
+            'text' => "Vielen Dank für Ihre Registrierung, {$validated['first_name']}! Wie kann ich Ihnen helfen?",
+            'message_type' => 'registration_welcome'
+        ]);
+
+        // ✅ Nachricht über Pusher broadcasten, damit sie im Admin-Dashboard erscheint
+        broadcast(new MessagePusher($welcomeMessage, $chat->session_id));
+
+        // ✅ Admin-Dashboard über neuen Chat informieren
+        event(new AllChatsUpdate([
+            'type' => 'chat_updated',
+            'chat' => [
+                'session_id' => $chat->session_id,
+                'chat_id' => $chat->id,
+                'status' => 'bot',
+                'channel' => $chat->channel ?? 'website',
+                'customer_first_name' => $visitor->first_name,
+                'customer_last_name' => $visitor->last_name,
+                'customer_phone' => $visitor->phone,
+                'last_message' => $welcomeMessage->text,
+                'last_message_time' => $welcomeMessage->created_at,
+            ]
+        ]));
+
         return response()->json([
             'success' => true,
             'message' => 'Daten erfolgreich gespeichert',
@@ -2445,10 +2483,13 @@ class ChatbotController extends Controller
             ]);
 
             // Chat als aktiv markieren (ohne Assignment zu ändern)
-            $chat->update([
-                'updated_at' => now()
-                // assigned_to NICHT ändern!
-            ]);
+            // ✅ FIX: Aktualisiere last_activity wenn Benutzer eine Nachricht sendet (nicht bei Agent)
+            $updateData = ['updated_at' => now()];
+            if (!$isAgent) {
+                $updateData['last_activity'] = now(); // ✅ Aktualisiere Zuletzt-Online-Status für Website-Besucher
+            }
+            $chat->update($updateData);
+            // assigned_to NICHT ändern!
 
             // Assignment-Daten für Broadcasting - nur wenn bereits assigned
             $assignmentData = null;
@@ -2478,6 +2519,7 @@ class ChatbotController extends Controller
                         'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
                         'last_message' => $message->text,
                         'last_message_time' => $message->created_at,
+                        'last_activity' => $chat->last_activity ? $chat->last_activity->toIso8601String() : null, // ✅ FIX: last_activity im Event mitgeben
                         'unread_count' => Message::where('chat_id', $chat->id)
                             ->where('from', '!=', 'agent')
                             ->whereDoesntHave('reads')

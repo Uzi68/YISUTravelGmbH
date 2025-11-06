@@ -138,20 +138,20 @@ button[type="submit"] {
   padding: 10px 20px;
   font-size: 16px;
   font-family: 'Roboto', sans-serif;
-  background: var(--yisu-navbar-top) !important;
-  color: #2c3e50 !important;
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-text-white) !important;
   border: none !important;
   font-weight: 500;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35);
   border-radius: 8px;
 }
 
 button[type="submit"]:hover {
-  background: #f59e0b !important;
-  color: #2c3e50 !important;
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.45);
 }
 
 .kontaktinformationen {
@@ -225,7 +225,7 @@ button[type="submit"]:hover {
   width: 40px; /* Breite der Schaltfläche */
   height: 40px; /* Höhe der Schaltfläche */
   border-radius: 50%; /* Runde Schaltflächen */
-  color: white; /* Schriftfarbe */
+  color: white !important; /* Schriftfarbe */
   text-decoration: none; /* Unterstreichung entfernen */
   transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Schatten für Tiefe */
@@ -238,15 +238,22 @@ button[type="submit"]:hover {
 /* Icon-Stile */
 .btn-social i {
   font-size: 20px; /* Größe der Icons */
+  color: white !important;
+}
+
+.btn-social:hover i {
+  color: white !important;
 }
 
 .instagram-btn {
   background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
-  color: white;
+  color: white !important;
   border: none;
   border-radius: 50%; /* Makes it circular */
   font-size: 20px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.3s ease;
 }
 
@@ -255,7 +262,13 @@ button[type="submit"]:hover {
 }
 
 .instagram-btn i {
-  margin-right: 0; /* Remove margin inside icon */
+  margin: 0;
+  color: white !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
 }
 
 
@@ -266,20 +279,35 @@ button[type="submit"]:hover {
   font-size: 16px; /* Set a consistent font size */
   line-height: 50px; /* Set line height to match height for vertical centering */
   border-radius: 8px; /* Rounded corners */
-  color: #2c3e50 !important; /* Text color */
+  color: var(--yisu-text-white) !important; /* Text color */
   border: none; /* No border */
   cursor: pointer; /* Pointer cursor on hover */
-  transition: all 0.2s ease; /* Smooth transition */
-  background: var(--yisu-navbar-top) !important; /* Gelb */
+  transition: all 0.3s ease; /* Smooth transition */
+  background: var(--yisu-secondary) !important; /* YISU Blau */
   font-weight: 500;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35);
 }
 
 .custom-button:hover {
-  background: #f59e0b !important;
-  color: #2c3e50 !important;
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.45);
+}
+
+/* Dark Mode Button Styles */
+body.dark-mode .custom-button,
+body.dark-mode button[type="submit"] {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-text-white) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+}
+
+body.dark-mode .custom-button:hover,
+body.dark-mode button[type="submit"]:hover {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45);
 }
 
 .example-button-row {
@@ -294,4 +322,39 @@ iframe {
 
 .map-placeholder {
   margin-bottom: 40px;
+}
+
+/* Google Maps Button Style */
+.google-maps-button {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-text-white) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 14px !important;
+  padding: 0.75rem 1.5rem !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35) !important;
+  cursor: pointer !important;
+}
+
+.google-maps-button:hover {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.45) !important;
+}
+
+/* Dark Mode Google Maps Button */
+body.dark-mode .google-maps-button {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-text-white) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35) !important;
+}
+
+body.dark-mode .google-maps-button:hover {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45) !important;
 }

@@ -190,12 +190,12 @@ body.dark-mode {
 body.dark-mode {
   /* === Flyer-basiertes Travel Agency Dark Mode === */
   --yisu-primary: #60a5fa;          /* Helleres Blau - Dark Mode */
-  --yisu-secondary: #3b82f6;        /* Sekundäres Blau - Dark Mode */
+  --yisu-secondary: #2e67c3;        /* Sekundäres Blau - Dark Mode */
   --yisu-nav-items: #60a5fa;        /* Blau - Nav Items */
   --yisu-nav-items-hover: #3b82f6;
   --yisu-nav-items-hover-background: #1e293b;
-  --yisu-nav-items-active: #0f172a; /* aktiv */
-  --yisu-nav-items-active-hover: #1e293b;
+  --yisu-nav-items-active: #ffffff; /* Weißer Text wenn aktiv */
+  --yisu-nav-items-active-hover: #ffffff; /* Weißer Text beim Hover wenn aktiv */
   --yisu-nav-items-active-hover-background: #1d4ed8;
   --yisu-accent: #7dd3fc;           /* Helleres Himmelblau - Dark Mode */
   --yisu-light: #0f172a;            /* Dunkler Hintergrund */
@@ -397,11 +397,146 @@ body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper .mat-mdc-form-fie
   background-color: transparent !important;
 }
 
-/* Button Overrides */
+/* ====================================
+   YISU Travel - Einheitliche Button Styles
+   ==================================== */
+
+/* Globale Primary Button Styles */
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-flat-button.mat-primary,
+button[type="submit"],
+.submit-button,
+.cta-button,
+.custom-button,
+.btn-primary {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-text-white) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 0.75rem 1.5rem !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35) !important;
+  cursor: pointer !important;
+}
+
+.mat-mdc-raised-button.mat-primary:hover:not(:disabled),
+.mat-mdc-flat-button.mat-primary:hover:not(:disabled),
+button[type="submit"]:hover:not(:disabled),
+.submit-button:hover:not(:disabled),
+.cta-button:hover:not(:disabled),
+.custom-button:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.45) !important;
+}
+
+/* Disabled Button Styles - Better Readability */
+.mat-mdc-raised-button.mat-primary:disabled,
+.mat-mdc-raised-button.mat-primary[disabled],
+.mat-mdc-flat-button.mat-primary:disabled,
+.mat-mdc-flat-button.mat-primary[disabled],
+.mat-raised-button.mat-primary:disabled,
+.mat-raised-button.mat-primary[disabled],
+button[type="submit"]:disabled,
+.submit-button:disabled,
+.cta-button:disabled,
+.custom-button:disabled,
+.btn-primary:disabled {
+  background-color: #e0e0e0 !important;
+  color: #616161 !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+  border: 1px solid #bdbdbd !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.mat-mdc-raised-button.mat-primary:disabled .mat-mdc-button-wrapper,
+.mat-mdc-raised-button.mat-primary[disabled] .mat-mdc-button-wrapper,
+.mat-mdc-flat-button.mat-primary:disabled .mat-mdc-button-wrapper,
+.mat-mdc-flat-button.mat-primary[disabled] .mat-mdc-button-wrapper,
+.mat-raised-button.mat-primary:disabled .mat-button-wrapper,
+.mat-raised-button.mat-primary[disabled] .mat-button-wrapper {
+  color: #616161 !important;
+}
+
+.mat-mdc-raised-button.mat-primary:disabled .mat-icon,
+.mat-mdc-raised-button.mat-primary[disabled] .mat-icon,
+.mat-mdc-flat-button.mat-primary:disabled .mat-icon,
+.mat-mdc-flat-button.mat-primary[disabled] .mat-icon,
+.mat-raised-button.mat-primary:disabled .mat-icon,
+.mat-raised-button.mat-primary[disabled] .mat-icon {
+  color: #616161 !important;
+}
+
+/* Dark Mode Disabled Button - Gray/White instead of blue */
+body.dark-mode .mat-mdc-raised-button.mat-primary:disabled,
+body.dark-mode .mat-mdc-raised-button.mat-primary[disabled],
+body.dark-mode .mat-mdc-flat-button.mat-primary:disabled,
+body.dark-mode .mat-mdc-flat-button.mat-primary[disabled],
+body.dark-mode .mat-raised-button.mat-primary:disabled,
+body.dark-mode .mat-raised-button.mat-primary[disabled],
+body.dark-mode button[type="submit"]:disabled,
+body.dark-mode .submit-button:disabled,
+body.dark-mode .cta-button:disabled,
+body.dark-mode .custom-button:disabled,
+body.dark-mode .btn-primary:disabled {
+  background-color: #525252 !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #757575 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark-mode .mat-mdc-raised-button.mat-primary:disabled .mat-mdc-button-wrapper,
+body.dark-mode .mat-mdc-raised-button.mat-primary[disabled] .mat-mdc-button-wrapper,
+body.dark-mode .mat-mdc-flat-button.mat-primary:disabled .mat-mdc-button-wrapper,
+body.dark-mode .mat-mdc-flat-button.mat-primary[disabled] .mat-mdc-button-wrapper,
+body.dark-mode .mat-raised-button.mat-primary:disabled .mat-button-wrapper,
+body.dark-mode .mat-raised-button.mat-primary[disabled] .mat-button-wrapper {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .mat-mdc-raised-button.mat-primary:disabled .mat-icon,
+body.dark-mode .mat-mdc-raised-button.mat-primary[disabled] .mat-icon,
+body.dark-mode .mat-mdc-flat-button.mat-primary:disabled .mat-icon,
+body.dark-mode .mat-mdc-flat-button.mat-primary[disabled] .mat-icon,
+body.dark-mode .mat-raised-button.mat-primary:disabled .mat-icon,
+body.dark-mode .mat-raised-button.mat-primary[disabled] .mat-icon {
+  color: #e0e0e0 !important;
+}
+
+/* Dark Mode Button Overrides */
 body.dark-mode .mat-mdc-raised-button {
   border: none !important;
   outline: none !important;
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35) !important;
+}
+
+body.dark-mode .mat-mdc-raised-button.mat-primary,
+body.dark-mode .mat-mdc-flat-button.mat-primary,
+body.dark-mode button[type="submit"],
+body.dark-mode .submit-button,
+body.dark-mode .cta-button,
+body.dark-mode .custom-button,
+body.dark-mode .btn-primary {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-text-white) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35) !important;
+}
+
+body.dark-mode .mat-mdc-raised-button.mat-primary:hover:not(:disabled),
+body.dark-mode .mat-mdc-flat-button.mat-primary:hover:not(:disabled),
+body.dark-mode button[type="submit"]:hover:not(:disabled),
+body.dark-mode .submit-button:hover:not(:disabled),
+body.dark-mode .cta-button:hover:not(:disabled),
+body.dark-mode .custom-button:hover:not(:disabled),
+body.dark-mode .btn-primary:hover:not(:disabled) {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45) !important;
 }
 
 body.dark-mode .mat-mdc-raised-button:not(:disabled) {
