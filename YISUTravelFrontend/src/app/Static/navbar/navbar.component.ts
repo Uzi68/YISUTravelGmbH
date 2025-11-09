@@ -12,7 +12,6 @@ import {AuthService} from "../../Services/AuthService/auth.service";
 import {FooterComponent} from "../footer/footer.component";
 import {BehaviorSubject, filter, Observable} from "rxjs";
 import {ChatbotService} from "../../Services/chatbot-service/chatbot.service";
-import {response} from "express";
 
 @Component({
   selector: 'app-navbar',

@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   ElementRef,
   HostListener,
@@ -17,7 +18,7 @@ import { TruncatePipe } from "./truncate.pipe";
 import {MatFormField, MatHint, MatInput, MatLabel} from "@angular/material/input";
 import {MatTooltip} from "@angular/material/tooltip";
 import {animate, style, transition, trigger} from "@angular/animations";
-import {firstValueFrom, of, Subscription} from "rxjs";
+import {firstValueFrom, forkJoin, of, Subscription} from "rxjs";
 import {ChatbotService} from "../../../Services/chatbot-service/chatbot.service";
 import {AuthService} from "../../../Services/AuthService/auth.service";
 import {PusherService} from "../../../Services/Pusher/pusher.service";
@@ -26,7 +27,7 @@ import {UserManagementService} from "../../../Services/user-management-service.s
 import {OfferManagementComponent} from "../offer-management/offer-management.component";
 import {User} from "../../../Models/User";
 import {Visitor} from "../../../Models/Visitor";
-import {catchError, timeout} from "rxjs/operators";
+import {catchError, tap, timeout} from "rxjs/operators";
 import { MessageFilterPipe } from "./message-filter.pipe";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatButtonToggle, MatButtonToggleGroup} from "@angular/material/button-toggle";
@@ -74,6 +75,7 @@ import { Router } from '@angular/router';
   ],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [
     trigger('slideInOut', [
       transition(':enter', [
@@ -249,7 +251,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     // ✅ Cooldown Counter starten (1x pro Sekunde aktualisieren)
     this.cooldownUpdateInterval = setInterval(() => {
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
     }, 1000);
 
     this.loadActiveChats().then(() => {
@@ -560,7 +562,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.filteredActiveChats = [...sortedChats];
 
     // ✅ DetectChanges nur einmal am Ende
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
 // Methode zum Auswählen eines Admin-Chats
@@ -939,7 +941,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
 
       this.sortActiveChats();
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
       return;
     }
 
@@ -976,7 +978,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
         this.assignmentStatuses.delete(sessionId);
         this.sortActiveChats();
-        this.cdRef.detectChanges();
+        this.cdRef.markForCheck();
       }
       return;
     }
@@ -1015,7 +1017,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
         this.assignmentStatuses.delete(sessionId);
         this.sortActiveChats();
-        this.cdRef.detectChanges();
+        this.cdRef.markForCheck();
       }
       return;
     }
@@ -1058,7 +1060,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
 
         this.sortActiveChats();
-        this.cdRef.detectChanges();
+        this.cdRef.markForCheck();
       }
       return;
     }
@@ -1127,7 +1129,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.showToast(`🆕 Neue Chat-Anfrage von ${customerName}`, 'success');
 
       this.sortActiveChats();
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
       return;
     }
 
@@ -1200,7 +1202,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
 
       this.sortActiveChats();
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
       return;
     }
 
@@ -1235,7 +1237,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         lastMessageTime: new Date(chatData.last_message_time || Date.now())
       });
 
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
       return;
     }
 
@@ -1280,7 +1282,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         });
 
         this.sortActiveChats();
-        this.cdRef.detectChanges();
+        this.cdRef.markForCheck();
       } else {
         // ✅ Chat existiert nicht mehr in Liste (wurde vielleicht entfernt) - neu laden
         console.log('⚠️ Chat nicht in activeChats gefunden - lade Chats neu');
@@ -1360,7 +1362,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       // ✅ Change Detection EXPLIZIT triggern
       this.cdRef.markForCheck();
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
     }
   }
 
@@ -1379,7 +1381,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.selectedChat = null;
     }
 
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
 
@@ -1460,7 +1462,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     // ✅ OPTIMISTIC TOAST: Sofort anzeigen
     this.showToast('Chat wurde erfolgreich beendet', 'success');
-    this.cdRef.detectChanges(); // ✅ Sofort UI aktualisieren
+    this.cdRef.markForCheck(); // ✅ Sofort UI aktualisieren
 
     this.chatbotService.closeChatByAgent(payload).subscribe({
       next: (response) => {
@@ -1516,7 +1518,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.selectedChat = originalState.selectedChat;
     }
 
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
 // ✅ Close-Chat Dialog schließen
@@ -1642,7 +1644,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     this.sortActiveChats();
     this.filterChats();
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
 
     // ✅ KORRIGIERT: Nur Sound wenn Tab inaktiv
     this.notificationSound.playNotificationSoundIfTabInactive();
@@ -1696,7 +1698,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.sortActiveChats();
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
 
@@ -1763,7 +1765,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       };
 
       // Change Detection für sofortige UI-Updates
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
 
       console.log('Selected chat updated in real-time:', this.selectedChat);
     }
@@ -1860,7 +1862,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       // ✅ NEU: Chat-Liste neu sortieren (Event-Message = neue Aktivität)
       this.sortActiveChats();
 
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
 
       // ✅ NEU: Tab-Titel aktualisieren (unreadCount bleibt erhalten)
       this.updateTabTitle();
@@ -2172,7 +2174,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             this.shouldScrollToBottom = true;
 
             // ✅ FIX: Trigger Change Detection BEVOR Scroll
-            this.cdRef.detectChanges();
+            this.cdRef.markForCheck();
 
             // ✅ Scroll nach Change Detection
             this.scrollToBottom(false);
@@ -2237,7 +2239,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         });
 
         this.sortActiveChats();
-        this.cdRef.detectChanges();
+        this.cdRef.markForCheck();
 
         console.log('✅ Chat unassigned - updated everywhere');
         return;
@@ -2296,7 +2298,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.addMessageToChat(sessionId, messageData);
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
 
     // ✅ NEU: Tab-Titel aktualisieren nach neuer Nachricht
     this.updateTabTitle();
@@ -2346,7 +2348,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.audioProgress.set(audioKey, progress);
         const currentTime = this.formatDuration(audio!.currentTime);
         this.audioCurrentTimes.set(audioKey, currentTime);
-        this.cdRef.detectChanges();
+        this.cdRef.markForCheck();
       });
 
       // Load metadata for duration
@@ -2354,7 +2356,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         const duration = this.formatDuration(audio!.duration);
         this.audioDurations.set(audioKey, duration);
         this.audioCurrentTimes.set(audioKey, '0:00');
-        this.cdRef.detectChanges();
+        this.cdRef.markForCheck();
       });
 
       // Reset on end
@@ -2362,7 +2364,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.currentPlayingAudio = null;
         this.audioProgress.set(audioKey, 0);
         this.audioCurrentTimes.set(audioKey, '0:00');
-        this.cdRef.detectChanges();
+        this.cdRef.markForCheck();
       });
     }
 
@@ -2409,7 +2411,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     // Update UI immediately
     this.audioProgress.set(audioKey, percentage * 100);
     this.audioCurrentTimes.set(audioKey, this.formatDuration(newTime));
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
 
     // Auto-play if not already playing
     if (this.currentPlayingAudio !== audioKey) {
@@ -2485,7 +2487,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.filteredActiveChats = this.filteredActiveChats.map(chat =>
       chat.id === sessionId ? { ...chat, unreadCount } : chat
     );
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
 
@@ -2496,124 +2498,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   async loadActiveChats(): Promise<void> {
     try {
       const response: any = await firstValueFrom(this.chatbotService.getActiveChats());
-      const chats = Array.isArray(response) ? response : response.data;
+      const chats = Array.isArray(response) ? response : response?.data ?? [];
 
+      this.escalationPrompts.clear();
 
-      this.activeChats = await Promise.all(chats.map(async (chat: any) => {
-        const isSelected = this.selectedChat?.id === chat.session_id;
-        const isNew = chat.status === 'human' && !chat.assigned_agent;
+      const mappedChats = chats.map((chat: any) => this.buildChatFromResponse(chat));
 
-        // ✅ WICHTIG: Nutze customer_name vom Backend (wenn vorhanden)
-        let customerName = chat.customer_name;
+      this.activeChats = mappedChats;
+      this.filteredActiveChats = [...mappedChats];
 
-        // ✅ Fallback: Berechne aus first_name und last_name (wenn customer_name fehlt)
-        if (!customerName || customerName === 'Anonymer Benutzer') {
-          if (chat.customer_first_name || chat.customer_last_name) {
-            customerName = `${chat.customer_first_name || ''} ${chat.customer_last_name || ''}`.trim();
-          } else {
-            customerName = 'Anonymer Benutzer';
-          }
-        }
-
-        // Nur Visitor-Daten abrufen, wenn immer noch kein Name vorhanden ist (nur für Website-Chats)
-        // ✅ FIX: Auch Email im Cache speichern wenn Visitor-Daten geladen werden
-        if (customerName === 'Anonymer Benutzer' && !chat.customer_first_name && !chat.customer_last_name && chat.channel !== 'whatsapp') {
-          try {
-            const visitor = await firstValueFrom(
-              this.chatbotService.getVisitorDetails(chat.session_id).pipe(
-                catchError(() => of(null))
-              )
-            );
-            if (visitor) {
-              customerName = visitor.first_name && visitor.last_name
-                ? `${visitor.first_name} ${visitor.last_name}`
-                : customerName;
-              // ✅ Email im Cache speichern für sofortige Anzeige
-              if (visitor.email && chat.session_id) {
-                this.visitorEmailCache.set(chat.session_id.toString(), visitor.email);
-              }
-            }
-          } catch (error) {
-            console.error('Error loading visitor name:', error);
-          }
-        }
-        
-        // ✅ FIX: Email auch direkt aus Chat-Daten prüfen (falls vorhanden)
-        // Manche Backend-Responses könnten die Email direkt im Chat-Objekt haben
-        if (chat.customer_email && chat.session_id) {
-          this.visitorEmailCache.set(chat.session_id.toString(), chat.customer_email);
-        }
-        // ✅ FIX: Auch visitor.email prüfen und cachen
-        if (chat.visitor?.email && chat.session_id) {
-          this.visitorEmailCache.set(chat.session_id.toString(), chat.visitor.email);
-        }
-
-        // ✅ Escalation-Prompt wiederherstellen falls vorhanden
-        if (chat.escalation_prompt) {
-          this.escalationPrompts.set(chat.session_id, {
-            prompt_id: chat.escalation_prompt.id,
-            sent_at: new Date(chat.escalation_prompt.sent_at),
-            sent_by: chat.escalation_prompt.sent_by_agent_name
-          });
-        }
-
-        return {
-          id: chat.session_id || '',
-          chatId: chat.chat_id || '',
-          customerName: customerName,
-          customerFirstName: chat.customer_first_name || '',
-          customerLastName: chat.customer_last_name || '',
-          customerPhone: chat.customer_phone || '',
-          customerEmail: chat.customer_email || chat.visitor?.email || '',  // ✅ FIX: Email direkt im Chat-Objekt speichern
-          customerAvatar: chat.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
-          lastMessage: chat.last_message || '',
-          lastMessageTime: new Date(chat.last_message_time || Date.now()),
-          unreadCount: isSelected ? 0 : (chat.unread_count || 0),
-          isOnline: chat.is_online || false,
-          last_activity: chat.last_activity || null,
-          lastOnline: chat.last_activity ? new Date(chat.last_activity) : undefined, // ✅ FIX: Konvertiere last_activity zu Date für Anzeige
-          messages: Array.isArray(chat.messages)
-            ? chat.messages.map((msg: any) => {
-                return {
-                  id: msg.id || Date.now().toString(),
-                  content: msg.text || '',
-                  timestamp: new Date(msg.timestamp || Date.now()),
-                  isAgent: msg.from === 'agent',
-                  isBot: msg.from === 'bot',
-                  read: isSelected ? true : (msg.read || false),
-                  from: msg.from,
-                  message_type: msg.message_type,
-                  metadata: msg.metadata,
-                  attachment: msg.has_attachment ? msg.attachment : undefined
-                };
-              })
-            : [],
-          status: chat.status || '',
-          assigned_agent: chat.assigned_agent || '',
-          assigned_to: chat.assigned_to,
-          channel: chat.channel || 'website',
-          whatsapp_number: chat.whatsapp_number || null,
-          isNew: isNew,
-          visitor: chat.visitor ? {
-            first_name: chat.visitor.first_name,
-            last_name: chat.visitor.last_name,
-            email: chat.visitor.email || '',
-            phone: chat.visitor.phone || ''
-          } : undefined
-        };
-        
-        // ✅ FIX: Email im Cache speichern wenn sie im Chat-Objekt vorhanden ist (für sofortige Anzeige)
-        const sessionIdStr = chat.session_id?.toString() || '';
-        if (chat.visitor?.email && sessionIdStr) {
-          this.visitorEmailCache.set(sessionIdStr, chat.visitor.email);
-        }
-      }));
-
-      // ✅ Filtere und sortiere
       this.sortActiveChats();
-      this.filterChats(); // Wende aktuelle Filter an
+      this.filterChats();
 
-      // ✅ Setup Pusher nach erfolgreichem Laden
       const assignedSessionId = localStorage.getItem('assigned_chat_session_id');
       if (assignedSessionId && (!this.selectedChat || this.selectedChat.id !== assignedSessionId)) {
         const assignedChat = this.activeChats.find(chat => chat.id === assignedSessionId);
@@ -2623,10 +2519,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
 
       this.setupPusherListeners();
-      this.cdRef.detectChanges();
-
-      // ✅ NEU: Tab-Titel nach Laden der Chats aktualisieren
       this.updateTabTitle();
+      this.cdRef.markForCheck();
+
+      this.hydrateVisitorDetails(chats);
 
     } catch (error) {
       console.error('Error loading chats:', error);
@@ -2636,8 +2532,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }, 5000);
     }
   }
-
-
 
   closeChat() {
     if (!this.selectedChat) return;
@@ -2718,7 +2612,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.shouldScrollToBottom = true;
 
       // ✅ FIX: Trigger Change Detection BEVOR Scroll
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
 
       // ✅ Scroll mit smooth behavior (nach Change Detection!)
       this.scrollToBottom(false);
@@ -2728,7 +2622,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.sortActiveChats();
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
 
@@ -2825,7 +2719,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     // ✅ OPTIMISTIC TOAST: Sofort anzeigen
     this.showToast('✅ Admin-Chat erfolgreich übernommen', 'success');
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
 
     this.chatbotService.assignChatToAgent(sessionId).subscribe({
       next: (response) => {
@@ -2924,7 +2818,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
       
       // ✅ SOFORT UI aktualisieren damit Name/Email/Phone sofort angezeigt werden
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
 
       // Setze unreadCount = 0 und alle Nachrichten auf read = true
       this.activeChats = this.activeChats.map(c =>
@@ -2953,7 +2847,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         requestAnimationFrame(() => {
           this.scrollToBottom(true);
           this.isLoadingChat = false;
-          this.cdRef.detectChanges();
+          this.cdRef.markForCheck();
         });
       });
 
@@ -3012,7 +2906,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                     };
                   }
                 }
-                this.cdRef.detectChanges();
+                this.cdRef.markForCheck();
               } else {
                 console.log('⚠️ Chat wurde gewechselt während API-Call lief - ignoriere Visitor-Details');
                 // ✅ Email trotzdem im Cache speichern (könnte später nützlich sein)
@@ -3257,7 +3151,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     // ✅ OPTIMISTIC TOAST: Sofort anzeigen (nicht warten auf API-Response)
     this.showToast('✅ Chat erfolgreich übernommen', 'success');
-    this.cdRef.detectChanges(); // ✅ Sofort UI aktualisieren
+    this.cdRef.markForCheck(); // ✅ Sofort UI aktualisieren
 
     // ✅ FIX: Chat direkt nach Übernahme öffnen
     const updatedChat = this.activeChats.find(c => c.id === chat.id);
@@ -3319,7 +3213,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
 
@@ -3472,7 +3366,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     // ✅ OPTIMISTIC TOAST: Sofort anzeigen
     this.showToast(`✅ Chat erfolgreich an ${selectedAgent.name} übertragen`, 'success');
-    this.cdRef.detectChanges(); // ✅ Sofort UI aktualisieren
+    this.cdRef.markForCheck(); // ✅ Sofort UI aktualisieren
 
     this.chatbotService.transferChatToAgent(
       chatToTransfer.id.toString(),
@@ -3530,7 +3424,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
   /**
@@ -3592,7 +3486,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     // ✅ OPTIMISTIC TOAST: Sofort anzeigen
     this.showToast('✅ Zuweisung erfolgreich aufgehoben', 'success');
-    this.cdRef.detectChanges(); // ✅ Sofort UI aktualisieren
+    this.cdRef.markForCheck(); // ✅ Sofort UI aktualisieren
 
     this.chatbotService.unassignChat(chat.id.toString()).subscribe({
       next: (response) => {
@@ -3648,7 +3542,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
   }
 
   /**
@@ -3692,7 +3586,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     // ✅ OPTIMISTIC TOAST: Sofort anzeigen
     this.showToast(`✅ Escalation-Anfrage erfolgreich an ${chat.customerName} gesendet`, 'success');
-    this.cdRef.detectChanges();
+    this.cdRef.markForCheck();
 
     this.chatbotService.sendEscalationPrompt(chat.id.toString(), payload).subscribe({
       next: (response) => {
@@ -3703,7 +3597,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             sent_at: new Date(),
             sent_by: response.sent_by || this.currentAgent.name
           });
-          this.cdRef.detectChanges();
+          this.cdRef.markForCheck();
         } else {
           // ✅ Bei Fehler: Änderungen rückgängig machen
           if (originalEscalationPrompt) {
@@ -3798,7 +3692,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       // ✅ Sofort scrollen
       this.shouldScrollToBottom = true;
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
       this.scrollToBottom(false);
     }
 
@@ -3844,7 +3738,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }
 
         this.showError('Nachricht konnte nicht gesendet werden');
-        this.cdRef.detectChanges();
+        this.cdRef.markForCheck();
       }
     });
   }
@@ -4126,7 +4020,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           });
 
           this.filterChats();
-          this.cdRef.detectChanges();
+          this.cdRef.markForCheck();
         }
       },
       error: (error) => {
@@ -4187,7 +4081,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
       // ✅ Sofort scrollen
       this.shouldScrollToBottom = true;
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
       this.scrollToBottom(false);
     }
 
@@ -4527,6 +4421,166 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.currentAgent.profile_image_url = '';
       }
     });
+  }
+
+  private buildChatFromResponse(chat: any): Chat {
+    const sessionId: string = (chat.session_id ?? chat.id ?? '').toString();
+    const isSelected = this.selectedChat?.id === sessionId;
+    const { name, firstName, lastName } = this.resolveCustomerName(chat);
+    const emailFromChat = chat.customer_email || chat.visitor?.email || this.visitorEmailCache.get(sessionId) || '';
+
+    if (sessionId && emailFromChat) {
+      this.visitorEmailCache.set(sessionId, emailFromChat);
+    }
+
+    if (sessionId && chat.escalation_prompt) {
+      this.escalationPrompts.set(sessionId, {
+        prompt_id: chat.escalation_prompt.id,
+        sent_at: new Date(chat.escalation_prompt.sent_at),
+        sent_by: chat.escalation_prompt.sent_by_agent_name
+      });
+    }
+
+    const messages: Message[] = Array.isArray(chat.messages)
+      ? chat.messages.map((msg: any) => ({
+          id: msg.id || `${Date.now()}-${Math.random()}`,
+          content: msg.text || '',
+          timestamp: new Date(msg.timestamp || Date.now()),
+          isAgent: msg.from === 'agent',
+          isBot: msg.from === 'bot',
+          read: isSelected ? true : (msg.read || false),
+          from: msg.from,
+          message_type: msg.message_type,
+          metadata: msg.metadata,
+          attachment: msg.has_attachment ? msg.attachment : undefined
+        }))
+      : [];
+
+    return {
+      id: sessionId,
+      chatId: chat.chat_id || '',
+      customerName: name,
+      customerFirstName: firstName,
+      customerLastName: lastName,
+      customerPhone: chat.customer_phone || '',
+      customerEmail: emailFromChat,
+      customerAvatar: chat.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
+      lastMessage: chat.last_message || '',
+      lastMessageTime: new Date(chat.last_message_time || Date.now()),
+      unreadCount: isSelected ? 0 : (chat.unread_count || 0),
+      isOnline: chat.is_online || false,
+      last_activity: chat.last_activity || null,
+      lastOnline: chat.last_activity ? new Date(chat.last_activity) : undefined,
+      messages,
+      status: chat.status || '',
+      assigned_agent: chat.assigned_agent || '',
+      assigned_to: chat.assigned_to,
+      channel: chat.channel || 'website',
+      whatsapp_number: chat.whatsapp_number || null,
+      isNew: chat.status === 'human' && !chat.assigned_agent,
+      visitor: chat.visitor ? {
+        first_name: chat.visitor.first_name,
+        last_name: chat.visitor.last_name,
+        email: chat.visitor.email || '',
+        phone: chat.visitor.phone || ''
+      } : undefined
+    };
+  }
+
+  private resolveCustomerName(chat: any): { name: string; firstName: string; lastName: string } {
+    const firstName = chat.customer_first_name || chat.visitor?.first_name || '';
+    const lastName = chat.customer_last_name || chat.visitor?.last_name || '';
+    let name = chat.customer_name;
+
+    if (!name || name === 'Anonymer Benutzer') {
+      const combined = `${firstName} ${lastName}`.trim();
+      name = combined || 'Anonymer Benutzer';
+    }
+
+    return {
+      name,
+      firstName: firstName || '',
+      lastName: lastName || ''
+    };
+  }
+
+  private hydrateVisitorDetails(rawChats: any[]): void {
+    const sessionIds = Array.from(new Set(
+      rawChats
+        .filter(chat => chat?.session_id && chat.channel !== 'whatsapp')
+        .filter(chat => {
+          const sessionIdStr = String(chat.session_id);
+          const hasCachedEmail = this.visitorEmailCache.has(sessionIdStr);
+          const hasEmail = Boolean(chat.customer_email || chat.visitor?.email || hasCachedEmail);
+          const hasName = Boolean(chat.customer_first_name || chat.customer_last_name || chat.customer_name) ||
+                          Boolean(chat.visitor?.first_name || chat.visitor?.last_name);
+          return !hasEmail || !hasName;
+        })
+        .map(chat => String(chat.session_id))
+    ));
+
+    if (!sessionIds.length) {
+      return;
+    }
+
+    const requests = sessionIds.map(sessionIdStr =>
+      this.chatbotService.getVisitorDetails(sessionIdStr).pipe(
+        catchError(() => of(null)),
+        tap(visitor => {
+          if (visitor) {
+            const fallbackName = this.activeChats.find(chat => chat.id === sessionIdStr)?.customerName ?? 'Anonymer Benutzer';
+            const displayName = this.resolveVisitorDisplayName(visitor, fallbackName);
+
+            if (visitor.email) {
+              this.visitorEmailCache.set(sessionIdStr, visitor.email);
+            }
+
+            this.activeChats = this.activeChats.map(chat =>
+              chat.id === sessionIdStr
+                ? {
+                    ...chat,
+                    customerName: displayName,
+                    customerFirstName: visitor.first_name || chat.customerFirstName,
+                    customerLastName: visitor.last_name || chat.customerLastName,
+                    customerEmail: visitor.email || chat.customerEmail,
+                    visitor: {
+                      first_name: visitor.first_name,
+                      last_name: visitor.last_name,
+                      email: visitor.email,
+                      phone: visitor.phone
+                    }
+                  }
+                : chat
+            );
+
+            const updatedChat = this.activeChats.find(chat => chat.id === sessionIdStr);
+            if (updatedChat) {
+              this.filteredActiveChats = this.filteredActiveChats.map(chat =>
+                chat.id === sessionIdStr ? updatedChat : chat
+              );
+            }
+          }
+        })
+      )
+    );
+
+    if (!requests.length) {
+      return;
+    }
+
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.filterChats();
+        this.cdRef.markForCheck();
+      }
+    });
+  }
+
+  private resolveVisitorDisplayName(visitor: any, fallback: string): string {
+    const first = visitor?.first_name ?? '';
+    const last = visitor?.last_name ?? '';
+    const full = `${first} ${last}`.trim();
+    return full || fallback || 'Anonymer Benutzer';
   }
 }
 

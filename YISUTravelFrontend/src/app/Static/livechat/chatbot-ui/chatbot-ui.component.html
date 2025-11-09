@@ -168,7 +168,7 @@
             <div class="welcome-bubble">
               <p>Hallo! 👋 Wie kann ich Ihnen helfen?</p>
               <div class="quick-questions">
-                @for (question of quickQuestions(); track question) {
+                @for (question of quickQuestions(); track trackQuickQuestion($index, question)) {
                   <button mat-stroked-button (click)="sendMessage(question)">
                     {{ question }}
                   </button>
@@ -179,7 +179,7 @@
         }
 
         <!-- Messages -->
-        @for (message of messages(); track $index) {
+        @for (message of messages(); track trackMessage($index, message)) {
           <div class="message"
                [class.user-message]="message.from === 'user'"
                [class.bot-message]="message.from === 'bot' || message.from === 'agent'"

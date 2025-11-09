@@ -1682,7 +1682,12 @@ class ChatbotController extends Controller
             ->first();
 
         if (!$chat) {
-            return response()->json(['error' => 'Chat session not found'], 404);
+            return response()->json([
+                'session_id' => $validated['session_id'],
+                'user_id' => null,
+                'messages' => [],
+                'chat_exists' => false
+            ]);
         }
 
         // Für authentifizierte Benutzer: Sicherstellen, dass sie nur ihre eigenen Chats sehen
@@ -1796,8 +1801,15 @@ class ChatbotController extends Controller
         if (!$chat) {
             return response()->json([
                 'success' => false,
+                'status' => 'not_found',
+                'chat_id' => null,
+                'session_id' => $sessionId,
+                'assigned_to' => null,
+                'assigned_agent_name' => null,
+                'can_write' => false,
+                'is_escalated' => false,
                 'message' => 'Chat nicht gefunden'
-            ], 404);
+            ]);
         }
 
         $agent = Auth::user();

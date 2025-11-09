@@ -1,12 +1,13 @@
 import {
-  AfterViewInit, ChangeDetectorRef,
+  AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef,
   Component,
   effect,
   ElementRef,
   Inject, NgZone,
   PLATFORM_ID,
   signal,
-  viewChild
+  viewChild,
+  isDevMode
 } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { animate, style, transition, trigger } from "@angular/animations";
@@ -17,7 +18,7 @@ import { MatInput, MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import {ChatbotService} from "../../../Services/chatbot-service/chatbot.service";
 import {AuthService} from "../../../Services/AuthService/auth.service";
-import {interval, Subscription} from "rxjs";
+import {catchError, interval, of, Subscription, throwError} from "rxjs";
 import {PusherService} from "../../../Services/Pusher/pusher.service";
 import {MatCheckbox} from "@angular/material/checkbox";
 import {RouterLink} from "@angular/router";
@@ -30,6 +31,7 @@ import {MatSnackBar, MatSnackBarModule} from "@angular/material/snack-bar";
   imports: [MatIconModule, MatButton, DatePipe, FormsModule, MatIconButton, MatInput, MatInputModule, MatFormFieldModule, MatCheckbox, RouterLink, NgSwitch, MatSnackBarModule],
   templateUrl: './chatbot-ui.component.html',
   styleUrl: './chatbot-ui.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [
     trigger('windowAnimation', [
       transition(':enter', [
@@ -116,6 +118,25 @@ export class ChatUiComponent implements AfterViewInit {
 
   // SSR browser check
   isBrowser: boolean;
+  private readonly debugEnabled = isDevMode();
+  
+  private debugLog(...args: any[]): void {
+    if (this.debugEnabled) {
+      console.log(...args);
+    }
+  }
+
+  private warnLog(...args: any[]): void {
+    if (this.debugEnabled) {
+      console.warn(...args);
+    }
+  }
+
+  private errorLog(...args: any[]): void {
+    if (this.debugEnabled) {
+      console.error(...args);
+    }
+  }
   
   // ✅ Flag um zu verhindern, dass beim Laden aus localStorage gespeichert wird
   private isLoadingFromStorage = false;
@@ -162,7 +183,7 @@ export class ChatUiComponent implements AfterViewInit {
 
     const sessionId = localStorage.getItem('session_id');
     if (!sessionId) {
-      console.error('No session ID found for escalation response');
+      this.errorLog('No session ID found for escalation response');
       this.addMessage({
         from: 'bot',
         text: 'Sitzungsfehler. Bitte starten Sie den Chat neu.',
@@ -171,7 +192,7 @@ export class ChatUiComponent implements AfterViewInit {
       return;
     }
 
-    console.log('Handling escalation response:', {
+    this.debugLog('Handling escalation response:', {
       response,
       metadata,
       sessionId
@@ -206,12 +227,12 @@ export class ChatUiComponent implements AfterViewInit {
     }
 
 
-    console.log('Sending escalation response to backend:', payload);
+    this.debugLog('Sending escalation response to backend:', payload);
 
     // Backend-Call mit korrigiertem Payload
     this.chatbotService.handleEscalationPromptResponse(payload).subscribe({
       next: (result) => {
-        console.log('Escalation response processed successfully:', result);
+        this.debugLog('Escalation response processed successfully:', result);
         this.isTyping.set(false);
 
         if (response === 'accept') {
@@ -245,7 +266,7 @@ export class ChatUiComponent implements AfterViewInit {
         this.scrollToBottom();
       },
       error: (err) => {
-        console.error('Error handling escalation response:', err);
+        this.errorLog('Error handling escalation response:', err);
         this.isTyping.set(false);
 
         // Fehlermeldung basierend auf Fehlertyp
@@ -298,7 +319,7 @@ export class ChatUiComponent implements AfterViewInit {
     this.restoreAssignmentStatus();
 
     // ✅ WICHTIG: Pusher Listener sofort einrichten (vor Auth-Check)
-    console.log('Initializing Pusher listeners on component init...');
+    this.debugLog('Initializing Pusher listeners on component init...');
     this.setupPusherListener();
 
     this.authSub = this.authService.getAuthenticated().subscribe(auth => {
@@ -320,7 +341,7 @@ export class ChatUiComponent implements AfterViewInit {
     // Notification Permission Status überwachen
     this.visitorNotification.permissionStatus.subscribe(status => {
       if (status.granted) {
-        console.log('✅ Visitor notifications enabled');
+        this.debugLog('✅ Visitor notifications enabled');
       }
     });
   }
@@ -354,7 +375,7 @@ export class ChatUiComponent implements AfterViewInit {
         }
       },
       error: (err) => {
-        console.error('Error checking registration:', err);
+        this.errorLog('Error checking registration:', err);
         this.showRegistrationForm.set(true);
         this.showQuickQuestions.set(false);
       }
@@ -417,7 +438,7 @@ export class ChatUiComponent implements AfterViewInit {
       agb_accepted: form.agb_accepted
     }).subscribe({
       next: (response) => {
-        console.log('Registration successful:', response);
+        this.debugLog('Registration successful:', response);
 
         this.isTyping.set(false);
         this.isRegistered.set(true);
@@ -426,7 +447,7 @@ export class ChatUiComponent implements AfterViewInit {
         // ✅ WICHTIG: Pusher Listener nach erfolgreicher Registrierung einrichten
         // Muss VOR loadChatHistory() eingerichtet werden, damit die Willkommensnachricht empfangen wird
         if (this.sessionId) {
-          console.log('Setting up Pusher listeners after registration...');
+          this.debugLog('Setting up Pusher listeners after registration...');
           this.setupPusherListener();
         }
 
@@ -440,7 +461,7 @@ export class ChatUiComponent implements AfterViewInit {
           message_type: 'registration_welcome'
         };
         
-        console.log('✅ Füge Willkommensnachricht direkt hinzu');
+        this.debugLog('✅ Füge Willkommensnachricht direkt hinzu');
         this.addMessage(welcomeMessage);
 
         // ✅ Chat-Historie laden (enthält die Nachricht vom Backend für Persistenz)
@@ -473,7 +494,7 @@ export class ChatUiComponent implements AfterViewInit {
 
       },
       error: (err) => {
-        console.error('Registration error:', err);
+        this.errorLog('Registration error:', err);
         this.isTyping.set(false);
 
         // Spezifische Fehlermeldungen basierend auf dem Fehlercode
@@ -498,7 +519,7 @@ export class ChatUiComponent implements AfterViewInit {
         }
 
         // Fehler-Log für Debugging
-        console.error('Registration failed:', {
+        this.errorLog('Registration failed:', {
           status: err.status,
           error: err.error,
           message: err.message
@@ -514,201 +535,203 @@ export class ChatUiComponent implements AfterViewInit {
 
     const sessionId = localStorage.getItem('session_id');
     if (!sessionId) {
-      console.error('No session ID found for Pusher listener');
+      this.errorLog('No session ID found for Pusher listener');
       return;
     }
 
-    console.log('Setting up Pusher listener for session:', sessionId);
+    this.ngZone.runOutsideAngular(() => {
+      this.debugLog('Setting up Pusher listener for session:', sessionId);
 
-    // ✅ WICHTIG: Escalation Listener ZUERST einrichten
-    this.pusherService.listenToChannel(
-      `chat.${sessionId}`,
-      'escalation.prompt.sent',
-      (data: any) => {
-        console.log('📢 Escalation prompt received from agent:', data);
-        this.ngZone.run(() => {
-          if (data.message && data.escalation_prompt) {
-            // Escalation Options anzeigen
-            this.showEscalationOptions.set(true);
-            this.currentEscalationPrompt.set({
-              prompt_id: data.message.metadata?.escalation_prompt_id || null,
-              is_manual: true,
-              is_automatic: false,
-              options: data.message.metadata?.options || [
-                { text: 'Ja, gerne', value: 'accept' },
-                { text: 'Nein, danke', value: 'decline' }
-              ]
+      // ✅ WICHTIG: Escalation Listener ZUERST einrichten
+      this.pusherService.listenToChannel(
+        `chat.${sessionId}`,
+        'escalation.prompt.sent',
+        (data: any) => {
+          this.debugLog('📢 Escalation prompt received from agent:', data);
+          this.ngZone.run(() => {
+            if (data.message && data.escalation_prompt) {
+              // Escalation Options anzeigen
+              this.showEscalationOptions.set(true);
+              this.currentEscalationPrompt.set({
+                prompt_id: data.message.metadata?.escalation_prompt_id || null,
+                is_manual: true,
+                is_automatic: false,
+                options: data.message.metadata?.options || [
+                  { text: 'Ja, gerne', value: 'accept' },
+                  { text: 'Nein, danke', value: 'decline' }
+                ]
+              });
+
+              // Nachricht zum Chat hinzufügen
+              const messageTimestamp = new Date(data.message.created_at || new Date());
+              if (!this.isMessageDuplicate(data.message.text, 'bot', messageTimestamp)) {
+                this.addMessage({
+                  from: 'bot',
+                  text: data.message.text,
+                  timestamp: messageTimestamp,
+                  message_type: 'escalation_prompt',
+                  metadata: data.message.metadata
+                });
+              }
+
+              // Optional: Benachrichtigung
+              if (this.visitorNotification.areNotificationsEnabled) {
+                this.visitorNotification.notifySystemMessage(
+                  'Anfrage vom Support',
+                  'Ein Mitarbeiter möchte wissen, ob Sie Hilfe benötigen'
+                );
+              }
+
+              this.scrollToBottom();
+              this.cdRef.markForCheck();
+            }
+          });
+        }
+      );
+
+      // Message Received Listener
+      this.pusherSubscription = this.pusherService.listenToChannel(
+        `chat.${sessionId}`,
+        'message.received',
+        (data: any) => {
+          this.debugLog('🔄 Raw Pusher data received:', {
+            channel: `chat.${sessionId}`,
+            data: data,
+            messageFrom: data.message?.from,
+            messageText: data.message?.text
+          });
+
+          this.ngZone.run(() => {
+            if (data.message?.session_id === sessionId) {
+              this.debugLog('✅ Processing message for correct session');
+              this.handleIncomingMessage(data);
+            } else {
+              this.warnLog('❌ Message for different session, ignoring');
+            }
+          });
+        }
+      );
+
+      // Assignment-Event Listener
+      this.pusherService.listenToChannel(
+        `chat.${sessionId}`,
+        'chat.assigned',
+        (data: any) => {
+          this.debugLog('🎯 Chat assigned event:', data);
+          this.ngZone.run(() => {
+            this.chatAssignmentStatus.set({
+              is_assigned: true,
+              assigned_to: data.assigned_to,
+              assigned_agent_name: data.agent_name
+            });
+            this.assignedAgentName.set(data.agent_name || '');
+            this.showAgentConnection.set(true);
+
+            // ✅ Set chat ID from assignment
+            if (data.chat_id) {
+              this.debugLog('Setting chat ID from chat.assigned event:', data.chat_id);
+              this.currentChatId.set(data.chat_id);
+              localStorage.setItem('current_chat_id', data.chat_id);
+            }
+
+            // ✅ IMPORTANT: Update chat status to allow file uploads
+            if (data.status) {
+              this.debugLog('Setting chat status from chat.assigned event:', data.status);
+              this.chatStatus.set(data.status);
+              if (data.status === 'human' || data.status === 'in_progress') {
+                this.isEscalated.set(true);
+              }
+            } else {
+              // Fallback: If no status provided, set to in_progress when agent is assigned
+              this.debugLog('No status in chat.assigned, defaulting to in_progress');
+              this.chatStatus.set('in_progress');
+              this.isEscalated.set(true);
+            }
+
+            this.debugLog('✅ Chat assigned complete:', {
+              agent: data.agent_name,
+              chat_id: this.currentChatId(),
+              status: this.chatStatus(),
+              can_upload: this.chatStatus() === 'human' || this.chatStatus() === 'in_progress'
             });
 
-            // Nachricht zum Chat hinzufügen
-            const messageTimestamp = new Date(data.message.created_at || new Date());
-            if (!this.isMessageDuplicate(data.message.text, 'bot', messageTimestamp)) {
+            // ✅ NOTIFICATION: Nur wenn explizit aktiviert
+            if (data.agent_name && this.visitorNotification.areNotificationsEnabled) {
+              this.debugLog('Sending agent assigned notification...');
+              this.visitorNotification.notifyAgentAssigned(data.agent_name);
+            } else {
+              this.debugLog('Agent assigned notification skipped - not enabled');
+            }
+          });
+        }
+      );
+
+      // ✅ Transfer-Event Listener
+      this.pusherService.listenToChannel(
+        `chat.${sessionId}`,
+        'chat.transferred',
+        (data: any) => {
+          this.debugLog('🔄 Chat transferred event:', data);
+          this.ngZone.run(() => {
+            this.assignedAgentName.set(data.to_agent_name || '');
+            // ✅ ENTFERNT: Lokale Transfer-Nachricht nicht mehr hinzufügen
+            // Das Backend sendet bereits eine vollständige Transfer-Nachricht via Pusher
+
+            // ✅ NOTIFICATION: Nur wenn explizit aktiviert
+            if (data.to_agent_name && this.visitorNotification.areNotificationsEnabled) {
+              this.debugLog('Sending agent transfer notification...');
+              this.visitorNotification.notifyAgentAssigned(data.to_agent_name);
+            } else {
+              this.debugLog('Agent transfer notification skipped - not enabled');
+            }
+          });
+        }
+      );
+
+      // Chat Status Changed Listener
+      this.pusherService.listenToChannel(
+        `chat.${sessionId}`,
+        'chat.status.changed',
+        (data: any) => {
+          this.debugLog('📊 Chat status changed:', data);
+          this.ngZone.run(() => {
+            if (data.new_status) {
+              this.chatStatus.set(data.new_status);
+              if (data.new_status === 'human') {
+                this.isEscalated.set(true);
+              }
+            }
+          });
+        }
+      );
+
+      // Chat Ended Listener
+      this.pusherService.listenToChannel(
+        `chat.${sessionId}`,
+        'chat.ended',
+        (data: any) => {
+          this.debugLog('🔚 Chat ended event:', data);
+          this.ngZone.run(() => {
+            this.chatStatus.set('bot');
+            this.isEscalated.set(false);
+            this.showAgentConnection.set(false);
+            this.assignedAgentName.set('');
+            this.chatAssignmentStatus.set(null);
+
+            if (data.ended_by === 'agent') {
               this.addMessage({
-                from: 'bot',
-                text: data.message.text,
-                timestamp: messageTimestamp,
-                message_type: 'escalation_prompt',
-                metadata: data.message.metadata
+                from: 'system',
+                text: 'Der Mitarbeiter hat den Chat beendet.',
+                timestamp: new Date(),
+                isSystemMessage: true
               });
             }
-
-            // Optional: Benachrichtigung
-            if (this.visitorNotification.areNotificationsEnabled) {
-              this.visitorNotification.notifySystemMessage(
-                'Anfrage vom Support',
-                'Ein Mitarbeiter möchte wissen, ob Sie Hilfe benötigen'
-              );
-            }
-
-            this.scrollToBottom();
-            this.cdRef.detectChanges();
-          }
-        });
-      }
-    );
-
-    // Message Received Listener
-    this.pusherSubscription = this.pusherService.listenToChannel(
-      `chat.${sessionId}`,
-      'message.received',
-      (data: any) => {
-        console.log('🔄 Raw Pusher data received:', {
-          channel: `chat.${sessionId}`,
-          data: data,
-          messageFrom: data.message?.from,
-          messageText: data.message?.text
-        });
-
-        this.ngZone.run(() => {
-          if (data.message?.session_id === sessionId) {
-            console.log('✅ Processing message for correct session');
-            this.handleIncomingMessage(data);
-          } else {
-            console.warn('❌ Message for different session, ignoring');
-          }
-        });
-      }
-    );
-
-    // Assignment-Event Listener
-    this.pusherService.listenToChannel(
-      `chat.${sessionId}`,
-      'chat.assigned',
-      (data: any) => {
-        console.log('🎯 Chat assigned event:', data);
-        this.ngZone.run(() => {
-          this.chatAssignmentStatus.set({
-            is_assigned: true,
-            assigned_to: data.assigned_to,
-            assigned_agent_name: data.agent_name
           });
-          this.assignedAgentName.set(data.agent_name || '');
-          this.showAgentConnection.set(true);
+        }
+      );
 
-          // ✅ Set chat ID from assignment
-          if (data.chat_id) {
-            console.log('Setting chat ID from chat.assigned event:', data.chat_id);
-            this.currentChatId.set(data.chat_id);
-            localStorage.setItem('current_chat_id', data.chat_id);
-          }
-
-          // ✅ IMPORTANT: Update chat status to allow file uploads
-          if (data.status) {
-            console.log('Setting chat status from chat.assigned event:', data.status);
-            this.chatStatus.set(data.status);
-            if (data.status === 'human' || data.status === 'in_progress') {
-              this.isEscalated.set(true);
-            }
-          } else {
-            // Fallback: If no status provided, set to in_progress when agent is assigned
-            console.log('No status in chat.assigned, defaulting to in_progress');
-            this.chatStatus.set('in_progress');
-            this.isEscalated.set(true);
-          }
-
-          console.log('✅ Chat assigned complete:', {
-            agent: data.agent_name,
-            chat_id: this.currentChatId(),
-            status: this.chatStatus(),
-            can_upload: this.chatStatus() === 'human' || this.chatStatus() === 'in_progress'
-          });
-
-          // ✅ NOTIFICATION: Nur wenn explizit aktiviert
-          if (data.agent_name && this.visitorNotification.areNotificationsEnabled) {
-            console.log('Sending agent assigned notification...');
-            this.visitorNotification.notifyAgentAssigned(data.agent_name);
-          } else {
-            console.log('Agent assigned notification skipped - not enabled');
-          }
-        });
-      }
-    );
-
-    // ✅ Transfer-Event Listener
-    this.pusherService.listenToChannel(
-      `chat.${sessionId}`,
-      'chat.transferred',
-      (data: any) => {
-        console.log('🔄 Chat transferred event:', data);
-        this.ngZone.run(() => {
-          this.assignedAgentName.set(data.to_agent_name || '');
-          // ✅ ENTFERNT: Lokale Transfer-Nachricht nicht mehr hinzufügen
-          // Das Backend sendet bereits eine vollständige Transfer-Nachricht via Pusher
-
-          // ✅ NOTIFICATION: Nur wenn explizit aktiviert
-          if (data.to_agent_name && this.visitorNotification.areNotificationsEnabled) {
-            console.log('Sending agent transfer notification...');
-            this.visitorNotification.notifyAgentAssigned(data.to_agent_name);
-          } else {
-            console.log('Agent transfer notification skipped - not enabled');
-          }
-        });
-      }
-    );
-
-    // Chat Status Changed Listener
-    this.pusherService.listenToChannel(
-      `chat.${sessionId}`,
-      'chat.status.changed',
-      (data: any) => {
-        console.log('📊 Chat status changed:', data);
-        this.ngZone.run(() => {
-          if (data.new_status) {
-            this.chatStatus.set(data.new_status);
-            if (data.new_status === 'human') {
-              this.isEscalated.set(true);
-            }
-          }
-        });
-      }
-    );
-
-    // Chat Ended Listener
-    this.pusherService.listenToChannel(
-      `chat.${sessionId}`,
-      'chat.ended',
-      (data: any) => {
-        console.log('🔚 Chat ended event:', data);
-        this.ngZone.run(() => {
-          this.chatStatus.set('bot');
-          this.isEscalated.set(false);
-          this.showAgentConnection.set(false);
-          this.assignedAgentName.set('');
-          this.chatAssignmentStatus.set(null);
-
-          if (data.ended_by === 'agent') {
-            this.addMessage({
-              from: 'system',
-              text: 'Der Mitarbeiter hat den Chat beendet.',
-              timestamp: new Date(),
-              isSystemMessage: true
-            });
-          }
-        });
-      }
-    );
-
-    console.log('✅ All Pusher listeners set up successfully for session:', sessionId);
+      this.debugLog('✅ All Pusher listeners set up successfully for session:', sessionId);
+    });
   }
 
 
@@ -726,7 +749,7 @@ export class ChatUiComponent implements AfterViewInit {
           this.setupPusherListener(); // Listener neu einrichten
         }
       },
-      error: (err) => console.error('Error checking chat status:', err)
+      error: (err) => this.errorLog('Error checking chat status:', err)
     });
   }
 
@@ -774,7 +797,7 @@ export class ChatUiComponent implements AfterViewInit {
           }
         });
       },
-      error: (err) => console.error('Statusabfrage fehlgeschlagen:', err)
+      error: (err) => this.errorLog('Statusabfrage fehlgeschlagen:', err)
     });
   }
 
@@ -792,11 +815,11 @@ export class ChatUiComponent implements AfterViewInit {
       return;
     }
 
-    console.log('🔄 Restoring assignment status for session:', sessionId);
+    this.debugLog('🔄 Restoring assignment status for session:', sessionId);
 
     this.chatbotService.getAnonymousAssignmentStatus(sessionId).subscribe({
       next: (response) => {
-        console.log('✅ Assignment status restored:', response);
+        this.debugLog('✅ Assignment status restored:', response);
         
         if (response.success && response.assigned_agent_name) {
           this.ngZone.run(() => {
@@ -827,18 +850,20 @@ export class ChatUiComponent implements AfterViewInit {
               assigned_agent_name: response.assigned_agent_name
             });
 
-            console.log('✅ Assignment status fully restored:', {
+            this.debugLog('✅ Assignment status fully restored:', {
               agent: response.assigned_agent_name,
               status: response.status,
               chat_id: response.chat_id
             });
           });
         } else {
-          console.log('ℹ️ No agent assigned, banner will not be shown');
+          this.debugLog('ℹ️ No agent assigned, banner will not be shown');
         }
       },
       error: (err) => {
-        console.error('❌ Error restoring assignment status:', err);
+        if (err?.status !== 404) {
+          this.errorLog('❌ Error restoring assignment status:', err);
+        }
         // Bei Fehler (z.B. Chat nicht gefunden) einfach nichts tun
         // Das Banner bleibt ausgeblendet
       }
@@ -869,197 +894,211 @@ export class ChatUiComponent implements AfterViewInit {
 
 
   loadChatHistory() {
-    const sessionId = localStorage.getItem('session_id');
-    if (!this.sessionId) {
-      this.sessionId = this.generateSessionId();
-      localStorage.setItem('session_id', this.sessionId);
-      return;
-    }
-    if (sessionId) {
-      this.chatbotService.getChatHistory(sessionId).subscribe({
-        next: (response) => {
-          console.log('📚 Chat history loaded:', response);
-          if (response.messages) {
-            const loadedMessages = response.messages.map((msg: any) => ({
-              from: msg.from,
-              text: msg.text,
-              timestamp: new Date(msg.timestamp || Date.now()),
-              message_type: msg.message_type,
-              metadata: msg.metadata,
-              attachment: msg.has_attachment ? msg.attachment : undefined
-            }));
-            
-            // ✅ Nachrichten nach Timestamp sortieren
-            // Auf Mobile und Desktop: Älteste zuerst (normale Reihenfolge)
-            const sortedMessages = [...loadedMessages].sort((a, b) => {
-              const timeA = new Date(a.timestamp).getTime();
-              const timeB = new Date(b.timestamp).getTime();
-              return timeA - timeB;
-            });
-            
-            // ✅ WICHTIG: Merge mit bestehenden Nachrichten, um lokal hinzugefügte Nachrichten nicht zu verlieren
-            // Prüfe ob Willkommensnachricht bereits lokal hinzugefügt wurde
-            const currentMessages = this.messages();
-            const hasLocalWelcomeMessage = currentMessages.some(msg => 
-              msg.message_type === 'registration_welcome' || 
-              (msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
-            );
-            
-            // Wenn Willkommensnachricht lokal vorhanden ist, aber nicht in der Historie, behalte sie
-            if (hasLocalWelcomeMessage) {
-              const welcomeInHistory = sortedMessages.some(msg => 
-                msg.message_type === 'registration_welcome' || 
-                (msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
-              );
-              
-              if (!welcomeInHistory) {
-                console.log('✅ Behalte lokal hinzugefügte Willkommensnachricht');
-                // Merge: Füge lokale Nachrichten hinzu, die nicht in der Historie sind
-                const localOnlyMessages = currentMessages.filter(localMsg => {
-                  // Prüfe ob diese Nachricht in der Historie ist
-                  // Für Willkommensnachrichten: Prüfe auch auf ähnlichen Text
-                  const isWelcomeMessage = localMsg.message_type === 'registration_welcome' || 
-                    (localMsg.from === 'bot' && localMsg.text.includes('Vielen Dank für Ihre Registrierung'));
-                  
-                  if (isWelcomeMessage) {
-                    // Für Willkommensnachrichten: Prüfe ob eine ähnliche Nachricht in der Historie ist
-                    return !sortedMessages.some(histMsg => 
-                      (histMsg.message_type === 'registration_welcome' || 
-                       (histMsg.from === 'bot' && histMsg.text.includes('Vielen Dank für Ihre Registrierung'))) &&
-                      histMsg.from === localMsg.from
-                    );
-                  } else {
-                    // Für andere Nachrichten: Exakte Prüfung
-                    return !sortedMessages.some(histMsg => 
-                      histMsg.text === localMsg.text && 
-                      histMsg.from === localMsg.from &&
-                      Math.abs(new Date(histMsg.timestamp).getTime() - new Date(localMsg.timestamp).getTime()) < 5000
-                    );
-                  }
-                });
-                
-                // Kombiniere Historie mit lokalen Nachrichten
-                const mergedMessages = [...sortedMessages, ...localOnlyMessages].sort((a, b) => {
-                  const timeA = new Date(a.timestamp).getTime();
-                  const timeB = new Date(b.timestamp).getTime();
-                  return timeA - timeB;
-                });
-                
-                this.messages.set(mergedMessages);
-              } else {
-                // Willkommensnachricht ist in der Historie, verwende nur Historie
-                // ✅ WICHTIG: Stelle sicher, dass Willkommensnachricht den frühesten Timestamp hat
-                const welcomeInSorted = sortedMessages.find((msg: any) => 
-                  msg.message_type === 'registration_welcome' || 
-                  (msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
-                );
-                
-                if (welcomeInSorted) {
-                  const otherMessages = sortedMessages.filter((msg: any) => 
-                    msg.message_type !== 'registration_welcome' && 
-                    !(msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
-                  );
-                  
-                  if (otherMessages.length > 0) {
-                    const earliestOther = Math.min(...otherMessages.map((msg: any) => new Date(msg.timestamp).getTime()));
-                    const welcomeTimestamp = new Date(welcomeInSorted.timestamp).getTime();
-                    
-                    // Wenn Willkommensnachricht später ist, setze sie auf 1ms vor der frühesten anderen Nachricht
-                    if (welcomeTimestamp >= earliestOther) {
-                      welcomeInSorted.timestamp = new Date(earliestOther - 1);
-                      // Neu sortieren nach Timestamp-Korrektur
-                      sortedMessages.sort((a: any, b: any) => {
-                        const timeA = new Date(a.timestamp).getTime();
-                        const timeB = new Date(b.timestamp).getTime();
-                        return timeA - timeB;
-                      });
-                    }
-                  }
-                }
-                
-                this.messages.set(sortedMessages);
-              }
-            } else {
-              // Keine lokale Willkommensnachricht, verwende nur Historie
-              // ✅ WICHTIG: Stelle sicher, dass Willkommensnachricht den frühesten Timestamp hat
-              const welcomeInSorted = sortedMessages.find((msg: any) => 
-                msg.message_type === 'registration_welcome' || 
-                (msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
-              );
-              
-              if (welcomeInSorted) {
-                const otherMessages = sortedMessages.filter((msg: any) => 
-                  msg.message_type !== 'registration_welcome' && 
-                  !(msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
-                );
-                
-                if (otherMessages.length > 0) {
-                  const earliestOther = Math.min(...otherMessages.map((msg: any) => new Date(msg.timestamp).getTime()));
-                  const welcomeTimestamp = new Date(welcomeInSorted.timestamp).getTime();
-                  
-                  // Wenn Willkommensnachricht später ist, setze sie auf 1ms vor der frühesten anderen Nachricht
-                  if (welcomeTimestamp >= earliestOther) {
-                    welcomeInSorted.timestamp = new Date(earliestOther - 1);
-                    // Neu sortieren nach Timestamp-Korrektur
-                    sortedMessages.sort((a: any, b: any) => {
-                      const timeA = new Date(a.timestamp).getTime();
-                      const timeB = new Date(b.timestamp).getTime();
-                      return timeA - timeB;
-                    });
-                  }
-                }
-              }
-              
-              this.messages.set(sortedMessages);
-            }
-            console.log('Messages with attachments:', this.messages().filter(m => m.attachment));
-            
-            // ✅ Logging: Prüfe ob Willkommensnachricht in der Historie ist
-            const welcomeMessage = sortedMessages.find(msg => 
-              msg.message_type === 'registration_welcome' || 
-              (msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
-            );
-            if (welcomeMessage) {
-              console.log('✅ Willkommensnachricht in Chat-Historie gefunden:', welcomeMessage.text);
-            } else {
-              console.log('⚠️ Willkommensnachricht NICHT in Chat-Historie gefunden');
-            }
+     const sessionId = localStorage.getItem('session_id');
+     if (!this.sessionId) {
+       this.sessionId = this.generateSessionId();
+       localStorage.setItem('session_id', this.sessionId);
+       return;
+     }
+     if (sessionId) {
+       this.chatbotService.getChatHistory(sessionId)
+         .pipe(
+           catchError((err) => {
+             if (err?.status === 404) {
+               this.debugLog('No chat history found for session:', sessionId);
+               return of({ messages: [] });
+             }
+             return throwError(() => err);
+           })
+         )
+         .subscribe({
+           next: (response) => {
+             this.debugLog('📚 Chat history loaded:', response);
+             if (response.messages) {
+               const loadedMessages = response.messages.map((msg: any) => ({
+                 from: msg.from,
+                 text: msg.text,
+                 timestamp: new Date(msg.timestamp || Date.now()),
+                 message_type: msg.message_type,
+                 metadata: msg.metadata,
+                 attachment: msg.has_attachment ? msg.attachment : undefined
+               }));
+               
+               // ✅ Nachrichten nach Timestamp sortieren
+               // Auf Mobile und Desktop: Älteste zuerst (normale Reihenfolge)
+               const sortedMessages = [...loadedMessages].sort((a, b) => {
+                 const timeA = new Date(a.timestamp).getTime();
+                 const timeB = new Date(b.timestamp).getTime();
+                 return timeA - timeB;
+               });
+               
+               // ✅ WICHTIG: Merge mit bestehenden Nachrichten, um lokal hinzugefügte Nachrichten nicht zu verlieren
+               // Prüfe ob Willkommensnachricht bereits lokal hinzugefügt wurde
+               const currentMessages = this.messages();
+               const hasLocalWelcomeMessage = currentMessages.some(msg => 
+                 msg.message_type === 'registration_welcome' || 
+                 (msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
+               );
+               
+               // Wenn Willkommensnachricht lokal vorhanden ist, aber nicht in der Historie, behalte sie
+               if (hasLocalWelcomeMessage) {
+                 const welcomeInHistory = sortedMessages.some(msg => 
+                   msg.message_type === 'registration_welcome' || 
+                   (msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
+                 );
+                 
+                 if (!welcomeInHistory) {
+                   this.debugLog('✅ Behalte lokal hinzugefügte Willkommensnachricht');
+                   // Merge: Füge lokale Nachrichten hinzu, die nicht in der Historie sind
+                   const localOnlyMessages = currentMessages.filter(localMsg => {
+                     // Prüfe ob diese Nachricht in der Historie ist
+                     // Für Willkommensnachrichten: Prüfe auch auf ähnlichen Text
+                     const isWelcomeMessage = localMsg.message_type === 'registration_welcome' || 
+                       (localMsg.from === 'bot' && localMsg.text.includes('Vielen Dank für Ihre Registrierung'));
+                     
+                     if (isWelcomeMessage) {
+                       // Für Willkommensnachrichten: Prüfe ob eine ähnliche Nachricht in der Historie ist
+                       return !sortedMessages.some(histMsg => 
+                         (histMsg.message_type === 'registration_welcome' || 
+                          (histMsg.from === 'bot' && histMsg.text.includes('Vielen Dank für Ihre Registrierung'))) &&
+                        histMsg.from === localMsg.from
+                       );
+                     } else {
+                       // Für andere Nachrichten: Exakte Prüfung
+                       return !sortedMessages.some(histMsg => 
+                         histMsg.text === localMsg.text && 
+                         histMsg.from === localMsg.from &&
+                         Math.abs(new Date(histMsg.timestamp).getTime() - new Date(localMsg.timestamp).getTime()) < 5000
+                       );
+                     }
+                   });
+                   
+                   // Kombiniere Historie mit lokalen Nachrichten
+                   const mergedMessages = [...sortedMessages, ...localOnlyMessages].sort((a, b) => {
+                     const timeA = new Date(a.timestamp).getTime();
+                     const timeB = new Date(b.timestamp).getTime();
+                     return timeA - timeB;
+                   });
+                   
+                   this.messages.set(mergedMessages);
+                 } else {
+                   // Willkommensnachricht ist in der Historie, verwende nur Historie
+                   // ✅ WICHTIG: Stelle sicher, dass Willkommensnachricht den frühesten Timestamp hat
+                   const welcomeInSorted = sortedMessages.find((msg: any) => 
+                     msg.message_type === 'registration_welcome' || 
+                     (msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
+                   );
+                   
+                   if (welcomeInSorted) {
+                     const otherMessages = sortedMessages.filter((msg: any) => 
+                       msg.message_type !== 'registration_welcome' && 
+                       !(msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
+                     );
+                     
+                     if (otherMessages.length > 0) {
+                       const earliestOther = Math.min(...otherMessages.map((msg: any) => new Date(msg.timestamp).getTime()));
+                       const welcomeTimestamp = new Date(welcomeInSorted.timestamp).getTime();
+                       
+                       // Wenn Willkommensnachricht später ist, setze sie auf 1ms vor der frühesten anderen Nachricht
+                       if (welcomeTimestamp >= earliestOther) {
+                         welcomeInSorted.timestamp = new Date(earliestOther - 1);
+                         // Neu sortieren nach Timestamp-Korrektur
+                         sortedMessages.sort((a: any, b: any) => {
+                           const timeA = new Date(a.timestamp).getTime();
+                           const timeB = new Date(b.timestamp).getTime();
+                           return timeA - timeB;
+                         });
+                       }
+                     }
+                   }
+                   
+                   this.messages.set(sortedMessages);
+                 }
+               } else {
+                 // Keine lokale Willkommensnachricht, verwende nur Historie
+                 // ✅ WICHTIG: Stelle sicher, dass Willkommensnachricht den frühesten Timestamp hat
+                 const welcomeInSorted = sortedMessages.find((msg: any) => 
+                   msg.message_type === 'registration_welcome' || 
+                   (msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
+                 );
+                 
+                 if (welcomeInSorted) {
+                   const otherMessages = sortedMessages.filter((msg: any) => 
+                     msg.message_type !== 'registration_welcome' && 
+                     !(msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
+                   );
+                   
+                   if (otherMessages.length > 0) {
+                     const earliestOther = Math.min(...otherMessages.map((msg: any) => new Date(msg.timestamp).getTime()));
+                     const welcomeTimestamp = new Date(welcomeInSorted.timestamp).getTime();
+                     
+                     // Wenn Willkommensnachricht später ist, setze sie auf 1ms vor der frühesten anderen Nachricht
+                     if (welcomeTimestamp >= earliestOther) {
+                       welcomeInSorted.timestamp = new Date(earliestOther - 1);
+                       // Neu sortieren nach Timestamp-Korrektur
+                       sortedMessages.sort((a: any, b: any) => {
+                         const timeA = new Date(a.timestamp).getTime();
+                         const timeB = new Date(b.timestamp).getTime();
+                         return timeA - timeB;
+                       });
+                     }
+                   }
+                 }
+                 
+                 this.messages.set(sortedMessages);
+               }
+               this.debugLog('Messages with attachments:', this.messages().filter(m => m.attachment));
+               
+               // ✅ Logging: Prüfe ob Willkommensnachricht in der Historie ist
+               const welcomeMessage = sortedMessages.find(msg => 
+                 msg.message_type === 'registration_welcome' || 
+                 (msg.from === 'bot' && msg.text.includes('Vielen Dank für Ihre Registrierung'))
+               );
+               if (welcomeMessage) {
+                 this.debugLog('✅ Willkommensnachricht in Chat-Historie gefunden:', welcomeMessage.text);
+               } else {
+                 this.debugLog('⚠️ Willkommensnachricht NICHT in Chat-Historie gefunden');
+               }
 
-            // ✅ Quick Questions anzeigen wenn Chat offen ist und nicht eskaliert
-            if (this.isOpen() && !this.isEscalated() && this.chatStatus() === 'bot') {
-              this.showQuickQuestions.set(true);
-            }
+               // ✅ Quick Questions anzeigen wenn Chat offen ist und nicht eskaliert
+               if (this.isOpen() && !this.isEscalated() && this.chatStatus() === 'bot') {
+                 this.showQuickQuestions.set(true);
+               }
 
-            // ✅ WICHTIG: Nachrichten im localStorage speichern
-            this.saveMessagesToLocalStorage();
+               // ✅ WICHTIG: Nachrichten im localStorage speichern
+               this.saveMessagesToLocalStorage();
 
-            // ✅ WICHTIG: Escalation-Prompt erkennen und Buttons anzeigen
-            const escalationPrompt = response.messages.find((msg: any) =>
-              msg.message_type === 'escalation_prompt' && msg.metadata?.is_automatic
-            );
+               // ✅ WICHTIG: Escalation-Prompt erkennen und Buttons anzeigen
+               const escalationPrompt = response.messages.find((msg: any) =>
+                 msg.message_type === 'escalation_prompt' && msg.metadata?.is_automatic
+               );
 
-            if (escalationPrompt) {
-              console.log('🚨 Escalation prompt found in history, showing buttons');
-              this.showEscalationOptions.set(true);
-              this.currentEscalationPrompt.set({
-                prompt_id: escalationPrompt.metadata?.escalation_prompt_id || null,
-                is_automatic: true,
-                is_manual: false,
-                options: escalationPrompt.metadata?.options || [
-                  { text: 'Ja, gerne', value: 'accept' },
-                  { text: 'Nein, danke', value: 'decline' }
-                ]
-              });
-            }
-          }
-          
-          // ✅ WICHTIG: Assignment-Status wiederherstellen nach dem Laden der Historie
-          this.restoreAssignmentStatus();
-        },
-        error: (err) => console.error('Error loading chat history:', err)
-      });
-    }
-  }
+               if (escalationPrompt) {
+                 this.debugLog('🚨 Escalation prompt found in history, showing buttons');
+                 this.showEscalationOptions.set(true);
+                 this.currentEscalationPrompt.set({
+                   prompt_id: escalationPrompt.metadata?.escalation_prompt_id || null,
+                   is_automatic: true,
+                   is_manual: false,
+                   options: escalationPrompt.metadata?.options || [
+                     { text: 'Ja, gerne', value: 'accept' },
+                     { text: 'Nein, danke', value: 'decline' }
+                   ]
+                 });
+               }
+             }
+             
+             // ✅ WICHTIG: Assignment-Status wiederherstellen nach dem Laden der Historie
+             this.restoreAssignmentStatus();
+           },
+           error: (err) => {
+             if (err?.status !== 404) {
+               this.errorLog('Error loading chat history:', err);
+             }
+           }
+         });
+     }
+   }
 
 
   // In chatbot-ui.component.ts
@@ -1104,10 +1143,10 @@ export class ChatUiComponent implements AfterViewInit {
           this.scrollToBottom();
         }, 100);
 
-        console.log('✅ Chat ended, notifications disabled');
+        this.debugLog('✅ Chat ended, notifications disabled');
       },
       error: (err) => {
-        console.error('Fehler:', err);
+        this.errorLog('Fehler:', err);
         // ✅ Bei Fehler: Fehlermeldung anzeigen, aber UI-States bleiben gesetzt
         this.addMessage({
           from: 'bot',
@@ -1150,9 +1189,9 @@ export class ChatUiComponent implements AfterViewInit {
 
       const storageKey = `chat_messages_${this.sessionId}`;
       localStorage.setItem(storageKey, JSON.stringify(messagesData));
-      console.log('✅ Messages saved to localStorage:', messagesData.length, 'messages');
+      this.debugLog('✅ Messages saved to localStorage:', messagesData.length, 'messages');
     } catch (error) {
-      console.error('Error saving messages to localStorage:', error);
+      this.errorLog('Error saving messages to localStorage:', error);
     }
   }
 
@@ -1193,7 +1232,7 @@ export class ChatUiComponent implements AfterViewInit {
         });
 
         this.messages.set(sortedMessages);
-        console.log('✅ Messages loaded from localStorage:', messages.length, 'messages');
+        this.debugLog('✅ Messages loaded from localStorage:', messages.length, 'messages');
         
         // ✅ Quick Questions anzeigen wenn keine Nachrichten vorhanden oder Chat offen ist
         if (messages.length === 0 || (this.isOpen() && !this.isEscalated() && this.chatStatus() === 'bot')) {
@@ -1211,7 +1250,7 @@ export class ChatUiComponent implements AfterViewInit {
         }, 100);
       }
     } catch (error) {
-      console.error('Error loading messages from localStorage:', error);
+      this.errorLog('Error loading messages from localStorage:', error);
       this.isLoadingFromStorage = false;
     }
   }
@@ -1227,9 +1266,9 @@ export class ChatUiComponent implements AfterViewInit {
     try {
       const storageKey = `chat_messages_${this.sessionId}`;
       localStorage.removeItem(storageKey);
-      console.log('✅ Messages cleared from localStorage');
+      this.debugLog('✅ Messages cleared from localStorage');
     } catch (error) {
-      console.error('Error clearing messages from localStorage:', error);
+      this.errorLog('Error clearing messages from localStorage:', error);
     }
   }
 
@@ -1248,7 +1287,7 @@ export class ChatUiComponent implements AfterViewInit {
         }
       }
     } catch (error) {
-      console.warn('Error updating tab title:', error);
+      this.warnLog('Error updating tab title:', error);
     }
   }
 
@@ -1272,15 +1311,15 @@ export class ChatUiComponent implements AfterViewInit {
     }
   }
   testVisitorNotifications(): void {
-    console.log('Testing visitor notifications...');
-    console.log('Current notification status:', {
+    this.debugLog('Testing visitor notifications...');
+    this.debugLog('Current notification status:', {
       areEnabled: this.visitorNotification.areNotificationsEnabled,
       hasPermission: this.visitorNotification.hasPermission,
       isVisible: this.visitorNotification.isVisible
     });
 
     if (!this.visitorNotification.areNotificationsEnabled) {
-      console.log('❌ Notifications not enabled. Please request human support first.');
+      this.debugLog('❌ Notifications not enabled. Please request human support first.');
       alert('Benachrichtigungen sind nicht aktiviert. Bitte drücken Sie erst "Mit Mitarbeiter sprechen".');
       return;
     }
@@ -1484,7 +1523,7 @@ export class ChatUiComponent implements AfterViewInit {
         this.scrollToBottom();
       },
       error: (err) => {
-        console.error('Error sending message:', err);
+        this.errorLog('Error sending message:', err);
         this.isTyping.set(false);
 
         // ✅ Bei Fehler: Optimistische Nachricht entfernen und Fehlermeldung anzeigen
@@ -1517,7 +1556,7 @@ export class ChatUiComponent implements AfterViewInit {
         return;
       }
 
-      console.log('📨 Processing incoming message:', {
+      this.debugLog('📨 Processing incoming message:', {
         from: data.message?.from,
         text: data.message?.text?.substring(0, 30) + '...',
         hasAttachment: data.message?.has_attachment,
@@ -1540,11 +1579,11 @@ export class ChatUiComponent implements AfterViewInit {
         const allowedTypes = ['escalation_reply', 'chat_farewell', 'escalation_prompt', 'registration_welcome'];
 
         if (!allowedTypes.includes(messageType)) {
-          console.log('⚠️ Bot message received via Pusher - IGNORING (should come via HTTP only)');
+          this.debugLog('⚠️ Bot message received via Pusher - IGNORING (should come via HTTP only)');
           return; // Nur normale Bot-Nachrichten ignorieren
         }
 
-        console.log('✅ Bot message with type', messageType, '- Processing via Pusher');
+        this.debugLog('✅ Bot message with type', messageType, '- Processing via Pusher');
       }
 
       // Chat-Ende durch Agent (unverändert)
@@ -1553,7 +1592,7 @@ export class ChatUiComponent implements AfterViewInit {
 
         // Prüfe ob es eine Chat-Ende Nachricht ist
         if (data.message.message_type === 'chat_ended_by_agent') {
-          console.log('Chat ended by agent (system message):', data.message);
+          this.debugLog('Chat ended by agent (system message):', data.message);
 
           // Status Updates
           this.chatStatus.set('bot');
@@ -1603,7 +1642,7 @@ export class ChatUiComponent implements AfterViewInit {
           data.message.text.includes('Chat wurde vom Benutzer beendet') ||
           data.message.text.includes('vom Benutzer beendet')
         )) {
-          console.log('✅ Chat ended by user - skipping system message (toast already shown)');
+          this.debugLog('✅ Chat ended by user - skipping system message (toast already shown)');
           return;
         }
 
@@ -1623,7 +1662,7 @@ export class ChatUiComponent implements AfterViewInit {
 
       // Chat-Ende durch Visitor
       if (data.chat_ended && data.ended_by === 'visitor') {
-        console.log('Chat ended by visitor');
+        this.debugLog('Chat ended by visitor');
         this.chatStatus.set('bot');
         this.isEscalated.set(false);
         this.showAgentConnection.set(false);
@@ -1636,7 +1675,7 @@ export class ChatUiComponent implements AfterViewInit {
       if (data.unassigned === true ||
           (data.assigned_to === null && data.agent_name === null && data.previous_agent)) {
 
-        console.log('Processing chat unassignment:', {
+        this.debugLog('Processing chat unassignment:', {
           previous_agent: data.previous_agent,
           unassigned_by: data.unassigned_by
         });
@@ -1692,7 +1731,7 @@ export class ChatUiComponent implements AfterViewInit {
         const assignmentChanged = !currentStatus || currentStatus.assigned_to !== data.assigned_to;
 
         if (assignmentChanged) {
-          console.log('Processing assignment change:', {
+          this.debugLog('Processing assignment change:', {
             from: currentStatus?.assigned_to,
             to: data.assigned_to,
             agent_name: data.agent_name,
@@ -1712,21 +1751,21 @@ export class ChatUiComponent implements AfterViewInit {
 
             // ✅ IMPORTANT: Set chat ID from assignment
             if (data.chat_id) {
-              console.log('Setting chat ID from assignment:', data.chat_id);
+              this.debugLog('Setting chat ID from assignment:', data.chat_id);
               this.currentChatId.set(data.chat_id);
               localStorage.setItem('current_chat_id', data.chat_id);
             }
 
             // ✅ IMPORTANT: Update chat status to 'in_progress' when agent is assigned
             if (data.status) {
-              console.log('Updating chat status from assignment:', data.status);
+              this.debugLog('Updating chat status from assignment:', data.status);
               this.chatStatus.set(data.status);
               if (data.status === 'human' || data.status === 'in_progress') {
                 this.isEscalated.set(true);
               }
             } else if (this.chatStatus() !== 'in_progress' && this.chatStatus() !== 'human') {
               // Fallback: If no status provided but agent assigned, set to in_progress
-              console.log('No status in assignment data, setting to in_progress');
+              this.debugLog('No status in assignment data, setting to in_progress');
               this.chatStatus.set('in_progress');
               this.isEscalated.set(true);
             }
@@ -1736,7 +1775,7 @@ export class ChatUiComponent implements AfterViewInit {
               this.visitorNotification.notifyAgentAssigned(data.agent_name);
             }
 
-            console.log('✅ New agent assigned:', {
+            this.debugLog('✅ New agent assigned:', {
               agent: data.agent_name,
               chat_id: this.currentChatId(),
               status: this.chatStatus(),
@@ -1745,7 +1784,7 @@ export class ChatUiComponent implements AfterViewInit {
           } else if (data.assigned_to === null) {
             this.assignedAgentName.set('');
             this.showAgentConnection.set(false);
-            console.log('Assignment removed');
+            this.debugLog('Assignment removed');
           }
         }
       }
@@ -1770,7 +1809,7 @@ export class ChatUiComponent implements AfterViewInit {
 
       // Status Updates
       if (data.status && data.status !== this.chatStatus()) {
-        console.log('Status update:', data.status);
+        this.debugLog('Status update:', data.status);
         this.chatStatus.set(data.status);
 
         if (data.status === 'human' && !this.isEscalated()) {
@@ -1783,7 +1822,7 @@ export class ChatUiComponent implements AfterViewInit {
         const messageTimestamp = new Date(data.message.created_at);
 
         if (!this.isMessageDuplicate(data.message.text, data.message.from, messageTimestamp)) {
-          console.log('💬 Agent message:', {
+          this.debugLog('💬 Agent message:', {
             text: data.message.text,
             has_attachment: data.message.has_attachment,
             attachment: data.message.attachment
@@ -1810,18 +1849,18 @@ export class ChatUiComponent implements AfterViewInit {
           if (!this.isOpen()) {
             this.unreadMessages.update(count => count + 1);
             this.updateTabTitle(); // Update tab title with unread count
-            console.log('Unread count increased:', this.unreadMessages());
+            this.debugLog('Unread count increased:', this.unreadMessages());
           }
 
           // ✅ NOTIFICATION: Nur wenn Notifications aktiviert sind
           if (this.visitorNotification.areNotificationsEnabled) {
-            console.log('Sending agent message notification...');
+            this.debugLog('Sending agent message notification...');
             this.visitorNotification.notifyAgentMessage(agentName, data.message.text);
           } else {
-            console.log('Agent message notification skipped - not enabled');
+            this.debugLog('Agent message notification skipped - not enabled');
           }
 
-          console.log('Agent message processed:', data.message.from, data.message.text.substring(0, 30));
+          this.debugLog('Agent message processed:', data.message.from, data.message.text.substring(0, 30));
         }
       }
 
@@ -1831,7 +1870,7 @@ export class ChatUiComponent implements AfterViewInit {
 
         // ✅ File-Upload Nachrichten verarbeiten
         if (data.message.has_attachment) {
-          console.log('📎 User file upload message:', {
+          this.debugLog('📎 User file upload message:', {
             text: data.message.text,
             has_attachment: data.message.has_attachment,
             attachment: data.message.attachment
@@ -1862,7 +1901,7 @@ export class ChatUiComponent implements AfterViewInit {
 
           if (optimisticMessageIndex !== -1) {
             // ✅ Ersetze optimistische Nachricht durch echte
-            console.log('✅ Replacing optimistic user message with real message from Pusher');
+            this.debugLog('✅ Replacing optimistic user message with real message from Pusher');
             this.messages.update(m => {
               const updated = [...m];
               updated[optimisticMessageIndex] = {
@@ -1883,7 +1922,7 @@ export class ChatUiComponent implements AfterViewInit {
             this.scrollToBottom();
           } else {
             // Normale User-Nachricht (keine optimistische vorhanden) - ignoriere wenn kein Attachment
-            console.log('⏭️ Skipping user text message from Pusher (no optimistic message to replace)');
+            this.debugLog('⏭️ Skipping user text message from Pusher (no optimistic message to replace)');
           }
         }
         return;
@@ -1895,7 +1934,7 @@ export class ChatUiComponent implements AfterViewInit {
 
         // ✅ Spezielles Logging für registration_welcome Nachrichten
         if (data.message.message_type === 'registration_welcome') {
-          console.log('🎉 Registration welcome message received via Pusher:', {
+          this.debugLog('🎉 Registration welcome message received via Pusher:', {
             text: data.message.text,
             message_type: data.message.message_type,
             timestamp: messageTimestamp
@@ -1910,7 +1949,7 @@ export class ChatUiComponent implements AfterViewInit {
           );
           
           if (localWelcomeIndex !== -1) {
-            console.log('✅ Ersetze lokale Willkommensnachricht durch echte vom Backend');
+            this.debugLog('✅ Ersetze lokale Willkommensnachricht durch echte vom Backend');
             this.messages.update(m => {
               const updated = [...m];
               // ✅ WICHTIG: Stelle sicher, dass Willkommensnachricht den frühesten Timestamp hat
@@ -1947,7 +1986,7 @@ export class ChatUiComponent implements AfterViewInit {
         }
 
         if (!this.isMessageDuplicate(data.message.text, data.message.from, messageTimestamp)) {
-          console.log('🤖 Bot message:', {
+          this.debugLog('🤖 Bot message:', {
             text: data.message.text,
             message_type: data.message.message_type,
             metadata: data.message.metadata
@@ -1955,7 +1994,7 @@ export class ChatUiComponent implements AfterViewInit {
 
           // ✅ Spezielle Behandlung für Escalation-Prompts
           if (data.message.message_type === 'escalation_prompt') {
-            console.log('🚨 Processing escalation_prompt from Pusher');
+            this.debugLog('🚨 Processing escalation_prompt from Pusher');
 
             // Escalation Options anzeigen
             this.showEscalationOptions.set(true);
@@ -1979,11 +2018,11 @@ export class ChatUiComponent implements AfterViewInit {
             showRestartOptions: data.message.message_type === 'chat_farewell' // Für "Vielen Dank" Nachricht
           });
 
-          console.log('Bot message added via Pusher:', data.message.message_type);
+          this.debugLog('Bot message added via Pusher:', data.message.message_type);
         }
       }
 
-      this.cdRef.detectChanges();
+      this.cdRef.markForCheck();
       this.scrollToBottom();
     });
   }
@@ -2015,7 +2054,7 @@ export class ChatUiComponent implements AfterViewInit {
             }
           },
           error: (err) => {
-            console.error('Error checking assignment status:', err);
+            this.errorLog('Error checking assignment status:', err);
           }
         });
 
@@ -2052,7 +2091,7 @@ export class ChatUiComponent implements AfterViewInit {
           }
         },
         error: (err) => {
-          console.error('Fehler beim Senden an Agent:', err);
+          this.errorLog('Fehler beim Senden an Agent:', err);
           this.isTyping.set(false);
 
           let errorMessage = 'Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
@@ -2076,7 +2115,7 @@ export class ChatUiComponent implements AfterViewInit {
   }
 
   private storePendingMessage(message: string) {
- //   console.log('Storing pending message:', message);
+ //   this.debugLog('Storing pending message:', message);
     // Implementieren Sie Ihre eigene Logik zum Speichern ausstehender Nachrichten
   }
 
@@ -2226,7 +2265,7 @@ export class ChatUiComponent implements AfterViewInit {
         });
       },
       error: (err) => {
-        console.error('Escalation failed:', err);
+        this.errorLog('Escalation failed:', err);
         this.isTyping.set(false);
 
         this.addMessage({
@@ -2273,7 +2312,7 @@ export class ChatUiComponent implements AfterViewInit {
     }
 
     if (!chatId) {
-      console.error('Chat ID nicht verfügbar');
+      this.errorLog('Chat ID nicht verfügbar');
       throw new Error('Chat ID nicht verfügbar');
     }
 
@@ -2309,7 +2348,7 @@ export class ChatUiComponent implements AfterViewInit {
         this.setupAgentListener(sessionId);
       },
       error: (err) => {
-        console.error('Error escalating to human:', err);
+        this.errorLog('Error escalating to human:', err);
         this.addMessage({
           from: 'bot',
           text: 'Entschuldigung, die Übergabe ist fehlgeschlagen. Bitte versuchen Sie es später erneut.',
@@ -2398,7 +2437,7 @@ export class ChatUiComponent implements AfterViewInit {
       },
       error: (err) => {
         this.isTyping.set(false);
-        console.error('Fehler beim Senden der Nachricht:', err);
+        this.errorLog('Fehler beim Senden der Nachricht:', err);
 
         // ✅ Bei Fehler: Optimistische Nachricht entfernen und Fehlermeldung anzeigen
         this.messages.update(m => {
@@ -2443,15 +2482,15 @@ export class ChatUiComponent implements AfterViewInit {
 
   private async enableVisitorNotifications(): Promise<void> {
     if (this.visitorNotification.areNotificationsEnabled) {
-      console.log('Notifications already enabled');
+      this.debugLog('Notifications already enabled');
       return;
     }
 
-    console.log('Enabling visitor notifications...');
+    this.debugLog('Enabling visitor notifications...');
 
     const success = await this.visitorNotification.enableNotifications();
     if (success) {
-      console.log('✅ Visitor notifications successfully enabled');
+      this.debugLog('✅ Visitor notifications successfully enabled');
 
       // Optional: Bestätigungsnachricht für den User
       this.addMessage({
@@ -2461,7 +2500,7 @@ export class ChatUiComponent implements AfterViewInit {
         isSystemMessage: true
       });
     } else {
-      console.log('❌ Failed to enable visitor notifications');
+      this.debugLog('❌ Failed to enable visitor notifications');
 
       // Freundliche Nachricht an den User
       this.addMessage({
@@ -2578,7 +2617,7 @@ export class ChatUiComponent implements AfterViewInit {
         });
       }
     } catch (error) {
-      console.warn('ScrollToBottom error - viewChild not ready:', error);
+      this.warnLog('ScrollToBottom error - viewChild not ready:', error);
       return;
     }
   }
@@ -2594,7 +2633,7 @@ export class ChatUiComponent implements AfterViewInit {
         this.showScrollButton.set(!isAtBottom);
       }
     } catch (error) {
-      console.warn('CheckScrollPosition error - viewChild not ready:', error);
+      this.warnLog('CheckScrollPosition error - viewChild not ready:', error);
     }
   }
 
@@ -2620,7 +2659,7 @@ export class ChatUiComponent implements AfterViewInit {
       const hasAgent = chatStatus === 'human' || chatStatus === 'in_progress';
       const chatId = this.currentChatId();
 
-      console.log('🔍 File upload validation:', {
+      this.debugLog('🔍 File upload validation:', {
         chatStatus,
         hasAgent,
         chatId,
@@ -2628,7 +2667,7 @@ export class ChatUiComponent implements AfterViewInit {
       });
 
       if (!hasAgent || !chatId) {
-        console.warn('❌ File upload blocked - no agent or no chat ID');
+        this.warnLog('❌ File upload blocked - no agent or no chat ID');
         this.addMessage({
           from: 'system',
           text: 'Sie können nur Dateien senden wenn Sie mit einem Mitarbeiter verbunden sind',
@@ -2638,7 +2677,7 @@ export class ChatUiComponent implements AfterViewInit {
         return;
       }
 
-      console.log('✅ File upload allowed, proceeding...');
+      this.debugLog('✅ File upload allowed, proceeding...');
 
       this.uploadFile(file);
     }
@@ -2649,7 +2688,7 @@ export class ChatUiComponent implements AfterViewInit {
     const chatId = this.currentChatId();
 
     if (!sessionId || !chatId) {
-      console.error('Missing session or chat ID');
+      this.errorLog('Missing session or chat ID');
       return;
     }
 
@@ -2661,14 +2700,14 @@ export class ChatUiComponent implements AfterViewInit {
 
     this.chatbotService.uploadAttachment(file, chatId, sessionId, 'user').subscribe({
       next: (response) => {
-        console.log('File uploaded successfully:', response);
+        this.debugLog('File uploaded successfully:', response);
         this.ngZone.run(() => {
           this.isTyping.set(false);
         });
         // ✅ File message will be received via Pusher with full attachment preview
       },
       error: (err) => {
-        console.error('File upload error:', err);
+        this.errorLog('File upload error:', err);
         this.ngZone.run(() => {
           this.isTyping.set(false);
           this.addMessage({
@@ -2695,7 +2734,7 @@ export class ChatUiComponent implements AfterViewInit {
         window.URL.revokeObjectURL(url);
       },
       error: (err) => {
-        console.error('Download error:', err);
+        this.errorLog('Download error:', err);
         this.addMessage({
           from: 'system',
           text: 'Fehler beim Herunterladen der Datei',
@@ -2743,7 +2782,7 @@ export class ChatUiComponent implements AfterViewInit {
           return metadata.agent_name;
         }
       } catch (e) {
-        console.error('Error parsing message metadata:', e);
+        this.errorLog('Error parsing message metadata:', e);
       }
     }
 
@@ -2778,11 +2817,11 @@ export class ChatUiComponent implements AfterViewInit {
    */
   private async requestNotificationPermission(): Promise<void> {
     if (!this.visitorNotification.isSupported) {
-      console.log('Browser unterstützt keine Benachrichtigungen');
+      this.debugLog('Browser unterstützt keine Benachrichtigungen');
       return;
     }
 
-    console.log('🔔 Requesting notification permission for visitor...');
+    this.debugLog('🔔 Requesting notification permission for visitor...');
 
     try {
       const enabled = await this.visitorNotification.enableNotifications();
@@ -2791,23 +2830,23 @@ export class ChatUiComponent implements AfterViewInit {
       if (this.sessionId) {
         this.chatbotService.saveNotificationStatus(this.sessionId, enabled).subscribe({
           next: (response) => {
-            console.log('Notification status saved to backend:', response);
+            this.debugLog('Notification status saved to backend:', response);
           },
           error: (err) => {
-            console.error('Error saving notification status:', err);
+            this.errorLog('Error saving notification status:', err);
           }
         });
       }
 
       if (enabled) {
-        console.log('✅ Visitor notifications enabled');
+        this.debugLog('✅ Visitor notifications enabled');
         // Backend sendet jetzt die Bestätigungsnachricht
       } else {
-        console.log('❌ Visitor notifications denied or not granted');
+        this.debugLog('❌ Visitor notifications denied or not granted');
         // Backend sendet jetzt die Info-Nachricht
       }
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      this.errorLog('Error requesting notification permission:', error);
     }
   }
 
@@ -2832,6 +2871,15 @@ export class ChatUiComponent implements AfterViewInit {
       snackBarRef.dismiss();
     });
   }
+
+  readonly trackMessage = (index: number, message: any): string | number => {
+    const timestamp = message?.timestamp instanceof Date
+      ? message.timestamp.getTime()
+      : new Date(message?.timestamp ?? Date.now()).getTime();
+    return message?.id ?? `${message?.from ?? 'msg'}-${timestamp}-${index}`;
+  };
+
+  readonly trackQuickQuestion = (_: number, question: string): string => question;
 }
 
 interface MessageEvent {
