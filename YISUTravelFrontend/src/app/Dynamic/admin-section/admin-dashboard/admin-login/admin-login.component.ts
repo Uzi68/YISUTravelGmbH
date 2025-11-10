@@ -4,9 +4,10 @@ import {MatCard, MatCardContent, MatCardHeader, MatCardTitle} from "@angular/mat
 import {MatFormField, MatLabel} from "@angular/material/form-field";
 import {MatInput} from "@angular/material/input";
 import {MatButton} from "@angular/material/button";
+import {MatProgressSpinner} from "@angular/material/progress-spinner";
+import {finalize} from "rxjs";
 import {AuthService} from "../../../../Services/AuthService/auth.service";
 import {Router} from "@angular/router";
-import {response} from "express";
 
 @Component({
   selector: 'app-admin-login',
@@ -20,7 +21,8 @@ import {response} from "express";
     MatLabel,
     MatButton,
     MatCardTitle,
-    MatCardHeader
+    MatCardHeader,
+    MatProgressSpinner
 
   ],
   templateUrl: './admin-login.component.html',
@@ -28,6 +30,7 @@ import {response} from "express";
 })
 export class AdminLoginComponent {
   contactForm: FormGroup;
+  isLoading = false;
 
   constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {
     this.contactForm = this.fb.group ({
@@ -61,7 +64,12 @@ export class AdminLoginComponent {
   onsubmit(): void {
     if (this.contactForm.valid) {
       const credentials = this.contactForm.value;
-      this.authService.login(credentials).subscribe({
+      this.isLoading = true;
+      this.authService.login(credentials).pipe(
+        finalize(() => {
+          this.isLoading = false;
+        })
+      ).subscribe({
         next: (response) => {
      //     console.log('Login successful', response);
           this.router.navigate(['/admin-dashboard']);

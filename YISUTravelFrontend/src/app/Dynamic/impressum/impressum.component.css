@@ -1,51 +1,58 @@
-body {
-  background-color: #f8f9fa; /* Helles Grau für den Hintergrund der Seite */
-  font-family: 'Arial', sans-serif; /* Schriftart für die gesamte Seite */
+:host {
+  display: block;
+  background-color: var(--yisu-bg-main);
+  color: var(--yisu-text-medium);
+  font-family: 'Open Sans', "Helvetica Neue", sans-serif;
 }
 
-h1 {
-  margin-bottom: 40px;
-  color: #333; /* Dunkles Grau für den Titel */
-  font-size: 2.5rem; /* Größere Schriftgröße für den Titel */
-  text-align: left; /* Titel zentrieren */
-  font-weight: 800;
+.container {
+  max-width: 960px;
 }
-
-.card-body {
-  padding: 30px; /* Padding für die Karte */
-  color: #171616;
-  font-weight: 500;
-}
-
 
 .cardmobile {
   padding-left: 1.2rem;
   padding-right: 1.5rem;
 }
 
+h1 {
+  margin-bottom: 40px;
+  color: var(--yisu-secondary);
+  font-size: 2.5rem;
+  text-align: left;
+  font-weight: 800;
+}
+
 #yisutravel {
-  font-size: 2rem
+  font-size: 2rem;
+  color: var(--yisu-nav-items);
 }
 
 h2 {
-  color: #292929; /* Dunklerer Grauton für Unterüberschriften */
-  font-size: 1.5rem; /* Schriftgröße für Unterüberschriften */
-  margin-top: 20px; /* Abstand nach oben */
-  border-bottom: 1px solid #dee2e6; /* Unterstreichung für Unterüberschriften */
-  padding-bottom: 10px; /* Abstand unter den Unterüberschriften */
+  color: var(--yisu-nav-items);
+  font-size: 1.5rem;
+  margin-top: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--yisu-border-light);
 }
 
 p {
-  line-height: 1.6; /* Zeilenhöhe für besseren Lesefluss */
-  margin-bottom: 15px; /* Abstand zwischen den Absätzen */
-  color: #292929; /* Dunklerer Grauton für den Text */
+  line-height: 1.7;
+  margin-bottom: 15px;
+  color: inherit;
+}
+
+strong {
+  color: var(--yisu-secondary);
 }
 
 a {
-  color: #0077b6; /* Bootstrap-Linkfarbe */
-  text-decoration: none; /* Keine Unterstreichung bei normalen Links */
+  color: var(--link-color);
+  text-decoration: none;
+  font-weight: 600;
 }
 
-a:hover {
-  text-decoration: underline; /* Unterstreicht Links beim Hover */
+a:hover,
+a:focus {
+  color: var(--yisu-nav-items-hover);
+  text-decoration: underline;
 }

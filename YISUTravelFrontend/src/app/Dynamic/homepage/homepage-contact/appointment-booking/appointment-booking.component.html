@@ -41,7 +41,7 @@
             <div class="form-row">
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>E-Mail *</mat-label>
-                <input matInput formControlName="customer_email" type="email" placeholder="ihre.email@beispiel.de">
+                <input matInput formControlName="customer_email" type="email" placeholder="Ihre E-Mail-Adresse">
                 <mat-error *ngIf="personalDataForm.get('customer_email')?.hasError('required')">
                   E-Mail ist erforderlich
                 </mat-error>
@@ -105,70 +105,8 @@
             </div>
 
 
-            <!-- Available Time Slots -->
-            <div *ngIf="selectedDate" class="time-slots-section">
-              <h4>Verfügbare Uhrzeiten für {{getFormattedDate(selectedDate)}}</h4>
-              
-              <div *ngIf="isLoadingSlots" class="loading-slots">
-                <mat-spinner diameter="30"></mat-spinner>
-                <span>Lade verfügbare Zeiten...</span>
-              </div>
-
-              <div *ngIf="!isLoadingSlots && allPossibleSlots.length === 0" class="no-slots">
-                <mat-icon>info</mat-icon>
-                <span>Für dieses Datum sind keine Termine verfügbar.</span>
-              </div>
-
-              <div *ngIf="!isLoadingSlots && allPossibleSlots.length > 0" class="time-slots-container">
-
-                <!-- Time Slot Selection - Only One Selectable -->
-                <div class="time-slots-grid">
-                  <button mat-raised-button
-                          *ngFor="let slot of allPossibleSlots"
-                          type="button"
-                          [class.selected-time]="selectedTime === slot"
-                          [class.unavailable-slot]="!isSlotAvailable(slot)"
-                          [disabled]="!isSlotAvailable(slot)"
-                          (click)="selectTimeSlot(slot)"
-                          class="time-slot-button">
-                    <span *ngIf="!isSlotAvailable(slot)" class="unavailable-indicator">
-                      <mat-icon>block</mat-icon>
-                      {{slot}} Uhr (Ausgebucht)
-                    </span>
-                    <span *ngIf="isSlotAvailable(slot)">{{slot}} Uhr</span>
-                  </button>
-                </div>
-
-                <!-- Selected Time Display -->
-                <div *ngIf="selectedTime" class="selected-time-display">
-                  <mat-icon>check_circle</mat-icon>
-                  <span><strong>Ausgewählte Zeit:</strong> {{selectedTime}} Uhr</span>
-                </div>
-
-                <!-- Custom Time Input -->
-                <div class="custom-time-section">
-                  <div class="custom-time-field">
-                    <mat-form-field appearance="outline">
-                      <mat-label>Oder eigene Uhrzeit eingeben</mat-label>
-                      <input matInput 
-                             type="time"
-                             [value]="customTime"
-                             (change)="onCustomTimeChange($event)"
-                             placeholder="HH:MM">
-                      <mat-hint>Format: HH:MM (z.B. 14:30)</mat-hint>
-                    </mat-form-field>
-                  </div>
-                  <div class="add-custom-time-btn">
-                    <button mat-raised-button 
-                            (click)="addCustomTime()"
-                            [disabled]="!customTime || !isCustomTimeValid()">
-                      <mat-icon>add</mat-icon>
-                      Hinzufügen
-                    </button>
-                  </div>
-                </div>
-              </div>
-
+            <!-- Selected Date Details -->
+            <ng-container *ngIf="selectedDate">
               <!-- Business Hours Info -->
               <div class="business-hours-info">
                 <mat-icon>schedule</mat-icon>
@@ -178,7 +116,72 @@
                   <div>Samstag: 10:30 - 15:30 Uhr</div>
                 </div>
               </div>
-            </div>
+
+              <!-- Available Time Slots -->
+              <div class="time-slots-section">
+                <h4>Verfügbare Uhrzeiten für {{getFormattedDate(selectedDate)}}</h4>
+                
+                <div *ngIf="isLoadingSlots" class="loading-slots">
+                  <mat-spinner diameter="30"></mat-spinner>
+                  <span>Lade verfügbare Zeiten...</span>
+                </div>
+
+                <div *ngIf="!isLoadingSlots && allPossibleSlots.length === 0" class="no-slots">
+                  <mat-icon>info</mat-icon>
+                  <span>Für dieses Datum sind keine Termine verfügbar.</span>
+                </div>
+
+                <div *ngIf="!isLoadingSlots && allPossibleSlots.length > 0" class="time-slots-container">
+
+                  <!-- Time Slot Selection - Only One Selectable -->
+                  <div class="time-slots-grid">
+                    <button mat-raised-button
+                            *ngFor="let slot of allPossibleSlots"
+                            type="button"
+                            [class.selected-time]="selectedTime === slot"
+                            [class.unavailable-slot]="!isSlotAvailable(slot)"
+                            [disabled]="!isSlotAvailable(slot)"
+                            (click)="selectTimeSlot(slot)"
+                            class="time-slot-button">
+                      <span *ngIf="!isSlotAvailable(slot)" class="unavailable-indicator">
+                        <mat-icon>block</mat-icon>
+                        {{slot}} Uhr (Ausgebucht)
+                      </span>
+                      <span *ngIf="isSlotAvailable(slot)">{{slot}} Uhr</span>
+                    </button>
+                  </div>
+
+                  <!-- Selected Time Display -->
+                  <div *ngIf="selectedTime" class="selected-time-display">
+                    <mat-icon>check_circle</mat-icon>
+                    <span><strong>Ausgewählte Zeit:</strong> {{selectedTime}} Uhr</span>
+                  </div>
+
+                  <!-- Custom Time Input -->
+                  <div class="custom-time-section">
+                    <div class="custom-time-field">
+                      <mat-form-field appearance="outline">
+                        <mat-label>Oder eigene Uhrzeit eingeben</mat-label>
+                        <input matInput 
+                               type="time"
+                               [value]="customTime"
+                               (change)="onCustomTimeChange($event)"
+                               placeholder="HH:MM">
+                        <mat-hint>Format: HH:MM (z.B. 14:30)</mat-hint>
+                      </mat-form-field>
+                    </div>
+                    <div class="add-custom-time-btn">
+                      <button mat-raised-button 
+                              (click)="addCustomTime()"
+                              [disabled]="!customTime || !isCustomTimeValid()">
+                        <mat-icon>add</mat-icon>
+                        Hinzufügen
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
 
             <div class="step-actions">
               <button mat-button matStepperPrevious>
@@ -381,15 +384,16 @@
 
 /* Unavailable Slot Styles */
 .unavailable-slot {
-  background-color: #f5f5f5 !important;
-  color: #999 !important;
-  border-color: #ddd !important;
+  background-color: rgba(148, 163, 184, 0.18) !important;
+  color: rgba(71, 85, 105, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.32) !important;
   cursor: not-allowed !important;
 }
 
 .unavailable-slot:hover {
-  background-color: #f5f5f5 !important;
+  background-color: rgba(148, 163, 184, 0.18) !important;
   transform: none !important;
+  box-shadow: none !important;
 }
 
 .unavailable-indicator {

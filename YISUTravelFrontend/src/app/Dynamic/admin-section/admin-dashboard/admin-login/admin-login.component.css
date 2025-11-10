@@ -44,6 +44,13 @@ mat-label {
   color: white;
 }
 
+.submitButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
 input {
   border-radius: 4px;
 }
@@ -89,6 +96,19 @@ button:hover:not([disabled]) {
 
 .login-links button:hover {
   background-color: rgba(0, 0, 0, 0.04);
+}
+
+.login-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  color: var(--text-color);
+}
+
+.login-loading span {
+  font-size: 0.95rem;
 }
 
 

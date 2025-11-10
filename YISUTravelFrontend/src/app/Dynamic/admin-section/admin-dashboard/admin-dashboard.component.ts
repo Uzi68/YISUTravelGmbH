@@ -40,6 +40,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { StaffManagementComponent } from '../staff-management/staff-management.component';
 import { AppointmentManagementComponent } from '../appointment-management/appointment-management.component';
 import { Router } from '@angular/router';
+import {ThemeService} from '../../../Services/theme-service/theme.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -152,6 +153,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   
   // Dark Mode - übernommen aus Navbar
   darkMode: boolean = false;
+  private themeSubscription?: Subscription;
 
   // ✅ Neue Properties für Close-Dialog
   showCloseChatDialog = signal(false);
@@ -200,6 +202,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   showWhatsAppFileUpload = signal(false);
   selectedFileType: 'image' | 'document' | null = null;
   fileCaption = '';
+  isMobileView = false;
   constructor(
     private chatbotService: ChatbotService,
     private authService: AuthService,
@@ -212,19 +215,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
     private router: Router,
+    private themeService: ThemeService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    // Dark Mode Flashbang Prevention - Set immediately in constructor
-    if (isPlatformBrowser(this.platformId)) {
-      const savedDarkMode = JSON.parse(localStorage.getItem('dark-mode') || 'false');
-      this.darkMode = savedDarkMode;
-      
-      // Apply Dark Mode immediately if it was saved
-      if (this.darkMode) {
-        document.documentElement.classList.add('dark-mode');
-        document.body.classList.add('dark-mode');
-      }
-    }
+    this.darkMode = this.themeService.getDarkMode();
     
     this.transferForm = this.fb.group({
       selectedAgent: [''],
@@ -233,6 +227,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.closeDialogForm = this.fb.group({
       closeChatReason: ['']
     });
+  }
+
+  private updateViewportState(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      this.isMobileView = window.innerWidth <= 1024;
+    } else {
+      this.isMobileView = false;
+    }
   }
 
 
@@ -248,6 +250,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     // ✅ Tab-Titel initialisieren
     this.updateTabTitle();
     this.setupTabVisibilityTracking();
+    this.updateViewportState();
+
+    if (isPlatformBrowser(this.platformId)) {
+      this.themeSubscription = this.themeService.darkModeChanges().subscribe(enabled => {
+        this.darkMode = enabled;
+        this.cdRef.markForCheck();
+      });
+    }
 
     // ✅ Cooldown Counter starten (1x pro Sekunde aktualisieren)
     this.cooldownUpdateInterval = setInterval(() => {
@@ -508,9 +518,48 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    * Assignment Status CSS-Klasse bestimmen
    */
   getAssignmentStatusClass(chat: Chat): string {
-    if (!chat.assigned_to) return 'unassigned';
-    if (chat.assigned_to === this.currentAgent.id) return 'assigned-to-me';
-    return 'assigned-to-other';
+    const assignedId = chat.assigned_to;
+    if (assignedId === null || assignedId === undefined) {
+      return 'unassigned';
+    }
+
+    const currentAgentId = Number(this.currentAgent.id);
+    return Number(assignedId) === currentAgentId ? 'assigned-to-me' : 'assigned-to-other';
+  }
+
+  getAssignmentStatusIcon(chat: Chat): string {
+    const assignedId = chat.assigned_to;
+    if (assignedId === null || assignedId === undefined) {
+      if (chat.status === 'bot') {
+        return 'smart_toy';
+      }
+      if (chat.status === 'human') {
+        return 'hourglass_empty';
+      }
+      return '';
+    }
+
+    const currentAgentId = Number(this.currentAgent.id);
+    return Number(assignedId) === currentAgentId ? 'person' : 'groups';
+  }
+
+  shouldShowAssignmentStatus(chat: Chat): boolean {
+    if (!chat) {
+      return false;
+    }
+
+    const assignedId = chat.assigned_to;
+
+    if (chat.status === 'bot') {
+      return false;
+    }
+
+    if (assignedId === null || assignedId === undefined) {
+      return chat.status === 'human';
+    }
+
+    const currentAgentId = Number(this.currentAgent.id);
+    return Number(assignedId) !== currentAgentId;
   }
 
 // Zeitfilter ändern
@@ -1746,12 +1795,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    * Assignment-Info für bessere UX
    */
   getAssignmentInfo(chat: Chat): string {
-    if (!chat.assigned_to) return '';
+    const assignedId = chat.assigned_to;
+    if (assignedId === null || assignedId === undefined) {
+      if (chat.status === 'bot') {
+        return 'Chatbot aktiv';
+      }
+      if (chat.status === 'human') {
+        return 'Wartet auf Übernahme';
+      }
+      return '';
+    }
 
-    const isMyChat = chat.assigned_to === this.currentAgent.id;
-    const agentName = chat.assigned_agent || 'Unbekannt';
+    const currentAgentId = Number(this.currentAgent.id);
+    if (Number(assignedId) === currentAgentId) {
+      return 'Von mir übernommen';
+    }
 
-    return isMyChat ? 'Von mir übernommen' : `Zugewiesen an ${agentName}`;
+    const agentName = (chat.assigned_agent || '').trim();
+    return agentName ? `Zugewiesen an ${agentName}` : 'Zugewiesen an Team';
   }
 
   /**
@@ -2454,6 +2515,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.authSub.unsubscribe();
     }
 
+    this.themeSubscription?.unsubscribe();
+
     if (this.chatRequestSubscription) {
       this.chatRequestSubscription.unsubscribe();
     }
@@ -2511,7 +2574,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.filterChats();
 
       const assignedSessionId = localStorage.getItem('assigned_chat_session_id');
-      if (assignedSessionId && (!this.selectedChat || this.selectedChat.id !== assignedSessionId)) {
+      if (!this.isMobileView && assignedSessionId && (!this.selectedChat || this.selectedChat.id !== assignedSessionId)) {
         const assignedChat = this.activeChats.find(chat => chat.id === assignedSessionId);
         if (assignedChat) {
           this.selectChat(assignedChat);
@@ -2626,8 +2689,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
 
-
-
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateViewportState();
+  }
 
   @HostListener('scroll', ['$event'])
   onScroll(event: Event) {
@@ -4346,21 +4411,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   // Dark Mode Toggle - übernommen aus Navbar
   toggleDarkMode() {
-    this.darkMode = !this.darkMode;
-
-    // Add or remove the 'dark-mode' class
-    if (this.darkMode) {
-      document.documentElement.classList.add('dark-mode');
-      document.body.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-      document.body.classList.remove('dark-mode');
-    }
-
-    // Save the state in localStorage if running in the browser
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('dark-mode', JSON.stringify(this.darkMode));
-    }
+    this.themeService.toggleDarkMode();
   }
 
   // Staff Management Methods

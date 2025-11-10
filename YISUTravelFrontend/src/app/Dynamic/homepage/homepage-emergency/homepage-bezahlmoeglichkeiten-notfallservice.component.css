@@ -36,12 +36,12 @@
 
 /* Left Section (Emergency Info) */
 .left-section {
-  background: var(--yisu-primary);
+  background: var(--yisu-highlight-gradient);
   padding: 30px;
   flex: 1;
   display: flex;
   align-items: center;
-  color: white;
+  color: var(--yisu-white);
 }
 
 .icon-wrapper {
@@ -73,7 +73,7 @@
 .emergency-contact a {
   font-size: 22px;
   font-weight: 600;
-  color: white;
+  color: var(--yisu-white);
   text-decoration: underline;
 }
 

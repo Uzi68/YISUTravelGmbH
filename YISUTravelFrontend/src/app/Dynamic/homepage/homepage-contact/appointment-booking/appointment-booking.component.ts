@@ -11,11 +11,39 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
+import { MatNativeDateModule, DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE, MatDateFormats, NativeDateAdapter } from '@angular/material/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AppointmentService } from '../../../../Services/appointment-service/appointment.service';
 import { Appointment, AppointmentFormData } from '../../../../Models/Appointment';
+
+export class GermanDateAdapter extends NativeDateAdapter {
+  override format(date: Date, displayFormat: any): string {
+    if (displayFormat === 'input') {
+      const day = this._to2digit(date.getDate());
+      const month = this._to2digit(date.getMonth() + 1);
+      const year = date.getFullYear();
+      return `${day}.${month}.${year}`;
+    }
+    return super.format(date, displayFormat);
+  }
+
+  private _to2digit(value: number): string {
+    return value.toString().padStart(2, '0');
+  }
+}
+
+export const GERMAN_DATE_FORMATS: MatDateFormats = {
+  parse: {
+    dateInput: 'DD.MM.YYYY'
+  },
+  display: {
+    dateInput: 'input',
+    monthYearLabel: 'MMM YYYY',
+    dateA11yLabel: 'LL',
+    monthYearA11yLabel: 'MMMM YYYY'
+  }
+};
 
 @Component({
   selector: 'app-appointment-booking',
@@ -37,7 +65,12 @@ import { Appointment, AppointmentFormData } from '../../../../Models/Appointment
     MatSnackBarModule
   ],
   templateUrl: './appointment-booking.component.html',
-  styleUrl: './appointment-booking.component.css'
+  styleUrl: './appointment-booking.component.css',
+  providers: [
+    { provide: MAT_DATE_LOCALE, useValue: 'de-DE' },
+    { provide: DateAdapter, useClass: GermanDateAdapter },
+    { provide: MAT_DATE_FORMATS, useValue: GERMAN_DATE_FORMATS }
+  ]
 })
 export class AppointmentBookingComponent implements OnInit, AfterViewInit {
   @ViewChild('stepper') stepper!: MatStepper;
@@ -46,6 +79,7 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
   private appointmentService = inject(AppointmentService);
+  private dateAdapter = inject<DateAdapter<Date>>(DateAdapter);
 
   // Form groups for each step
   personalDataForm!: FormGroup;
@@ -75,6 +109,8 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
 
 
   constructor() {
+    this.dateAdapter.setLocale('de-DE');
+
     // Set minimum date to today
     const today = new Date();
     this.minDate = today;

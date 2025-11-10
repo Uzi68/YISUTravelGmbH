@@ -211,9 +211,12 @@
   color: var(--yisu-secondary);
 }
 
+::ng-deep .mat-datepicker-content,
 ::ng-deep .mat-datepicker-popup {
-  border-radius: 12px !important;
+  border-radius: 16px !important;
   box-shadow: var(--yisu-shadow-lg) !important;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 ::ng-deep .mat-calendar {
@@ -223,29 +226,142 @@
 
 ::ng-deep .mat-calendar-header {
   background-color: var(--yisu-bg-section) !important;
-  border-radius: 12px 12px 0 0 !important;
+  border-radius: 16px 16px 0 0 !important;
+  color: var(--text-color) !important;
+  border-bottom: 1px solid var(--yisu-border-light) !important;
+}
+
+::ng-deep .mat-calendar-controls .mat-button-base {
+  color: inherit !important;
 }
 
 ::ng-deep .mat-calendar-table-header th {
   color: var(--yisu-text-medium) !important;
   font-weight: 600 !important;
+  letter-spacing: 0.04em;
+}
+
+::ng-deep .mat-calendar-body {
+  padding: 0.5rem 0.75rem 0.75rem 0.75rem;
 }
 
 ::ng-deep .mat-calendar-body-cell {
   color: var(--text-color) !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  padding: 0.25rem 0 !important;
 }
 
-::ng-deep .mat-calendar-body-cell:hover {
-  background-color: var(--yisu-bg-overlay) !important;
+::ng-deep .mat-calendar-body-cell .mat-calendar-body-cell-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 12px;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: inset 0 0 0 1px transparent;
 }
 
-::ng-deep .mat-calendar-body-selected {
-  background-color: var(--yisu-primary) !important;
+::ng-deep .mat-calendar-body-cell:not(.mat-calendar-body-disabled):hover .mat-calendar-body-cell-content,
+::ng-deep .mat-calendar-body-active:not(.mat-calendar-body-disabled):not(.mat-calendar-body-selected) .mat-calendar-body-cell-content {
+  background-color: rgba(33, 150, 243, 0.15) !important;
+  color: var(--yisu-secondary) !important;
+  box-shadow: inset 0 0 0 1px rgba(33, 150, 243, 0.25);
+  transform: translateY(-1px);
+}
+
+::ng-deep .mat-calendar-body-selected .mat-calendar-body-cell-content {
+  background: linear-gradient(135deg, var(--yisu-primary), var(--yisu-secondary)) !important;
   color: var(--yisu-white) !important;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.25) !important;
+  transform: translateY(-1px);
 }
 
-::ng-deep .mat-calendar-body-today:not(.mat-calendar-body-selected) {
-  border-color: var(--yisu-primary) !important;
+::ng-deep .mat-calendar-body-today:not(.mat-calendar-body-selected) .mat-calendar-body-cell-content {
+  box-shadow: inset 0 0 0 1px rgba(33, 150, 243, 0.65);
+  color: var(--yisu-secondary) !important;
+  background-color: rgba(33, 150, 243, 0.08);
+}
+
+::ng-deep .mat-calendar-body-disabled .mat-calendar-body-cell-content {
+  color: var(--yisu-text-light) !important;
+  opacity: 0.6;
+}
+
+::ng-deep .mat-calendar-body-cell .mat-ripple-element {
+  border-radius: 8px;
+}
+
+/* Dark Mode Enhancements */
+::ng-deep body.dark-mode .mat-datepicker-content,
+::ng-deep body.dark-mode .mat-datepicker-popup {
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.94)) !important;
+  box-shadow: 0 24px 56px rgba(8, 12, 20, 0.65) !important;
+  border: 1px solid rgba(148, 163, 184, 0.24) !important;
+}
+
+::ng-deep body.dark-mode .mat-calendar {
+  background-color: transparent !important;
+  color: #e2e8f0 !important;
+}
+
+::ng-deep body.dark-mode .mat-calendar-header {
+  background: rgba(15, 23, 42, 0.92) !important;
+  color: #f8fafc !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22) !important;
+}
+
+::ng-deep body.dark-mode .mat-calendar-period-button,
+::ng-deep body.dark-mode .mat-calendar-previous-button,
+::ng-deep body.dark-mode .mat-calendar-next-button,
+::ng-deep body.dark-mode .mat-calendar-arrow {
+  color: #e2e8f0 !important;
+}
+
+::ng-deep body.dark-mode .mat-calendar-table-header th {
+  color: #94a3b8 !important;
+}
+
+::ng-deep body.dark-mode .mat-calendar-body-cell {
+  background: transparent !important;
+  padding: 0.25rem 0 !important;
+}
+
+::ng-deep body.dark-mode .mat-calendar-body-cell .mat-calendar-body-cell-content {
+  color: #e2e8f0 !important;
+  border-radius: 12px;
+}
+
+::ng-deep body.dark-mode .mat-calendar-body-cell:not(.mat-calendar-body-disabled):hover .mat-calendar-body-cell-content,
+::ng-deep body.dark-mode .mat-calendar-body-active:not(.mat-calendar-body-disabled):not(.mat-calendar-body-selected) .mat-calendar-body-cell-content {
+  background-color: rgba(96, 165, 250, 0.22) !important;
+  color: #f8fafc !important;
+  box-shadow: inset 0 0 0 1px rgba(148, 197, 255, 0.32) !important;
+  transform: translateY(-1px);
+}
+
+::ng-deep body.dark-mode .mat-calendar-body-selected .mat-calendar-body-cell-content {
+  background: linear-gradient(135deg, #5b9dff, #2563eb) !important;
+  color: #0f172a !important;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.55) !important;
+}
+
+::ng-deep body.dark-mode .mat-calendar-body-today:not(.mat-calendar-body-selected) .mat-calendar-body-cell-content {
+  box-shadow: inset 0 0 0 1px rgba(148, 197, 255, 0.65) !important;
+  color: #f1f5f9 !important;
+  background-color: rgba(96, 165, 250, 0.1) !important;
+}
+
+::ng-deep body.dark-mode .mat-calendar-body-disabled .mat-calendar-body-cell-content {
+  color: rgba(148, 163, 184, 0.5) !important;
+  opacity: 0.4;
+}
+
+::ng-deep body.dark-mode .mat-calendar-body-cell .mat-ripple-element {
+  background-color: rgba(96, 165, 250, 0.25) !important;
 }
 
 .mat-form-field-appearance-outline .mat-form-field-outline {
@@ -270,17 +386,19 @@
 
 /* Time Slots */
 .time-slots-section {
-  margin-top: 2rem;
+  margin-top: 1.25rem;
   padding: 1.5rem;
-  background-color: var(--yisu-bg-section);
-  border-radius: 8px;
-  border: 1px solid var(--yisu-border-light);
+  background-color: var(--yisu-bg-card);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  box-shadow: none;
 }
 
 .time-slots-section h4 {
-  color: var(--yisu-primary);
+  color: var(--text-color);
   margin: 0 0 1rem 0;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .loading-slots {
@@ -314,31 +432,31 @@
 }
 
 .time-slot-button {
-  min-height: 50px !important;
-  border-radius: 8px !important;
-  background-color: var(--yisu-bg-card) !important;
-  color: var(--yisu-text-primary) !important;
+  min-height: 52px !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  color: var(--text-color) !important;
   font-weight: 600 !important;
   font-size: 14px !important;
-  transition: all 0.3s ease !important;
-  border: 2px solid var(--yisu-border-light) !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  box-shadow: none !important;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.25s ease !important;
 }
 
 .time-slot-button:hover {
-  background-color: var(--yisu-primary) !important;
+  background: var(--yisu-secondary) !important;
   color: var(--yisu-white) !important;
-  border-color: var(--yisu-primary) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+  border-color: var(--yisu-secondary) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: none !important;
 }
 
 .time-slot-button.selected-time {
-  background-color: var(--yisu-primary) !important;
+  background: linear-gradient(135deg, var(--yisu-secondary), #1e3a8a) !important;
   color: var(--yisu-white) !important;
-  border-color: var(--yisu-primary) !important;
-  box-shadow: 0 4px 12px rgba(var(--yisu-primary-rgb), 0.4) !important;
-  transform: scale(1.05) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transform: translateY(0) !important;
 }
 
 .selected-time-display {
@@ -347,23 +465,24 @@
   gap: 0.75rem;
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  background-color: var(--yisu-bg-card);
-  border-left: 4px solid var(--yisu-primary);
-  border-radius: 4px;
-  color: var(--yisu-text-primary);
+  background: var(--yisu-bg-card);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  border-radius: 12px;
+  color: var(--text-color);
   font-weight: 500;
+  box-shadow: none;
 }
 
 .selected-time-display mat-icon {
-  color: var(--yisu-primary);
+  color: var(--yisu-secondary);
 }
 
 .custom-time-section {
   margin-top: 1.5rem;
   padding: 1rem;
   background-color: var(--yisu-bg-card);
-  border-radius: 8px;
-  border: 1px solid var(--yisu-border-light);
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
   display: flex;
   align-items: flex-end;
   gap: 1rem;
@@ -380,22 +499,32 @@
 .add-custom-time-btn button {
   height: 56px;
   min-width: 120px;
+  font-weight: 600 !important;
+}
+
+.time-slot-button.unavailable-slot {
+  background: rgba(148, 163, 184, 0.18) !important;
+  color: rgba(71, 85, 105, 0.75) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  box-shadow: none !important;
 }
 
 .business-hours-info {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  margin-top: 1rem;
-  padding: 1rem;
+  margin: 1.5rem 0 1.25rem 0;
+  padding: 1rem 1.25rem;
   background-color: var(--yisu-bg-card);
-  border-radius: 6px;
+  border-radius: 12px;
   color: var(--yisu-text-medium);
   font-size: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  box-shadow: none;
 }
 
 .business-hours-info mat-icon {
-  color: var(--yisu-primary);
+  color: var(--yisu-secondary);
   margin-top: 0.2rem;
 }
 
@@ -421,6 +550,16 @@
   border-top: 1px solid var(--yisu-border-light);
 }
 
+.step-actions button[mat-button] {
+  color: var(--yisu-secondary);
+  font-weight: 600;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.step-actions button[mat-button]:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
 /* Button styles werden jetzt global in styles.css verwaltet */
 /* Alte spezifische Styles wurden entfernt für Konsistenz */
 
@@ -434,34 +573,45 @@
 }
 
 .confirmation-step h3 {
-  color: var(--yisu-primary);
+  color: var(--text-color);
   margin-bottom: 2rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .confirmation-details {
-  background-color: var(--yisu-bg-section);
-  border-radius: 8px;
-  padding: 1.5rem;
+  background: var(--yisu-bg-card);
+  border-radius: 16px;
+  padding: 1.75rem;
   margin-bottom: 2rem;
-  border: 1px solid var(--yisu-border-light);
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  box-shadow: var(--yisu-shadow-md);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .detail-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: linear-gradient(140deg, rgba(59, 130, 246, 0.08), rgba(148, 197, 253, 0.05));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .detail-section:last-child {
   margin-bottom: 0;
+  padding-bottom: 0.5rem;
 }
 
 .detail-section h4 {
-  color: var(--yisu-primary);
-  margin: 0 0 0.75rem 0;
+  color: var(--yisu-secondary);
+  margin: 0 0 1rem 0;
   font-size: 1rem;
-  font-weight: 600;
-  border-bottom: 1px solid var(--yisu-border-light);
-  padding-bottom: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 2px solid rgba(148, 163, 184, 0.35);
+  padding-bottom: 0.75rem;
 }
 
 .detail-row {
@@ -474,8 +624,12 @@
 }
 
 .detail-row strong {
-  color: var(--yisu-text-dark);
+  color: var(--yisu-secondary);
   font-weight: 600;
+}
+
+.detail-row:not(:last-child) {
+  margin-bottom: 0.75rem;
 }
 
 /* Message Display Styling */
@@ -609,17 +763,172 @@
 }
 
 .dark-mode .time-slots-section {
-  background-color: var(--yisu-bg-section);
-  border-color: var(--yisu-border-light);
+  background-color: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.24);
+  box-shadow: none;
 }
 
-.dark-mode .confirmation-details {
-  background-color: var(--yisu-bg-section);
-  border-color: var(--yisu-border-light);
+.dark-mode .time-slots-section h4 {
+  color: #93c5fd;
 }
 
 .dark-mode .business-hours-info {
-  background-color: var(--yisu-bg-card);
+  background-color: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.24);
+  color: #cbd5f5;
+}
+
+.dark-mode .business-hours-info mat-icon {
+  color: #93c5fd;
+}
+
+:host-context(body.dark-mode) .time-slot-button {
+  background: linear-gradient(145deg, rgba(26, 36, 58, 0.95), rgba(17, 24, 39, 0.92)) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(96, 165, 250, 0.45) !important;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.65), 0 12px 24px rgba(8, 15, 30, 0.35) !important;
+}
+
+:host-context(body.dark-mode) .time-slot-button span {
+  color: inherit !important;
+}
+
+:host-context(body.dark-mode) .time-slot-button .mat-icon {
+  color: inherit !important;
+}
+
+:host-context(body.dark-mode) .time-slot-button:hover {
+  background: linear-gradient(145deg, rgba(37, 99, 235, 0.96), rgba(29, 78, 216, 0.94)) !important;
+  border-color: rgba(147, 197, 253, 0.75) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 18px 32px rgba(37, 99, 235, 0.45) !important;
+}
+
+:host-context(body.dark-mode) .time-slot-button.selected-time {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: #f8fafc !important;
+  border-color: rgba(147, 197, 253, 0.9) !important;
+  box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.6), 0 16px 30px rgba(30, 64, 175, 0.55) !important;
+  transform: translateY(0) !important;
+}
+
+:host-context(body.dark-mode) .time-slot-button.unavailable-slot {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.8)) !important;
+  border-color: rgba(100, 116, 139, 0.55) !important;
+  color: rgba(203, 213, 225, 0.85) !important;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.65) !important;
+}
+
+:host-context(body.dark-mode) .time-slot-button.unavailable-slot span,
+:host-context(body.dark-mode) .time-slot-button.unavailable-slot .mat-icon {
+  color: rgba(203, 213, 225, 0.85) !important;
+}
+
+:host-context(body.dark-mode) .time-slot-button[disabled] {
+  opacity: 1 !important;
+  cursor: not-allowed;
+}
+
+:host-context(body.dark-mode) .time-slot-button[disabled]:hover {
+  transform: none !important;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.65) !important;
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.8)) !important;
+}
+
+:host-context(body.dark-mode) .confirmation-step h3 {
+  color: #e2e8f0;
+}
+
+:host-context(body.dark-mode) .confirmation-details {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.88));
+  border-color: rgba(147, 197, 253, 0.3);
+  box-shadow: 0 20px 40px rgba(8, 15, 30, 0.45);
+}
+
+:host-context(body.dark-mode) .detail-section h4 {
+  color: #93c5fd;
+  border-bottom-color: rgba(147, 197, 253, 0.25);
+  border-bottom-width: 2px;
+}
+
+:host-context(body.dark-mode) .detail-section {
+  background: linear-gradient(150deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.82));
+  border-color: rgba(71, 85, 105, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.75);
+}
+
+:host-context(body.dark-mode) .detail-row {
+  color: rgba(226, 232, 240, 0.95);
+}
+
+:host-context(body.dark-mode) .detail-row strong {
+  color: #93c5fd;
+}
+
+:host-context(body.dark-mode) .message-display strong {
+  color: #cbd5f5;
+}
+
+:host-context(body.dark-mode) .message-content {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(147, 197, 253, 0.22);
+  color: #e2e8f0;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.6);
+}
+
+.dark-mode .selected-time-display {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #e2e8f0;
+}
+
+.dark-mode .selected-time-display mat-icon {
+  color: #93c5fd;
+}
+
+.dark-mode .custom-time-section {
+  background-color: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.24);
+}
+
+.dark-mode .add-custom-time-btn button {
+  background: linear-gradient(135deg, #1f51d5, #2563eb) !important;
+  color: #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+.dark-mode .add-custom-time-btn button .mat-icon {
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .add-custom-time-btn button .mat-button-wrapper {
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .step-actions button[mat-button] {
+  color: #bfdbfe;
+}
+
+.dark-mode .step-actions button[mat-button]:hover {
+  background-color: rgba(96, 165, 250, 0.18);
+}
+
+
+:host-context(body.dark-mode) .mat-step-header .mat-step-label,
+:host-context(body.dark-mode) .mat-step-header .mat-step-label span,
+:host-context(body.dark-mode) .mat-step-header .mat-step-label .mat-step-text-label,
+:host-context(body.dark-mode) .step-label span {
+  color: var(--yisu-text-white) !important;
+  opacity: 1 !important;
+}
+
+:host-context(body.dark-mode) .mat-step-header .mat-step-label.mat-step-label-active,
+:host-context(body.dark-mode) .mat-step-header .mat-step-icon {
+  color: var(--yisu-text-white) !important;
+}
+
+:host-context(body.dark-mode) .mat-step-header .mat-step-icon {
+  border-color: var(--yisu-text-white);
 }
 
 /* Animation for smooth transitions */

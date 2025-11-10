@@ -1,6 +1,6 @@
 import {Inject, Injectable, PLATFORM_ID} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import {BehaviorSubject, Observable, of, switchMap, tap, throwError} from "rxjs";
+import {BehaviorSubject, Observable, of, switchMap, tap, throwError, map} from "rxjs";
 import {Router} from "@angular/router";
 import {catchError} from "rxjs/operators";
 import {isPlatformBrowser} from "@angular/common";
@@ -107,9 +107,17 @@ export class AuthService {
   }
 
   //Checking for Authentication
-  checkAuth(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/check-auth`, { withCredentials: true }).pipe(
+  checkAuth(): Observable<boolean> {
+    return this.http.get(`${this.apiUrl}/check-auth`, { withCredentials: true }).pipe(
+      map(() => true),
+      tap((isAuthenticated) => this.setAuthenticated(isAuthenticated)),
       catchError((error) => {
+        this.setAuthenticated(false);
+
+        if (error.status === 401 || error.status === 419) {
+          return of(false);
+        }
+
         console.error('Error checking auth:', error);
         return throwError(error);
       })

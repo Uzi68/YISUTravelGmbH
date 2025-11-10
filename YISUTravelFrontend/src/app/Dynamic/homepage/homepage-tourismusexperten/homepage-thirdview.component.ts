@@ -1,63 +1,94 @@
-import {Component, ElementRef, Inject, PLATFORM_ID, QueryList, ViewChild, ViewChildren} from '@angular/core';
-import {MatAnchor, MatButton} from "@angular/material/button";
-import {NgForOf, NgIf} from "@angular/common";
-import {RouterLink} from "@angular/router";
-import { isPlatformBrowser } from '@angular/common';
-import {MatGridList, MatGridTile} from "@angular/material/grid-list";
-export interface Tile {
-  cols: number;
-  rows: number;
-  text: string;
-  imageUrl: string;
-}
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  Inject,
+  OnDestroy,
+  OnInit,
+  PLATFORM_ID,
+  QueryList,
+  ViewChildren
+} from '@angular/core';
+import {CommonModule, isPlatformBrowser} from '@angular/common';
+import {MatIconModule} from '@angular/material/icon';
+import {HomepageStatisticsService} from '../../../Services/statistics-service/homepage-statistics.service';
+import {Subscription} from 'rxjs';
+
 @Component({
   selector: 'app-homepage-thirdview',
   standalone: true,
   imports: [
-    MatButton,
-    MatAnchor,
-    NgForOf,
-    NgIf,
-    RouterLink,
-    MatGridList,
-    MatGridTile
+    CommonModule,
+    MatIconModule
   ],
   templateUrl: './homepage-thirdview.component.html',
   styleUrl: './homepage-thirdview.component.css'
 })
-export class HomepageThirdviewComponent {
-  tiles: Tile[] = [
-    {text: '1', cols: 3, rows: 1, imageUrl: '/hotel.jpg'},
-    {text: '2', cols: 1, rows: 2, imageUrl: '/airplane.jpg'},
-    {text: '3', cols: 1, rows: 1, imageUrl: '/reise.jpg'},
-    {text: '4', cols: 2, rows: 1, imageUrl: '/mietwagen.jpg'},
-  ];
-
-
+export class HomepageThirdviewComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChildren('box', { read: ElementRef }) boxElements!: QueryList<ElementRef>;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+  buchungen = 210000;
+  buchungenToday: number | null = null;
+  zufriedeneKunden = 210000;
+  zufriedeneKundenToday: number | null = null;
 
-  ngAfterViewInit() {
-    if (isPlatformBrowser(this.platformId)) { // Only run in the browser
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, index) => {
-          const target = entry.target as HTMLElement;
+  private readonly isBrowser: boolean;
+  private statsSubscription?: Subscription;
+  private intersectionObserver?: IntersectionObserver;
 
-          if (entry.isIntersecting) {
-            // Add delay based on the index to make boxes appear one by one
-            setTimeout(() => {
-              target.classList.add('fade-in-up');
-              target.style.opacity = '1';
-              observer.unobserve(entry.target); // Stop observing once animated
-            }, index * 300); // 300ms delay between each box (adjust as needed)
-          }
-        });
-      }, { threshold: 0.1 });
+  constructor(
+    @Inject(PLATFORM_ID) platformId: Object,
+    private homepageStatisticsService: HomepageStatisticsService
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
 
-      this.boxElements.forEach((box) => {
-        observer.observe(box.nativeElement as HTMLElement);
-      });
+  ngOnInit(): void {
+    if (this.isBrowser) {
+      this.loadStatistics();
     }
+  }
+
+  ngAfterViewInit(): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
+    this.intersectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        const target = entry.target as HTMLElement;
+
+        if (entry.isIntersecting) {
+          setTimeout(() => {
+            target.classList.add('fade-in-up');
+            target.style.opacity = '1';
+            this.intersectionObserver?.unobserve(entry.target);
+          }, index * 300);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    this.boxElements.forEach((box) => {
+      this.intersectionObserver?.observe(box.nativeElement as HTMLElement);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.statsSubscription?.unsubscribe();
+    this.intersectionObserver?.disconnect();
+  }
+
+  private loadStatistics(): void {
+    this.statsSubscription = this.homepageStatisticsService.getStatistics().subscribe({
+      next: (stats) => {
+        this.buchungen = stats.bookings.total;
+        this.buchungenToday = stats.bookings.todayIncrement;
+        this.zufriedeneKunden = stats.happyCustomers.total;
+        this.zufriedeneKundenToday = stats.happyCustomers.todayIncrement;
+      },
+      error: (error) => {
+        console.error('Failed to load homepage statistics', error);
+      }
+    });
   }
 }

@@ -1,67 +1,67 @@
 <div class="tourism-experts-section">
   <div class="container py-5">
-    <div class="row">
-      <div class="col-12">
+    <div class="section-inner row align-items-center g-4 g-xl-5">
+      <div class="col-lg-6">
         <div class="section-header">
           <div class="section-label">Ihr Reiseexperte</div>
           <h2 class="section-title">Ihre Tourismus Experten</h2>
-          <div class="section-content">
-            <p class="section-description">
-              YISU Travel ist Ihr kompetenter Partner für Urlaubs- und Geschäftsreisen in Hanau. 
-              Unser Standort in der <strong>Schnurstraße 15, 63450 Hanau</strong> – im Herzen der Hanauer Innenstadt – 
-              ist Ihr Anlaufpunkt für maßgeschneiderte Privatreisen weltweit.
-            </p>
-            <p class="section-description">
-              Wir freuen uns darauf, Sie persönlich und individuell zu Ihrem nächsten Traumurlaub zu beraten.
-            </p>
+        </div>
+        <div class="section-copy">
+          <p class="section-lead">
+            YISU Travel GmbH ist Ihr kompetenter Reisebüro-Partner für Urlaubs- und Geschäftsreisen in Hanau.
+            Unser Standort in der <strong>Schnurstraße 15, 63450 Hanau</strong> – im Herzen der Hanauer Innenstadt –
+            ist Ihr Anlaufpunkt für maßgeschneiderte Privatreisen weltweit.
+          </p>
+          <p class="section-lead">
+            Wir freuen uns darauf, Sie persönlich und individuell zu Ihrem nächsten Traumurlaub zu beraten.
+          </p>
+        </div>
+        <div class="trust-card reveal-item" #box>
+          <mat-icon aria-hidden="true">support_agent</mat-icon>
+          <div class="trust-card-content">
+            <span class="trust-card-title">Beratung auf Augenhöhe</span>
+            <p>Unser Team begleitet Sie vom ersten Wunsch bis zur finalen Buchung – persönlich, flexibel und unkompliziert.</p>
+          </div>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-pill reveal-item" #box>
+            <mat-icon aria-hidden="true">flight_takeoff</mat-icon>
+            <span>Reisen Sie zu den schönsten Orten der Welt</span>
+          </div>
+          <div class="feature-pill reveal-item" #box>
+            <mat-icon aria-hidden="true">business_center</mat-icon>
+            <span>Business Travel mit 24/7 Support</span>
+          </div>
+          <div class="feature-pill reveal-item" #box>
+            <mat-icon aria-hidden="true">hotel_class</mat-icon>
+            <span>Exklusive Hotel- &amp; Flugdeals</span>
           </div>
         </div>
       </div>
-    </div>
-    
-    <div class="services-grid">
-      <div class="service-card">
-        <div class="service-image">
-          <img src="/hotel.jpg" alt="Hotel buchen" loading="lazy"/>
-          <div class="service-overlay"></div>
+      <div class="col-lg-6">
+        <div class="experience-stack">
+          <div class="experience-card highlight reveal-item" #box>
+            <div class="card-value">15+</div>
+            <p class="card-title">Jahre Erfahrung</p>
+            <span class="card-subtitle">Persönliche Insights und Insider-Tipps für besondere Erlebnisse.</span>
+          </div>
+          <div class="experience-card secondary reveal-item" #box>
+            <div class="card-value-row">
+              <div class="card-value">{{ buchungen | number:'1.0-0' }}+</div>
+              <span class="card-delta" *ngIf="buchungenToday !== null">Heute +{{ buchungenToday }}</span>
+            </div>
+            <p class="card-title">Buchungen</p>
+            <span class="card-subtitle">Beratungstermine und Reiseplanungen, die wir erfolgreich umgesetzt haben.</span>
+          </div>
+          <div class="experience-card outline reveal-item" #box>
+            <div class="card-value-row">
+              <div class="card-value">{{ zufriedeneKunden | number:'1.0-0' }}+</div>
+              <span class="card-delta" *ngIf="zufriedeneKundenToday !== null">Heute +{{ zufriedeneKundenToday }}</span>
+            </div>
+            <p class="card-title">Zufriedene Kunden</p>
+            <span class="card-subtitle">Wann immer Sie uns brauchen, wächst unsere Community um begeisterte Reisende.</span>
+          </div>
         </div>
-        <div class="service-content">
-          <h3>Hotel buchen</h3>
-        </div>
-        <a routerLink="/in-bearbeitung" class="service-link"></a>
-      </div>
-
-      <div class="service-card">
-        <div class="service-image">
-          <img src="/flug.jpg" alt="Günstige Flüge" loading="lazy"/>
-          <div class="service-overlay"></div>
-        </div>
-        <div class="service-content">
-          <h3>Günstige Flüge</h3>
-        </div>
-        <a routerLink="/in-bearbeitung" class="service-link"></a>
-      </div>
-
-      <div class="service-card">
-        <div class="service-image">
-          <img src="/reise.jpg" alt="Welt bereisen" loading="lazy"/>
-          <div class="service-overlay"></div>
-        </div>
-        <div class="service-content">
-          <h3>Welt bereisen</h3>
-        </div>
-        <a routerLink="/in-bearbeitung" class="service-link"></a>
-      </div>
-
-      <div class="service-card">
-        <div class="service-image">
-          <img src="/mietwagen.jpg" alt="Wagen mieten" loading="lazy"/>
-          <div class="service-overlay"></div>
-        </div>
-        <div class="service-content">
-          <h3>Wagen mieten</h3>
-        </div>
-        <a routerLink="/in-bearbeitung" class="service-link"></a>
       </div>
     </div>
   </div>
@@ -176,5 +176,5 @@ Erste Reihe mit vier Bildern
       </div>
     </div>
   </div>
-</div>
--->
+</div>-->
+

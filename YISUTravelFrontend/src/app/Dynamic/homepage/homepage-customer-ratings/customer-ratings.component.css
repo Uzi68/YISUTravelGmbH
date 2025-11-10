@@ -1,5 +1,7 @@
 .gradient-custom {
+  background: var(--yisu-highlight-gradient);
   background-blend-mode: screen, color-dodge, overlay, difference, normal;
+  color: var(--yisu-white);
   height: 660px;
 }
 .carousel-indicators {
@@ -37,11 +39,6 @@ h4 {
   align-items: center; /* Vertikale Zentrierung */
 }
 
-
-.gradient-custom {
-  background: var(--yisu-primary);
-  color: white;
-}
 
 .card {
   border: none; /* Keine Rahmen */

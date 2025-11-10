@@ -9,6 +9,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatRequestController;
 use App\Http\Controllers\MessagePusherController;
 use App\Http\Controllers\MessageAttachmentController;
+use App\Http\Controllers\HomepageStatisticsController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\WhatsAppMessageController;
 use App\Http\Controllers\OfferController;
@@ -287,6 +288,9 @@ Route::get('/offers', [OfferController::class, 'index']);
 Route::get('/offers/featured', [OfferController::class, 'featured']);
 Route::get('/offers/active', [OfferController::class, 'active']);
 Route::get('/offers/{id}', [OfferController::class, 'show']);
+
+// Homepage statistics
+Route::get('/homepage/statistics', [HomepageStatisticsController::class, 'show']);
 
 // Admin routes (nur für authentifizierte Admins)
 Route::middleware(['auth', 'role:Admin'])->prefix('admin/offers')->group(function () {

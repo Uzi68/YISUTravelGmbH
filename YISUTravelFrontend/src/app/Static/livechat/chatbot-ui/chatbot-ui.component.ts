@@ -926,11 +926,14 @@ export class ChatUiComponent implements AfterViewInit {
                
                // ✅ Nachrichten nach Timestamp sortieren
                // Auf Mobile und Desktop: Älteste zuerst (normale Reihenfolge)
-               const sortedMessages = [...loadedMessages].sort((a, b) => {
+               let sortedMessages = [...loadedMessages].sort((a, b) => {
                  const timeA = new Date(a.timestamp).getTime();
                  const timeB = new Date(b.timestamp).getTime();
                  return timeA - timeB;
                });
+               
+               // ✅ Doppelte Willkommensnachrichten entfernen (Backend kann sie mehrfach senden)
+               sortedMessages = this.removeDuplicateRegistrationWelcome(sortedMessages);
                
                // ✅ WICHTIG: Merge mit bestehenden Nachrichten, um lokal hinzugefügte Nachrichten nicht zu verlieren
                // Prüfe ob Willkommensnachricht bereits lokal hinzugefügt wurde
@@ -974,11 +977,13 @@ export class ChatUiComponent implements AfterViewInit {
                    });
                    
                    // Kombiniere Historie mit lokalen Nachrichten
-                   const mergedMessages = [...sortedMessages, ...localOnlyMessages].sort((a, b) => {
+                   let mergedMessages = [...sortedMessages, ...localOnlyMessages].sort((a, b) => {
                      const timeA = new Date(a.timestamp).getTime();
                      const timeB = new Date(b.timestamp).getTime();
                      return timeA - timeB;
                    });
+
+                   mergedMessages = this.removeDuplicateRegistrationWelcome(mergedMessages);
                    
                    this.messages.set(mergedMessages);
                  } else {
@@ -1061,7 +1066,7 @@ export class ChatUiComponent implements AfterViewInit {
                }
 
                // ✅ Quick Questions anzeigen wenn Chat offen ist und nicht eskaliert
-               if (this.isOpen() && !this.isEscalated() && this.chatStatus() === 'bot') {
+               if ((this.isRegistered() || this.isAuthenticated) && this.isOpen() && !this.isEscalated() && this.chatStatus() === 'bot') {
                  this.showQuickQuestions.set(true);
                }
 
@@ -1225,19 +1230,23 @@ export class ChatUiComponent implements AfterViewInit {
 
         // ✅ Nachrichten nach Timestamp sortieren
         // Auf Mobile und Desktop: Älteste zuerst (normale Reihenfolge)
-        const sortedMessages = [...messages].sort((a, b) => {
+        let sortedMessages = [...messages].sort((a, b) => {
           const timeA = new Date(a.timestamp).getTime();
           const timeB = new Date(b.timestamp).getTime();
           return timeA - timeB;
         });
 
+        sortedMessages = this.removeDuplicateRegistrationWelcome(sortedMessages);
+
         this.messages.set(sortedMessages);
-        this.debugLog('✅ Messages loaded from localStorage:', messages.length, 'messages');
+        this.debugLog('✅ Messages loaded from localStorage:', sortedMessages.length, 'messages');
         
-        // ✅ Quick Questions anzeigen wenn keine Nachrichten vorhanden oder Chat offen ist
-        if (messages.length === 0 || (this.isOpen() && !this.isEscalated() && this.chatStatus() === 'bot')) {
-          this.showQuickQuestions.set(true);
-        }
+        // ✅ Quick Questions nur anzeigen, wenn Besucher bereits freigeschaltet ist
+        const canShowQuickQuestions =
+          (this.isRegistered() || this.isAuthenticated) &&
+          (sortedMessages.length === 0 || (this.isOpen() && !this.isEscalated() && this.chatStatus() === 'bot'));
+
+        this.showQuickQuestions.set(canShowQuickQuestions);
         
         // ✅ Flag nach kurzer Verzögerung zurücksetzen
         setTimeout(() => {
@@ -2128,15 +2137,14 @@ export class ChatUiComponent implements AfterViewInit {
     }
 
     // ✅ Spezielle Behandlung für Willkommensnachrichten
-    const isWelcomeMessage = messageText.includes('Vielen Dank für Ihre Registrierung');
+    const isWelcomeMessage = this.isRegistrationWelcomeMessage({
+      from: fromType,
+      text: messageText
+    });
     
-    if (isWelcomeMessage && fromType === 'bot') {
+    if (isWelcomeMessage) {
       // Für Willkommensnachrichten: Prüfe auf ähnlichen Text, nicht nur exakten
-      return currentMessages.some(msg => 
-        msg.from === 'bot' && 
-        (msg.message_type === 'registration_welcome' || 
-         msg.text.includes('Vielen Dank für Ihre Registrierung'))
-      );
+      return currentMessages.some(msg => this.isRegistrationWelcomeMessage(msg));
     }
 
     // ✅ Erhöhter Zeit-Threshold für bessere Duplikat-Erkennung (10 Sekunden statt 2)
@@ -2551,8 +2559,15 @@ export class ChatUiComponent implements AfterViewInit {
    */
   private addMessage(newMessage: any): void {
     this.messages.update(m => {
+      let updated = [...m];
+
+      // Nur eine Willkommensnachricht zulassen
+      if (this.isRegistrationWelcomeMessage(newMessage)) {
+        updated = updated.filter(existing => !this.isRegistrationWelcomeMessage(existing));
+      }
+
       // Füge neue Nachricht hinzu
-      const updated = [...m, newMessage];
+      updated.push(newMessage);
       
       // Sortiere nach Timestamp (älteste zuerst, neueste am Ende)
       updated.sort((a, b) => {
@@ -2571,8 +2586,17 @@ export class ChatUiComponent implements AfterViewInit {
    */
   private addMessages(newMessages: any[]): void {
     this.messages.update(m => {
+      let updated = [...m];
+
+      const dedupedNewMessages = this.removeDuplicateRegistrationWelcome(newMessages);
+      const hasWelcomeMessage = dedupedNewMessages.some(msg => this.isRegistrationWelcomeMessage(msg));
+
+      if (hasWelcomeMessage) {
+        updated = updated.filter(existing => !this.isRegistrationWelcomeMessage(existing));
+      }
+
       // Füge neue Nachrichten hinzu
-      const updated = [...m, ...newMessages];
+      updated = [...updated, ...dedupedNewMessages];
       
       // Sortiere nach Timestamp (älteste zuerst, neueste am Ende)
       updated.sort((a, b) => {
@@ -2582,6 +2606,48 @@ export class ChatUiComponent implements AfterViewInit {
       });
       
       return updated;
+    });
+  }
+
+  /**
+   * Prüft, ob eine Nachricht die Registrierungs-Willkommensnachricht des Bots ist.
+   */
+  private isRegistrationWelcomeMessage(msg: any): boolean {
+    if (!msg) {
+      return false;
+    }
+
+    if (msg.message_type === 'registration_welcome') {
+      return true;
+    }
+
+    const from = msg.from ?? msg.sender ?? msg.role;
+    const text = msg.text ?? '';
+
+    if (from !== 'bot') {
+      return false;
+    }
+
+    return typeof text === 'string' && text.includes('Vielen Dank für Ihre Registrierung');
+  }
+
+  /**
+   * ✅ Entfernt doppelte Willkommensnachrichten (kann durch parallele Backend-Antworten entstehen)
+   */
+  private removeDuplicateRegistrationWelcome(messages: any[]): any[] {
+    let hasWelcome = false;
+
+    return messages.filter(msg => {
+      if (!this.isRegistrationWelcomeMessage(msg)) {
+        return true;
+      }
+
+      if (!hasWelcome) {
+        hasWelcome = true;
+        return true;
+      }
+
+      return false;
     });
   }
 

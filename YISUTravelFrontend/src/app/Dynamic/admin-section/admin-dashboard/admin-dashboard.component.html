@@ -7,10 +7,19 @@
       <div class="header-content">
         <h2>Live Support</h2>
         <div class="header-actions">
-          <button mat-icon-button (click)="toggleStaffManagement()" *ngIf="isAdmin" matTooltip="Mitarbeiter verwalten">
+          <button
+            mat-icon-button
+            class="header-icon-btn"
+            (click)="toggleStaffManagement()"
+            *ngIf="isAdmin"
+            matTooltip="Mitarbeiter verwalten">
             <mat-icon>people</mat-icon>
           </button>
-          <button mat-icon-button (click)="goToProfile()" matTooltip="Profil bearbeiten">
+          <button
+            mat-icon-button
+            class="header-icon-btn"
+            (click)="goToProfile()"
+            matTooltip="Profil bearbeiten">
             <mat-icon>person</mat-icon>
           </button>
           <mat-slide-toggle #darkModeSwitch (click)="toggleDarkMode()" [checked]="darkMode" class="darkmode-button"></mat-slide-toggle>
@@ -329,10 +338,17 @@
         </div>
       </div>
 
-      <!-- Assignment Status Indicator -->
-      <div class="assignment-status" *ngIf="selectedChat">
-        <div class="status-badge" [ngClass]="getAssignmentStatusClass(selectedChat)">
-          {{ getAssignmentInfo(selectedChat) }}
+      <!-- Status & Assignment Indicators -->
+      <div class="chat-header-badges" *ngIf="selectedChat">
+        <div class="chat-status-badge" [ngClass]="'status-' + selectedChat.status">
+          {{ getStatusLabel(selectedChat.status) }}
+        </div>
+
+        <div class="assignment-status" *ngIf="shouldShowAssignmentStatus(selectedChat)">
+          <div class="status-badge" [ngClass]="getAssignmentStatusClass(selectedChat)">
+            <mat-icon class="assignment-status-icon">{{ getAssignmentStatusIcon(selectedChat) }}</mat-icon>
+            <span>{{ getAssignmentInfo(selectedChat) }}</span>
+          </div>
         </div>
       </div>
 

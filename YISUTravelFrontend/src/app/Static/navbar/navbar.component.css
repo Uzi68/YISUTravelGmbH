@@ -34,6 +34,119 @@
   backdrop-filter: blur(10px);
   will-change: background-color, box-shadow, border-color;
 }
+
+.toolbarbackground--scrolled {
+  background: rgba(15, 76, 129, 0.92);
+  border-bottom: 1px solid rgba(15, 76, 129, 0.35);
+  box-shadow: 0 6px 16px rgba(15, 76, 129, 0.25);
+}
+
+:host-context(body.dark-mode) .toolbarbackground {
+  background: rgba(15, 23, 42, 0.65);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.35);
+}
+
+:host-context(body.dark-mode) .toolbarbackground--scrolled {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.55);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a {
+  color: #f5faff !important;
+  text-shadow: 0 1px 3px rgba(15, 76, 129, 0.35);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mdc-button__label {
+  color: #f5faff !important;
+  text-shadow: 0 1px 3px rgba(15, 76, 129, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mat-mdc-button {
+  --mdc-text-button-label-text-color: #f5faff;
+  --mdc-text-button-label-text-color-hover: #ffffff;
+  --mdc-text-button-label-text-color-focus: #ffffff;
+  color: #f5faff !important;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mat-mdc-button .mdc-button__label {
+  color: inherit !important;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a::after {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a:hover {
+  color: var(--yisu-nav-items-active);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(15, 76, 129, 0.35);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a.active-list-item {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff !important;
+  box-shadow: 0 3px 10px rgba(15, 76, 129, 0.4);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a.active-list-item:hover {
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff !important;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a.cta {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(15, 76, 129, 0.35);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a.cta:hover {
+  background: rgba(255, 255, 255, 0.32);
+  color: #ffffff !important;
+  box-shadow: 0 6px 16px rgba(15, 76, 129, 0.4);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a.cta.active-list-item {
+  background: rgba(255, 255, 255, 0.32);
+  color: #ffffff !important;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mdc-button__label i,
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mdc-button__label mat-icon,
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mdc-button__label svg,
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mdc-button__label svg path {
+  color: #f5faff !important;
+  fill: #f5faff !important;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .adminicon {
+  fill: #f9fbff;
+  filter: drop-shadow(0 2px 8px rgba(15, 76, 129, 0.45));
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .adminicon:hover {
+  background: rgba(255, 255, 255, 0.12);
+  fill: rgba(255, 255, 255, 1);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .mobile-menu-btn {
+  fill: #f9fbff;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .mobile-menu-btn svg path {
+  fill: #f9fbff;
+}
+
+body:not(.dark-mode) .toolbarbackground--scrolled .desktop-menu a i,
+body:not(.dark-mode) .toolbarbackground--scrolled .desktop-menu a svg,
+body:not(.dark-mode) .toolbarbackground--scrolled .desktop-menu a svg path {
+  color: #f5faff !important;
+  fill: #f5faff !important;
+}
 ::ng-deep .mat-mdc-menu-content {
   padding: 0px !important;
 }
@@ -617,13 +730,19 @@ body.dark-mode .additional-info span:hover {
 .additional-info-top {
   background: #afdef8;
   padding: 0.75rem 0;
-  border-bottom: 3px solid rgba(25, 118, 210, 0.2);
+  border-bottom: 3px solid #ffa600;
   position: relative;
   box-shadow: none;
   
   @media (max-width: 940px) {
     display: none;
   }
+}
+
+:host-context(.dark-mode) .additional-info-top {
+  background: linear-gradient(135deg, rgba(46, 103, 195, 0.92), rgba(96, 165, 250, 0.85)) !important; /* Harmonischer Verlauf aus bestehenden Dark-Mode-Farben */
+  border-bottom: 3px solid #ffa600;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.45);
 }
 
 .logo-social-container {
