@@ -9,7 +9,6 @@ app-homepage-features,
 app-homepage-partner,
 app-homepage-flugpartner,
 app-interessante-themen,
-app-homepage-sixthview,
 app-customer-ratings,
 app-homepage-bezahlmoeglichkeiten-notfallservice {
   display: block;
@@ -27,8 +26,7 @@ app-offers + app-homepage-features,
 app-homepage-features + app-homepage-partner,
 app-homepage-partner + app-homepage-flugpartner,
 app-homepage-flugpartner + app-interessante-themen,
-app-interessante-themen + app-homepage-sixthview,
-app-homepage-sixthview + app-customer-ratings,
+app-interessante-themen + app-customer-ratings,
 app-customer-ratings + app-homepage-bezahlmoeglichkeiten-notfallservice {
   margin-top: 0 !important;
 }
@@ -45,7 +43,6 @@ app-customer-ratings + app-homepage-bezahlmoeglichkeiten-notfallservice {
   app-homepage-partner,
   app-homepage-flugpartner,
   app-interessante-themen,
-  app-homepage-sixthview,
   app-customer-ratings,
   app-homepage-bezahlmoeglichkeiten-notfallservice {
     margin-bottom: 0 !important;
@@ -61,8 +58,7 @@ app-customer-ratings + app-homepage-bezahlmoeglichkeiten-notfallservice {
   app-homepage-features + app-homepage-partner,
   app-homepage-partner + app-homepage-flugpartner,
   app-homepage-flugpartner + app-interessante-themen,
-  app-interessante-themen + app-homepage-sixthview,
-  app-homepage-sixthview + app-customer-ratings,
+  app-interessante-themen + app-customer-ratings,
   app-customer-ratings + app-homepage-bezahlmoeglichkeiten-notfallservice {
     margin-top: 0 !important;
   }

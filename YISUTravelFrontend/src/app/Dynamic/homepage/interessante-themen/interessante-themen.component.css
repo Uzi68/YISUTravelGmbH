@@ -2,8 +2,40 @@ section {
   margin-top: 15px;
   position: relative;
   overflow: hidden;
-  background: var(--amt-section-color) !important;
+  isolation: isolate;
+  background: var(--amt-section-gradient) !important;
   color: var(--yisu-white);
+}
+
+section::before {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: clamp(80px, 12vw, 160px);
+  background: var(--homepage-divider-color);
+  clip-path: ellipse(78% 100% at 50% 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+section::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: clamp(80px, 12vw, 160px);
+  background: var(--amt-section-fade);
+  clip-path: ellipse(78% 100% at 50% 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+section > * {
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 768px) {

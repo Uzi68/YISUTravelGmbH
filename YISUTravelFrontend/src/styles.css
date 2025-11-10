@@ -178,6 +178,11 @@ body.dark-mode {
   --lc-block-hover2-color: var(--yisu-white);
   --lc-block-hover3-color: rgba(25, 118, 210, 0.08);
   --amt-section-color: var(--yisu-highlight-gradient);
+  --amt-section-gradient: linear-gradient(125deg, #1e6ef0 0%, #2f86ff 55%, #63a7ff 100%);
+  --amt-section-fade: linear-gradient(180deg, rgba(46, 114, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
+  --customer-ratings-gradient: linear-gradient(180deg, #f4f7ff 0%, #0b1f47 18%, #061531 55%, #030b1e 100%);
+  --customer-ratings-fade: linear-gradient(180deg, rgba(11, 31, 71, 0.25) 0%, rgba(3, 11, 30, 0) 90%);
+  --homepage-divider-color: #f5f8ff;
   --ueber-uns-color: rgba(142, 209, 220, 0.1);
   --customer-ratings-color: var(--yisu-bg-section);
   --additional-info-color: var(--yisu-bg-section);
@@ -262,6 +267,11 @@ body.dark-mode {
   --lc-block-hover2-color: #0e2431;
   --lc-block-hover3-color: rgba(255, 215, 94, 0.15);
   --amt-section-color: var(--yisu-highlight-gradient);
+  --amt-section-gradient: linear-gradient(135deg, #17295c 0%, #1e3a78 45%, #2a5dd6 100%);
+  --amt-section-fade: linear-gradient(180deg, rgba(42, 93, 214, 0.25) 0%, rgba(3, 11, 28, 0) 100%);
+  --customer-ratings-gradient: linear-gradient(180deg, #0b1227 0%, #07132c 45%, #061a3f 70%, #030b1e 100%);
+  --customer-ratings-fade: linear-gradient(180deg, rgba(39, 84, 195, 0.35) 0%, rgba(3, 11, 30, 0) 85%);
+  --homepage-divider-color: #0b1227;
   --ueber-uns-color: rgba(102, 191, 210, 0.2);
   --customer-ratings-color: var(--yisu-bg-section);
   --additional-info-color: var(--yisu-bg-section);
