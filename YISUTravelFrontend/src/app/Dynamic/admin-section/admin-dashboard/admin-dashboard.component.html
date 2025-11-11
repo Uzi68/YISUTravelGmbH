@@ -263,8 +263,15 @@
                 routerLink="/">
           <mat-icon>home</mat-icon>
         </button>
-        <button mat-icon-button class="profile-action-btn" matTooltip="Ausloggen"
-                (click)="logout()">
+        <button
+          mat-icon-button
+          type="button"
+          class="profile-action-btn"
+          [disabled]="isLoggingOut"
+          [ngClass]="{'is-logging-out': isLoggingOut}"
+          [matTooltip]="isLoggingOut ? 'Wird abgemeldet...' : 'Ausloggen'"
+          (click)="logout()"
+          [attr.aria-busy]="isLoggingOut ? 'true' : null">
           <mat-icon>logout</mat-icon>
         </button>
       </div>

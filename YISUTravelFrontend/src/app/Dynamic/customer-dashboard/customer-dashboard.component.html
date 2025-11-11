@@ -88,7 +88,7 @@
       </mat-card-header>
       <mat-card-content>
         <div class="chat-list" *ngIf="chatHistory.length > 0; else noChats">
-          <div class="chat-item" *ngFor="let chat of chatHistory">
+          <div class="chat-item" *ngFor="let chat of chatHistory; trackBy: trackChatById" [class.expanded]="expandedChatId === chat.id">
             <div class="chat-header">
               <div class="chat-info">
                 <div class="chat-channel">
@@ -106,15 +106,54 @@
               </div>
             </div>
             
-            <div class="chat-messages" *ngIf="chat.messages.length > 0">
+            <div class="chat-messages" *ngIf="chat.messages.length > 0; else emptyChat">
               <div class="message-summary">
                 <strong>{{ chat.messages.length }} Nachrichten</strong>
-                <div class="last-message" *ngIf="chat.messages[chat.messages.length - 1]">
-                  <span class="sender">{{ chat.messages[chat.messages.length - 1].sender_type === 'visitor' ? 'Sie' : 'Support' }}:</span>
-                  <span class="content">{{ chat.messages[chat.messages.length - 1].content | slice:0:100 }}{{ chat.messages[chat.messages.length - 1].content.length > 100 ? '...' : '' }}</span>
+                <div class="last-message" *ngIf="chat.messages[chat.messages.length - 1] as lastMessage">
+                  <span class="sender">{{ getSenderLabel(lastMessage.sender_type) }}:</span>
+                  <span class="content">{{ lastMessage.content | slice:0:140 }}{{ lastMessage.content.length > 140 ? '...' : '' }}</span>
+                </div>
+              </div>
+
+              <div class="chat-actions">
+                <button mat-stroked-button color="primary" (click)="toggleChat(chat.id)">
+                  <mat-icon>{{ expandedChatId === chat.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  {{ expandedChatId === chat.id ? 'Verlauf ausblenden' : 'Verlauf anzeigen' }}
+                </button>
+              </div>
+
+              <div class="chat-thread" *ngIf="expandedChatId === chat.id">
+                <div
+                  class="thread-message"
+                  *ngFor="let message of chat.messages; trackBy: trackMessageById"
+                  [ngClass]="message.sender_type">
+                  <div class="thread-meta">
+                    <span class="thread-sender">{{ getSenderLabel(message.sender_type) }}</span>
+                    <span class="thread-time">{{ formatMessageTimestamp(message.created_at) }}</span>
+                  </div>
+                  <div class="thread-content">
+                    {{ message.content }}
+                  </div>
+                  <div class="thread-attachments" *ngIf="message.attachments?.length">
+                    <a
+                      *ngFor="let attachment of message.attachments; let i = index"
+                      [href]="attachment.download_url || attachment.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="thread-attachment">
+                      <mat-icon>attach_file</mat-icon>
+                      {{ attachment.file_name || ('Anhang ' + (i + 1)) }}
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <ng-template #emptyChat>
+              <div class="empty-chat">
+                <span>Keine Nachrichten vorhanden.</span>
+              </div>
+            </ng-template>
           </div>
         </div>
 

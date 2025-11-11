@@ -141,7 +141,10 @@ export const routes: Routes = [
   {
     path: 'admin-dashboard',
     component: AdminDashboardComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    data: {
+      roles: ['Admin', 'Agent']
+    }
   },
   {
     path: 'admin-livechat',
@@ -165,20 +168,26 @@ export const routes: Routes = [
   {
     path: 'profile',
     component: ProfileManagementComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    data: {
+      roles: ['Admin', 'Agent', 'User']
+    }
   },
   {
     path: 'password-reset',
     component: PasswordResetComponent
   },
   {
-    path: 'customer-registration',
+    path: 'kunden-registrierung',
     component: CustomerRegistrationComponent
   },
   {
     path: 'customer-dashboard',
     component: CustomerDashboardComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    data: {
+      roles: ['User']
+    }
   },
   {
     path: 'termin-buchen',

@@ -9,7 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 
-import { CustomerService, CustomerProfile, CustomerChat, CustomerDashboardStats } from '../../Services/customer-service.service';
+import { CustomerService, CustomerProfile, CustomerChat, CustomerDashboardStats, ChatMessage } from '../../Services/customer-service.service';
 import { AuthService } from '../../Services/AuthService/auth.service';
 
 @Component({
@@ -33,6 +33,7 @@ export class CustomerDashboardComponent implements OnInit {
   chatHistory: CustomerChat[] = [];
   dashboardStats: CustomerDashboardStats | null = null;
   loading = false;
+  expandedChatId: number | null = null;
 
   constructor(
     private customerService: CustomerService,
@@ -126,6 +127,44 @@ export class CustomerDashboardComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  formatMessageTimestamp(dateString: string): string {
+    return new Date(dateString).toLocaleString('de-DE', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  toggleChat(chatId: number): void {
+    this.expandedChatId = this.expandedChatId === chatId ? null : chatId;
+  }
+
+  getSenderLabel(senderType: string): string {
+    switch (senderType) {
+      case 'visitor':
+      case 'user':
+        return 'Sie';
+      case 'bot':
+        return 'Chatbot';
+      case 'agent':
+        return 'Support';
+      case 'system':
+        return 'System';
+      default:
+        return senderType;
+    }
+  }
+
+  trackChatById(_index: number, chat: CustomerChat): number {
+    return chat.id;
+  }
+
+  trackMessageById(_index: number, message: ChatMessage): number {
+    return message.id;
   }
 
   startNewChat(): void {

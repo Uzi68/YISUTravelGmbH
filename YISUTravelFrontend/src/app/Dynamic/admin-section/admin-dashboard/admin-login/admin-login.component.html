@@ -18,19 +18,19 @@
         </mat-form-field>
 
         <div class="login-actions">
-        <!--  <button mat-raised-button class="submitButton" (click)="callXSFR()" type="submit" [disabled]="contactForm.invalid">-->
           <button mat-raised-button class="submitButton" type="submit" [disabled]="contactForm.invalid || isLoading">
             <mat-progress-spinner
               *ngIf="isLoading"
+              class="button-spinner"
               diameter="20"
               mode="indeterminate">
             </mat-progress-spinner>
             <span>{{ isLoading ? 'Wird angemeldet...' : 'Login' }}</span>
           </button>
         </div>
-        <div class="login-loading" *ngIf="isLoading">
-          <mat-progress-spinner diameter="28" mode="indeterminate"></mat-progress-spinner>
-          <span>Bitte warten, Anmeldung läuft ...</span>
+        <div class="login-error" *ngIf="errorMessage">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ errorMessage }}</span>
         </div>
         
         <div class="login-links">

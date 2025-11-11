@@ -9,6 +9,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\CustomerWelcomeMail;
 
 class CustomerController extends Controller
 {
@@ -47,6 +49,17 @@ class CustomerController extends Controller
         // Assign customer role
         $user->assignRole('User');
 
+        // Send welcome mail (fails silently but logged)
+        try {
+            Mail::to($user->email)->send(new CustomerWelcomeMail($user));
+        } catch (\Throwable $th) {
+            \Log::error('Customer welcome mail failed to send', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $th->getMessage(),
+            ]);
+        }
+
         // Auto-login after registration
         Auth::login($user);
         
@@ -79,7 +92,13 @@ class CustomerController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $chats = Chat::where('visitor_id', $user->id)
+        $chats = Chat::where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhere(function ($fallback) use ($user) {
+                        $fallback->whereNull('user_id')
+                            ->where('visitor_id', $user->id);
+                    });
+            })
             ->with(['messages' => function($query) {
                 $query->orderBy('created_at', 'asc');
             }])
@@ -119,11 +138,19 @@ class CustomerController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $totalChats = Chat::where('visitor_id', $user->id)->count();
-        $activeChats = Chat::where('visitor_id', $user->id)
-            ->whereIn('status', ['active', 'waiting'])
+        $chatQuery = Chat::where(function ($query) use ($user) {
+            $query->where('user_id', $user->id)
+                ->orWhere(function ($fallback) use ($user) {
+                    $fallback->whereNull('user_id')
+                        ->where('visitor_id', $user->id);
+                });
+        });
+
+        $totalChats = (clone $chatQuery)->count();
+        $activeChats = (clone $chatQuery)
+            ->whereIn('status', ['active', 'waiting', 'human', 'in_progress'])
             ->count();
-        $resolvedChats = Chat::where('visitor_id', $user->id)
+        $resolvedChats = (clone $chatQuery)
             ->where('status', 'closed')
             ->count();
 

@@ -325,11 +325,14 @@ export class ChatUiComponent implements AfterViewInit {
     this.authSub = this.authService.getAuthenticated().subscribe(auth => {
       this.isAuthenticated = auth;
 
-      if (!this.isAuthenticated) {
-        this.checkRegistrationStatus();
-      } else {
+      if (this.isAuthenticated) {
+        this.isRegistered.set(true);
+        this.showRegistrationForm.set(false);
         // ✅ Nach localStorage-Laden: Backend-Verlauf laden (aktualisiert localStorage)
         this.loadChatHistory();
+      } else {
+        this.isRegistered.set(false);
+        this.checkRegistrationStatus();
       }
 
       const storedChatId = localStorage.getItem('current_chat_id');
@@ -1115,9 +1118,9 @@ export class ChatUiComponent implements AfterViewInit {
     // Nachrichten wurden bereits in confirmCloseChat() geleert
     this.showQuickQuestions.set(false);
     this.resetRegistration();
-    this.showRegistrationForm.set(true);
+    this.showRegistrationForm.set(!this.isAuthenticated);
     this.isEscalated.set(false);
-    this.isRegistered.set(false);
+    this.isRegistered.set(this.isAuthenticated);
     this.chatStatus.set('bot');
     this.currentChatId.set(null);
     localStorage.removeItem('current_chat_id');

@@ -27,7 +27,7 @@ import {UserManagementService} from "../../../Services/user-management-service.s
 import {OfferManagementComponent} from "../offer-management/offer-management.component";
 import {User} from "../../../Models/User";
 import {Visitor} from "../../../Models/Visitor";
-import {catchError, tap, timeout} from "rxjs/operators";
+import {catchError, tap, timeout, finalize} from "rxjs/operators";
 import { MessageFilterPipe } from "./message-filter.pipe";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatButtonToggle, MatButtonToggleGroup} from "@angular/material/button-toggle";
@@ -185,6 +185,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   // ✅ Loading state für Chat-Wechsel
   isLoadingChat = false;
+  isLoggingOut = false;
 
 // Neue Properties für Filter
   searchQuery = '';
@@ -2114,14 +2115,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         // ✅ Wenn optimistische Nachricht gefunden, ersetze sie statt neue hinzuzufügen
         let updatedMessages: Message[];
         if (optimisticMessageIndex !== -1) {
+          const optimisticMessage = existingMessages[optimisticMessageIndex];
           console.log('✅ Replacing optimistic message with real message:', {
-            optimisticId: existingMessages[optimisticMessageIndex].id,
+            optimisticId: optimisticMessage.id,
             realId: newMessage.id,
             content: newMessage.content.substring(0, 30)
           });
+          const mergedMessage: Message = {
+            ...optimisticMessage,
+            ...newMessage,
+            clientMessageId: optimisticMessage.clientMessageId ?? optimisticMessage.id,
+            isOptimistic: false
+          };
           updatedMessages = [
             ...existingMessages.slice(0, optimisticMessageIndex),
-            newMessage,
+            mergedMessage,
             ...existingMessages.slice(optimisticMessageIndex + 1)
           ];
         } else {
@@ -2217,9 +2225,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           if (!isDuplicate) {
             let selectedMessages: Message[];
             if (selectedOptimisticIndex !== -1) {
+              const optimisticMessage = this.selectedChat.messages[selectedOptimisticIndex];
+              const mergedMessage: Message = {
+                ...optimisticMessage,
+                ...newMessage,
+                clientMessageId: optimisticMessage.clientMessageId ?? optimisticMessage.id,
+                isOptimistic: false
+              };
               selectedMessages = [
                 ...this.selectedChat.messages.slice(0, selectedOptimisticIndex),
-                newMessage,
+                mergedMessage,
                 ...this.selectedChat.messages.slice(selectedOptimisticIndex + 1)
               ];
             } else {
@@ -2379,7 +2394,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   trackByMessageId(index: number, message: Message): string {
-    return message.id;
+    return message.clientMessageId ?? message.id;
   }
 
 
@@ -3717,6 +3732,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     
     const optimisticMessage: Message = {
       id: tempId,
+      clientMessageId: tempId,
       content: trimmedContent,
       timestamp: new Date(),
       isAgent: true,
@@ -4106,6 +4122,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     
     const optimisticMessage: Message = {
       id: tempId,
+      clientMessageId: tempId,
       content: trimmedContent,
       timestamp: new Date(),
       isAgent: true,
@@ -4399,12 +4416,27 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   logout() {
-    this.authService.logout().subscribe({
+    if (this.isLoggingOut) {
+      return;
+    }
+
+    this.isLoggingOut = true;
+    this.cdRef.markForCheck();
+
+    this.authService.logout().pipe(
+      finalize(() => {
+        this.isLoggingOut = false;
+        this.cdRef.markForCheck();
+      })
+    ).subscribe({
       next: () => {
-        this.router.navigate(['/admin-login']);
+        // Navigation wird bereits im AuthService durchgeführt
       },
       error: (error: any) => {
         console.error('Error logging out:', error);
+        this.snackBar.open('Abmelden fehlgeschlagen. Bitte erneut versuchen.', 'Schließen', {
+          duration: 3000
+        });
       }
     });
   }
@@ -4669,6 +4701,7 @@ interface Chat {
 
 interface Message {
   id: string;
+  clientMessageId?: string;
   content: string;
   timestamp: Date;
   isAgent: boolean;

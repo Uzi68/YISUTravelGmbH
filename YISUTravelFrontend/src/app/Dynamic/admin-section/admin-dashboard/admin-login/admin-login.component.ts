@@ -6,9 +6,10 @@ import {MatFormField, MatLabel} from "@angular/material/form-field";
 import {MatInput} from "@angular/material/input";
 import {MatButton} from "@angular/material/button";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
+import {MatIcon} from "@angular/material/icon";
 import {finalize} from "rxjs";
 import {AuthService} from "../../../../Services/AuthService/auth.service";
-import {Router} from "@angular/router";
+import {Router, RouterLink} from "@angular/router";
 
 @Component({
   selector: 'app-admin-login',
@@ -24,7 +25,9 @@ import {Router} from "@angular/router";
     MatButton,
     MatCardTitle,
     MatCardHeader,
-    MatProgressSpinner
+    MatProgressSpinner,
+    MatIcon,
+    RouterLink
 
   ],
   templateUrl: './admin-login.component.html',
@@ -33,6 +36,7 @@ import {Router} from "@angular/router";
 export class AdminLoginComponent {
   contactForm: FormGroup;
   isLoading = false;
+  errorMessage: string | null = null;
 
   constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {
     this.contactForm = this.fb.group ({
@@ -64,23 +68,43 @@ export class AdminLoginComponent {
 
 
   onsubmit(): void {
-    if (this.contactForm.valid) {
-      const credentials = this.contactForm.value;
-      this.isLoading = true;
-      this.authService.login(credentials).pipe(
-        finalize(() => {
-          this.isLoading = false;
-        })
-      ).subscribe({
-        next: (response) => {
-     //     console.log('Login successful', response);
-          this.router.navigate(['/admin-dashboard']);
-        },
-        error: (err) => {
-          console.error('Login failed', err);
-        },
-      });
+    if (this.contactForm.invalid) {
+      this.contactForm.markAllAsTouched();
+      return;
     }
+
+    const credentials = this.contactForm.value;
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    this.authService.login(credentials).pipe(
+      finalize(() => {
+        this.isLoading = false;
+      })
+    ).subscribe({
+      next: (response) => {
+        const roles: string[] = Array.isArray(response?.roles) ? response.roles : [];
+
+        if (roles.includes('Admin') || roles.includes('Agent')) {
+          this.router.navigate(['/admin-dashboard']);
+        } else if (roles.includes('User')) {
+          this.router.navigate(['/customer-dashboard']);
+        } else {
+          console.warn('Unbekannte Rollen für angemeldeten Benutzer', roles);
+          this.router.navigate(['/admin-login']);
+        }
+      },
+      error: (err) => {
+        console.error('Login failed', err);
+        if (err?.status === 401 || err?.status === 422) {
+          this.errorMessage = 'E-Mail oder Passwort ist falsch. Bitte prüfen und erneut versuchen.';
+        } else if (err?.error?.message) {
+          this.errorMessage = err.error.message;
+        } else {
+          this.errorMessage = 'Die Anmeldung ist fehlgeschlagen. Bitte versuchen Sie es später erneut.';
+        }
+      },
+    });
   }
 
   goToPasswordReset(): void {
@@ -88,6 +112,6 @@ export class AdminLoginComponent {
   }
 
   goToCustomerRegistration(): void {
-    this.router.navigate(['/customer-registration']);
+    this.router.navigate(['/kunden-registrierung']);
   }
 }

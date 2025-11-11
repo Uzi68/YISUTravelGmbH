@@ -958,6 +958,20 @@ body.dark-mode .profile-status .status-dot {
   color: var(--yisu-white);
 }
 
+.profile-action-btn.is-logging-out,
+.profile-action-btn:disabled {
+  background: rgba(148, 163, 184, 0.24);
+  color: var(--yisu-secondary-muted, #64748b);
+  border-color: rgba(148, 163, 184, 0.45);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.profile-action-btn.is-logging-out mat-icon,
+.profile-action-btn:disabled mat-icon {
+  color: inherit;
+}
+
 .profile-action-btn.mat-mdc-icon-button {
   border-radius: 10px !important;
   padding: 0;
@@ -995,6 +1009,13 @@ body.dark-mode .profile-status .status-dot {
 
 :host-context(.dark-mode) .profile-action-btn.active mat-icon {
   color: var(--yisu-white);
+}
+
+:host-context(.dark-mode) .profile-action-btn.is-logging-out,
+:host-context(.dark-mode) .profile-action-btn:disabled {
+  background: rgba(148, 163, 184, 0.18);
+  color: rgba(226, 232, 240, 0.75);
+  border-color: rgba(148, 163, 184, 0.35);
 }
 
 @media (max-width: 1280px) {

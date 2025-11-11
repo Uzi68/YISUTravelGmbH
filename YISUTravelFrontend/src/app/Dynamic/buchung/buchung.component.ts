@@ -8,7 +8,7 @@ import { Component, OnInit } from '@angular/core';
   styleUrl: './buchung.component.css'
 })
 export class BuchungComponent implements OnInit {
-  // Statistics that increase daily with random numbers (0-9)
+  // Statistics that increase daily with random numbers (3-9)
   buchungen: number = 0;
   zufriedeneKunden: number = 0;
   rechnungen: number = 0;
@@ -26,15 +26,15 @@ export class BuchungComponent implements OnInit {
     const lastUpdateDate = localStorage.getItem(this.DATE_KEY);
 
     if (!lastUpdateDate || lastUpdateDate !== today) {
-      // New day - get previous values and add random (0-9)
+      // New day - get previous values and add random (3-9)
       const yesterdayBuchungen = this.getStoredValue('buchungen', 200000);
       const yesterdayZufriedeneKunden = this.getStoredValue('zufriedeneKunden', 20500);
       const yesterdayRechnungen = this.getStoredValue('rechnungen', 200000);
 
-      // Add random number (0-9) daily
-      const randomBuchungen = Math.floor(Math.random() * 10);
-      const randomZufriedeneKunden = Math.floor(Math.random() * 10);
-      const randomRechnungen = Math.floor(Math.random() * 10);
+      // Add random number (3-9) daily
+      const randomBuchungen = Math.floor(Math.random() * 7) + 3;
+      const randomZufriedeneKunden = Math.floor(Math.random() * 7) + 3;
+      const randomRechnungen = Math.floor(Math.random() * 7) + 3;
 
       this.buchungen = yesterdayBuchungen + randomBuchungen;
       this.zufriedeneKunden = yesterdayZufriedeneKunden + randomZufriedeneKunden;
