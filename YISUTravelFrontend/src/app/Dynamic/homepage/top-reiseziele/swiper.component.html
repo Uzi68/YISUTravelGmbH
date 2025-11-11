@@ -1,7 +1,13 @@
 <!-- Desktop -->
-<section class="popular-destinations" *ngIf="isBrowser">
+<section class="popular-destinations">
   <h2 class="section-title">Unsere schönsten Reiseziele</h2>
-  <div id="destinationsCarouselDesktop" class="carousel slide desktop custom-swiper" data-bs-ride="carousel" data-bs-interval="2500" appCarouselSwipe>
+  <div
+    id="destinationsCarouselDesktop"
+    class="carousel slide desktop custom-swiper"
+    [attr.data-bs-ride]="isBrowser ? 'carousel' : null"
+    [attr.data-bs-interval]="isBrowser ? 2500 : null"
+    appCarouselSwipe
+  >
     <div class="carousel-inner">
       <div class="carousel-item active">
         <div class="row g-3">
@@ -46,7 +52,13 @@
 </section>
 
 <!-- Mobile -->
-<div id="destinationsCarouselMobile" class="carousel slide custom-swiper mobile" data-bs-ride="carousel" data-bs-interval="2500" *ngIf="isBrowser" appCarouselSwipe>
+<div
+  id="destinationsCarouselMobile"
+  class="carousel slide custom-swiper mobile"
+  [attr.data-bs-ride]="isBrowser ? 'carousel' : null"
+  [attr.data-bs-interval]="isBrowser ? 2500 : null"
+  appCarouselSwipe
+>
   <div class="carousel-inner">
     <div class="carousel-item active">
       <div class="slider-wrapper">

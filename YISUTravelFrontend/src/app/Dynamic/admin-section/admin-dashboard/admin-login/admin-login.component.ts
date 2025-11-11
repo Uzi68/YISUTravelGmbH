@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import {CommonModule} from "@angular/common";
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
 import {MatCard, MatCardContent, MatCardHeader, MatCardTitle} from "@angular/material/card";
 import {MatFormField, MatLabel} from "@angular/material/form-field";
@@ -13,6 +14,7 @@ import {Router} from "@angular/router";
   selector: 'app-admin-login',
   standalone: true,
   imports: [
+    CommonModule,
     MatCard,
     MatCardContent,
     MatFormField,
