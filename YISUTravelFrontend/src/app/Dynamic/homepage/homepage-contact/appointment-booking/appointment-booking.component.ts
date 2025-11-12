@@ -96,7 +96,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
   allPossibleSlots: string[] = [];
   blockedSlots: string[] = []; // Blocked slots for selected date
   isLoadingSlots = false;
-  customTime: string = '';
   
   // Business hours
   businessHours = {
@@ -281,6 +280,7 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
   selectTimeSlot(slot: string): void {
     this.selectedTime = slot;
   }
+
 
   isAppointmentValid(): boolean {
     return !!(this.appointmentForm.get('appointment_date')?.valid && this.selectedTime);
