@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Chat;
+use App\Models\Visitor;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -92,16 +93,39 @@ class CustomerController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $chats = Chat::where(function ($query) use ($user) {
-                $query->where('user_id', $user->id)
-                    ->orWhere(function ($fallback) use ($user) {
-                        $fallback->whereNull('user_id')
-                            ->where('visitor_id', $user->id);
-                    });
+        $relatedVisitorIds = collect();
+
+        if ($user->email || $user->phone) {
+            $visitorQuery = Visitor::query();
+
+            if ($user->email) {
+                $visitorQuery->where('email', $user->email);
+            }
+
+            if ($user->phone) {
+                if ($visitorQuery->getQuery()->wheres) {
+                    $visitorQuery->orWhere('phone', $user->phone);
+                } else {
+                    $visitorQuery->where('phone', $user->phone);
+                }
+            }
+
+            $relatedVisitorIds = $visitorQuery->pluck('id');
+        }
+
+        $chats = Chat::where(function ($query) use ($user, $relatedVisitorIds) {
+                $query->where('user_id', $user->id);
+
+                if ($relatedVisitorIds->isNotEmpty()) {
+                    $query->orWhereIn('visitor_id', $relatedVisitorIds);
+                }
             })
-            ->with(['messages' => function($query) {
-                $query->orderBy('created_at', 'asc');
-            }])
+            ->with([
+                'messages' => function($query) {
+                    $query->orderBy('created_at', 'asc');
+                },
+                'messages.attachments'
+            ])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function($chat) {
@@ -115,10 +139,21 @@ class CustomerController extends Controller
                     'messages' => $chat->messages->map(function($message) {
                         return [
                             'id' => $message->id,
-                            'content' => $message->content,
-                            'sender_type' => $message->sender_type,
+                            'content' => $message->text,
+                            'text' => $message->text,
+                            'sender_type' => $message->from,
+                            'from' => $message->from,
+                            'message_type' => $message->message_type,
                             'created_at' => $message->created_at,
-                            'attachments' => $message->attachments ?? []
+                            'attachments' => $message->attachments->map(function($attachment) {
+                                return [
+                                    'id' => $attachment->id,
+                                    'file_name' => $attachment->file_name,
+                                    'file_type' => $attachment->file_type,
+                                    'file_size' => (int) $attachment->file_size,
+                                    'download_url' => url('api/attachments/' . $attachment->id . '/download'),
+                                ];
+                            })->values()
                         ];
                     })
                 ];
@@ -138,17 +173,37 @@ class CustomerController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $chatQuery = Chat::where(function ($query) use ($user) {
-            $query->where('user_id', $user->id)
-                ->orWhere(function ($fallback) use ($user) {
-                    $fallback->whereNull('user_id')
-                        ->where('visitor_id', $user->id);
-                });
+        $relatedVisitorIds = collect();
+
+        if ($user->email || $user->phone) {
+            $visitorStatsQuery = Visitor::query();
+
+            if ($user->email) {
+                $visitorStatsQuery->where('email', $user->email);
+            }
+
+            if ($user->phone) {
+                if ($visitorStatsQuery->getQuery()->wheres) {
+                    $visitorStatsQuery->orWhere('phone', $user->phone);
+                } else {
+                    $visitorStatsQuery->where('phone', $user->phone);
+                }
+            }
+
+            $relatedVisitorIds = $visitorStatsQuery->pluck('id');
+        }
+
+        $chatQuery = Chat::where(function ($query) use ($user, $relatedVisitorIds) {
+            $query->where('user_id', $user->id);
+
+            if ($relatedVisitorIds->isNotEmpty()) {
+                $query->orWhereIn('visitor_id', $relatedVisitorIds);
+            }
         });
 
         $totalChats = (clone $chatQuery)->count();
         $activeChats = (clone $chatQuery)
-            ->whereIn('status', ['active', 'waiting', 'human', 'in_progress'])
+            ->whereIn('status', ['active', 'waiting', 'human', 'in_progress', 'bot'])
             ->count();
         $resolvedChats = (clone $chatQuery)
             ->where('status', 'closed')

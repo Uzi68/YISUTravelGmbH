@@ -461,7 +461,7 @@
 
 .selected-time-display {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   margin-top: 1rem;
   padding: 0.75rem 1rem;
@@ -477,29 +477,10 @@
   color: var(--yisu-secondary);
 }
 
-.custom-time-section {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background-color: var(--yisu-bg-card);
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.26);
+.selected-time-text {
   display: flex;
-  align-items: flex-end;
-  gap: 1rem;
-}
-
-.custom-time-field {
-  flex: 1;
-}
-
-.add-custom-time-btn {
-  flex-shrink: 0;
-}
-
-.add-custom-time-btn button {
-  height: 56px;
-  min-width: 120px;
-  font-weight: 600 !important;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .time-slot-button.unavailable-slot {
@@ -697,17 +678,6 @@
     gap: 0.5rem;
   }
 
-  .custom-time-section {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-
-  .add-custom-time-btn button {
-    height: 48px;
-    width: 100%;
-  }
-
   .step-actions {
     flex-direction: column;
     gap: 1rem;
@@ -884,25 +854,6 @@
 
 .dark-mode .selected-time-display mat-icon {
   color: #93c5fd;
-}
-
-.dark-mode .custom-time-section {
-  background-color: rgba(15, 23, 42, 0.9);
-  border-color: rgba(148, 163, 184, 0.24);
-}
-
-.dark-mode .add-custom-time-btn button {
-  background: linear-gradient(135deg, #1f51d5, #2563eb) !important;
-  color: #e2e8f0 !important;
-  box-shadow: none !important;
-}
-
-.dark-mode .add-custom-time-btn button .mat-icon {
-  color: #e2e8f0 !important;
-}
-
-.dark-mode .add-custom-time-btn button .mat-button-wrapper {
-  color: #e2e8f0 !important;
 }
 
 .dark-mode .step-actions button[mat-button] {

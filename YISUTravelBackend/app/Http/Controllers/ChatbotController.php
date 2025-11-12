@@ -16,8 +16,8 @@ use App\Models\Escalation;
 use App\Models\EscalationPrompt;
 use App\Models\Message;
 use App\Models\MessageRead;
-use App\Models\Visitor;
 use App\Models\User;
+use App\Models\Visitor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -78,17 +78,68 @@ class ChatbotController extends Controller
             ], 401); // Falls der Benutzer nicht authentifiziert ist, eine 401-Antwort zurückgeben
         }
 
-        // Chatverlauf für den authentifizierten Benutzer aktualisieren
-        $existingChat = Chat::where('session_id', $sessionId)
-            ->where('user_id', $request->user()->id) // Chat für den authentifizierten Benutzer abrufen
-            ->first();
+        $user = $request->user();
 
-        // Falls kein Chatverlauf existiert, einen neuen erstellen
+        $firstName = $user->first_name;
+        $lastName = $user->last_name;
+
+        if ((!$firstName || !$lastName) && $user->name) {
+            $nameParts = preg_split('/\s+/', trim($user->name));
+            if (!$firstName && !empty($nameParts)) {
+                $firstName = array_shift($nameParts);
+            }
+            if (!$lastName && !empty($nameParts)) {
+                $lastName = implode(' ', $nameParts);
+            }
+        }
+
+        $visitorAttributes = [
+            'channel' => 'website',
+            'agb_accepted' => true,
+            'agb_accepted_at' => now(),
+            'agb_version' => '1.0'
+        ];
+
+        if ($firstName) {
+            $visitorAttributes['first_name'] = $firstName;
+        }
+
+        if ($lastName) {
+            $visitorAttributes['last_name'] = $lastName;
+        }
+
+        if ($user->email) {
+            $visitorAttributes['email'] = $user->email;
+        }
+
+        if ($user->phone) {
+            $visitorAttributes['phone'] = $user->phone;
+        }
+
+        // Besucherprofil mit Kundendaten synchronisieren
+        $visitor = Visitor::updateOrCreate(
+            ['session_id' => $sessionId],
+            $visitorAttributes
+        );
+
+        // Chatverlauf für den authentifizierten Benutzer aktualisieren
+        $existingChat = Chat::where('session_id', $sessionId)->first();
+
         if (!$existingChat) {
             $existingChat = Chat::create([
                 'session_id' => $sessionId,
-                'user_id' => $request->user()->id,  // Setze die user_id aus dem authentifizierten Benutzer
+                'user_id' => $user->id,
+                'visitor_id' => $visitor->id,
+                'visitor_session_id' => $sessionId,
+                'status' => 'bot',
+                'channel' => 'website'
             ]);
+        } else {
+            $existingChat->user_id = $user->id;
+            $existingChat->visitor_id = $visitor->id;
+            $existingChat->visitor_session_id = $sessionId;
+            $existingChat->channel = $existingChat->channel ?: 'website';
+            $existingChat->save();
         }
 
         // Speichern der Benutzer- und Bot-Nachricht in der Tabelle 'messages'

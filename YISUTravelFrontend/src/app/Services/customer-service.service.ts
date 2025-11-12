@@ -23,12 +23,23 @@ export interface CustomerProfile {
   created_at: string;
 }
 
+export interface ChatAttachment {
+  id: number;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  download_url: string;
+}
+
 export interface ChatMessage {
   id: number;
-  content: string;
-  sender_type: string;
+  content?: string | null;
+  text?: string | null;
+  sender_type?: string;
+  from?: string;
+  message_type?: string | null;
   created_at: string;
-  attachments: any[];
+  attachments: ChatAttachment[];
 }
 
 export interface CustomerChat {

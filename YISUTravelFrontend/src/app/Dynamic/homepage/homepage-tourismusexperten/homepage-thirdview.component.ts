@@ -27,9 +27,9 @@ import {Subscription} from 'rxjs';
 export class HomepageThirdviewComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChildren('box', { read: ElementRef }) boxElements!: QueryList<ElementRef>;
 
-  buchungen = 210000;
+  buchungen = 200000;
   buchungenToday: number | null = null;
-  zufriedeneKunden = 210000;
+  zufriedeneKunden = 30000;
   zufriedeneKundenToday: number | null = null;
 
   private readonly isBrowser: boolean;

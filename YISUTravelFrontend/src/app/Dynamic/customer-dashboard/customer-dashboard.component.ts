@@ -9,7 +9,13 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 
-import { CustomerService, CustomerProfile, CustomerChat, CustomerDashboardStats, ChatMessage } from '../../Services/customer-service.service';
+import {
+  CustomerService,
+  CustomerProfile,
+  CustomerChat,
+  CustomerDashboardStats,
+  ChatMessage
+} from '../../Services/customer-service.service';
 import { AuthService } from '../../Services/AuthService/auth.service';
 
 @Component({
@@ -90,6 +96,9 @@ export class CustomerDashboardComponent implements OnInit {
       case 'active': return 'primary';
       case 'waiting': return 'accent';
       case 'closed': return 'basic';
+      case 'human':
+      case 'in_progress': return 'primary';
+      case 'bot': return 'accent';
       default: return 'basic';
     }
   }
@@ -99,6 +108,9 @@ export class CustomerDashboardComponent implements OnInit {
       case 'active': return 'Aktiv';
       case 'waiting': return 'Wartend';
       case 'closed': return 'Geschlossen';
+      case 'human': return 'Mit Mitarbeiter';
+      case 'in_progress': return 'In Bearbeitung';
+      case 'bot': return 'Chatbot';
       default: return status;
     }
   }
@@ -143,8 +155,10 @@ export class CustomerDashboardComponent implements OnInit {
     this.expandedChatId = this.expandedChatId === chatId ? null : chatId;
   }
 
-  getSenderLabel(senderType: string): string {
-    switch (senderType) {
+  getSenderLabel(senderType?: string | null): string {
+    const normalized = (senderType || '').toLowerCase();
+
+    switch (normalized) {
       case 'visitor':
       case 'user':
         return 'Sie';
@@ -155,8 +169,23 @@ export class CustomerDashboardComponent implements OnInit {
       case 'system':
         return 'System';
       default:
-        return senderType;
+        return senderType || 'Unbekannt';
     }
+  }
+
+  getMessageText(message?: ChatMessage | null): string {
+    if (!message) {
+      return '';
+    }
+    return (message.content ?? message.text ?? '').trim();
+  }
+
+  truncateMessage(message?: ChatMessage | null, limit = 140): string {
+    const text = this.getMessageText(message);
+    if (!text) {
+      return '';
+    }
+    return text.length > limit ? `${text.slice(0, limit)}...` : text;
   }
 
   trackChatById(_index: number, chat: CustomerChat): number {

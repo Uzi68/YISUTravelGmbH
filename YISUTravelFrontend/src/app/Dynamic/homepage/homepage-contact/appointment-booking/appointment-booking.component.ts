@@ -204,7 +204,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
     this.availableSlots = [];
     this.allPossibleSlots = [];
     this.selectedTime = null;
-    this.customTime = '';
 
     // Generate all possible slots first
     this.allPossibleSlots = this.generateTimeSlots(date);
@@ -281,47 +280,6 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
 
   selectTimeSlot(slot: string): void {
     this.selectedTime = slot;
-  }
-
-  onCustomTimeChange(event: any): void {
-    this.customTime = event.target.value;
-  }
-
-  isCustomTimeValid(): boolean {
-    if (!this.customTime) return false;
-    
-    const [hours, minutes] = this.customTime.split(':').map(Number);
-    const selectedDate = new Date(this.selectedDate!);
-    const dayOfWeek = selectedDate.getDay();
-    
-    let startTime: string;
-    let endTime: string;
-    
-    if (dayOfWeek === 6) { // Saturday
-      startTime = this.businessHours.saturday.start;
-      endTime = this.businessHours.saturday.end;
-    } else if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
-      startTime = this.businessHours.weekdays.start;
-      endTime = this.businessHours.weekdays.end;
-    } else { // Sunday - closed
-      return false;
-    }
-    
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    
-    const customMinutes = hours * 60 + minutes;
-    const startMinutes = startHour * 60 + startMin;
-    const endMinutes = endHour * 60 + endMin;
-    
-    return customMinutes >= startMinutes && customMinutes <= endMinutes;
-  }
-
-  addCustomTime(): void {
-    if (this.customTime && this.isCustomTimeValid()) {
-      this.selectedTime = this.customTime;
-      this.customTime = '';
-    }
   }
 
   isAppointmentValid(): boolean {

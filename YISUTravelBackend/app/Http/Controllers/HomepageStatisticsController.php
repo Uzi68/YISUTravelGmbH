@@ -15,10 +15,12 @@ class HomepageStatisticsController extends Controller
      */
     private array $metrics = [
         'bookings' => [
-            'seed' => 210000,
+            'seed' => 200_000,
+            'increment_range' => ['min' => 9, 'max' => 12],
         ],
         'happyCustomers' => [
-            'seed' => 210000,
+            'seed' => 30_000,
+            'increment_range' => ['min' => 3, 'max' => 4],
         ],
     ];
 
@@ -37,8 +39,11 @@ class HomepageStatisticsController extends Controller
                 ]
             );
 
+            $counter->total = max($counter->total, $config['seed']);
+
             if (!$counter->last_increment_date || !$counter->last_increment_date->isSameDay($today)) {
-                $increment = random_int(0, 9);
+                $range = $config['increment_range'];
+                $increment = random_int($range['min'], $range['max']);
                 $counter->total += $increment;
                 $counter->today_increment = $increment;
                 $counter->last_increment_date = $today;

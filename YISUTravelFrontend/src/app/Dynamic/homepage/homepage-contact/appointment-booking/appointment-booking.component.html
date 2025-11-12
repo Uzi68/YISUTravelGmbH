@@ -154,29 +154,9 @@
                   <!-- Selected Time Display -->
                   <div *ngIf="selectedTime" class="selected-time-display">
                     <mat-icon>check_circle</mat-icon>
-                    <span><strong>Ausgewählte Zeit:</strong> {{selectedTime}} Uhr</span>
-                  </div>
-
-                  <!-- Custom Time Input -->
-                  <div class="custom-time-section">
-                    <div class="custom-time-field">
-                      <mat-form-field appearance="outline">
-                        <mat-label>Oder eigene Uhrzeit eingeben</mat-label>
-                        <input matInput 
-                               type="time"
-                               [value]="customTime"
-                               (change)="onCustomTimeChange($event)"
-                               placeholder="HH:MM">
-                        <mat-hint>Format: HH:MM (z.B. 14:30)</mat-hint>
-                      </mat-form-field>
-                    </div>
-                    <div class="add-custom-time-btn">
-                      <button mat-raised-button 
-                              (click)="addCustomTime()"
-                              [disabled]="!customTime || !isCustomTimeValid()">
-                        <mat-icon>add</mat-icon>
-                        Hinzufügen
-                      </button>
+                    <div class="selected-time-text">
+                      <div><strong>Ausgewählte Zeit:</strong> {{selectedTime}} Uhr</div>
+                      <div *ngIf="selectedDate"><strong>Ausgewähltes Datum:</strong> {{getDisplayDateFormat(selectedDate)}}</div>
                     </div>
                   </div>
                 </div>

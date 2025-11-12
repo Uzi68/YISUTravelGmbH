@@ -110,8 +110,8 @@
               <div class="message-summary">
                 <strong>{{ chat.messages.length }} Nachrichten</strong>
                 <div class="last-message" *ngIf="chat.messages[chat.messages.length - 1] as lastMessage">
-                  <span class="sender">{{ getSenderLabel(lastMessage.sender_type) }}:</span>
-                  <span class="content">{{ lastMessage.content | slice:0:140 }}{{ lastMessage.content.length > 140 ? '...' : '' }}</span>
+                  <span class="sender">{{ getSenderLabel(lastMessage.sender_type || lastMessage.from) }}:</span>
+                  <span class="content">{{ truncateMessage(lastMessage) || 'Keine Nachricht' }}</span>
                 </div>
               </div>
 
@@ -126,18 +126,18 @@
                 <div
                   class="thread-message"
                   *ngFor="let message of chat.messages; trackBy: trackMessageById"
-                  [ngClass]="message.sender_type">
+                  [ngClass]="message.sender_type || message.from">
                   <div class="thread-meta">
-                    <span class="thread-sender">{{ getSenderLabel(message.sender_type) }}</span>
+                    <span class="thread-sender">{{ getSenderLabel(message.sender_type || message.from) }}</span>
                     <span class="thread-time">{{ formatMessageTimestamp(message.created_at) }}</span>
                   </div>
                   <div class="thread-content">
-                    {{ message.content }}
+                    {{ getMessageText(message) || '–' }}
                   </div>
                   <div class="thread-attachments" *ngIf="message.attachments?.length">
                     <a
                       *ngFor="let attachment of message.attachments; let i = index"
-                      [href]="attachment.download_url || attachment.url"
+                      [href]="attachment.download_url"
                       target="_blank"
                       rel="noopener noreferrer"
                       class="thread-attachment">
