@@ -22,6 +22,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\PushSubscriptionController;
 use Pusher\Pusher;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
@@ -101,6 +102,13 @@ Route::post('messages', [MessagePusherController::class, 'message']);
 Route::post('/chatbot/end-by-user', [ChatbotController::class, 'endChatByUser']);
 
 Route::post('/human', [ChatbotController::class, 'requestHuman']);
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store']);
+    Route::delete('/push-subscriptions/{token}', [PushSubscriptionController::class, 'destroy'])
+        ->where('token', '.*');
+    Route::delete('/push-subscriptions/device/{deviceId}', [PushSubscriptionController::class, 'destroyByDevice']);
+});
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/chat-history', [ChatbotController::class, 'getChatHistory']);

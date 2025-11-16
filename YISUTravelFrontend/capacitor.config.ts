@@ -1,3 +1,4 @@
+/// <reference types="@capawesome/capacitor-badge" />
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -7,6 +8,12 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://yisu-travel.de/',
     cleartext: false
+  },
+  plugins: {
+    Badge: {
+      persist: true,
+      autoClear: false
+    }
   }
 };
 

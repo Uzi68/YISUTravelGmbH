@@ -50,4 +50,12 @@ return [
         'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
     ],
 
+    'fcm' => [
+        'project_id' => env('FCM_PROJECT_ID'),
+        'credentials_file' => env('FCM_CREDENTIALS_FILE'),
+        'client_email' => env('FCM_CLIENT_EMAIL'),
+        'private_key' => env('FCM_PRIVATE_KEY'),
+        'enabled' => env('FCM_ENABLED', false),
+    ],
+
 ];

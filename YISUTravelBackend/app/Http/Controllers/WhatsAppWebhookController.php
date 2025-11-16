@@ -7,6 +7,7 @@ use App\Models\Chat;
 use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\Visitor;
+use App\Services\PushNotificationService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,12 +17,10 @@ use Illuminate\Support\Facades\Storage;
 
 class WhatsAppWebhookController extends Controller
 {
-    private WhatsAppService $whatsappService;
-
-    public function __construct(WhatsAppService $whatsappService)
-    {
-        $this->whatsappService = $whatsappService;
-    }
+    public function __construct(
+        private readonly WhatsAppService $whatsappService,
+        private readonly PushNotificationService $pushNotifications
+    ) {}
 
     /**
      * Webhook-Verifizierung für WhatsApp (GET Request)
@@ -214,6 +213,17 @@ class WhatsAppWebhookController extends Controller
 
             // Broadcast über Pusher an Admin Dashboard
             broadcast(new MessagePusher($message, $chat->session_id))->toOthers();
+
+            try {
+                $chat->loadMissing('visitor');
+                $this->pushNotifications->notifyStaffAboutChatMessage($chat, $message);
+            } catch (\Throwable $exception) {
+                Log::warning('Failed to dispatch push for WhatsApp message', [
+                    'chat_id' => $chat->id,
+                    'message_id' => $message->id ?? null,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
 
             DB::commit();
 

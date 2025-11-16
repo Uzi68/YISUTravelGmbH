@@ -18,6 +18,7 @@ use App\Models\Message;
 use App\Models\MessageRead;
 use App\Models\User;
 use App\Models\Visitor;
+use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,10 @@ use App\Models\Chat;
 use Illuminate\Support\Facades\Cookie;
 class ChatbotController extends Controller
 {
+    public function __construct(private readonly PushNotificationService $pushNotifications)
+    {
+    }
+
     public function handleInput(Request $request): \Illuminate\Http\JsonResponse
     {
         // 1. Überprüfen, ob eine session_id übergeben wurde, oder eine neue generieren
@@ -143,11 +148,13 @@ class ChatbotController extends Controller
         }
 
         // Speichern der Benutzer- und Bot-Nachricht in der Tabelle 'messages'
-        Message::create([
+        $userMessage = Message::create([
             'chat_id' => $existingChat->id,
             'from' => 'user',
             'text' => $input
         ]);
+
+        $this->dispatchStaffPushForUserMessage($existingChat, $userMessage);
 
         Message::create([
             'chat_id' => $existingChat->id,
@@ -318,12 +325,14 @@ class ChatbotController extends Controller
 
         // Wenn Chat bereits eskaliert wurde, Nachricht direkt speichern
         if ($chat && in_array($chat->status, ['human', 'in_progress', 'assigned'])) {
-            Message::create([
+            $userMessage = Message::create([
                 'chat_id' => $chat->id,
                 'from' => 'user',
                 'text' => $request->message,
                 'is_escalation_trigger' => false
             ]);
+
+            $this->dispatchStaffPushForUserMessage($chat, $userMessage);
 
             return response()->json([
                 'status' => 'human',
@@ -552,6 +561,8 @@ class ChatbotController extends Controller
             'from' => 'user',
             'text' => $originalInput,
         ]);
+
+        $this->dispatchStaffPushForUserMessage($chat, $userMessage);
 
         // ✅ FIX: Aktualisiere last_activity für Website-Besucher beim Senden einer Nachricht
         $chat->update(['last_activity' => now()]);
@@ -2526,6 +2537,13 @@ class ChatbotController extends Controller
             ], 400);
         }
 
+        \Log::info('sendToHumanChat invoked', [
+            'chat_id' => $chat->id,
+            'session_id' => $sessionId,
+            'is_agent' => $validated['isAgent'] ?? false,
+            'chat_status' => $chat->status,
+        ]);
+
         return DB::transaction(function () use ($chat, $validated, $sessionId) {
             // ✅ WICHTIG: Bei Agent-Nachrichten den aktuellen Agent-Namen speichern
             $isAgent = $validated['isAgent'] ?? false;
@@ -2591,6 +2609,14 @@ class ChatbotController extends Controller
                         'assigned_agent' => $chat->assignedTo?->name
                     ]
                 ]));
+
+                $chat->loadMissing('visitor');
+                Log::info('ChatbotController dispatching push notification', [
+                    'chat_id' => $chat->id,
+                    'message_id' => $message->id ?? null,
+                ]);
+
+                $this->pushNotifications->notifyStaffAboutChatMessage($chat, $message);
             }
 
             return response()->json([
@@ -2677,6 +2703,27 @@ class ChatbotController extends Controller
             'success' => true,
             'message' => 'Notification status saved'
         ]);
+    }
+
+    /**
+     * ✅ Helper: Sende Nachricht via WhatsApp wenn es ein WhatsApp-Chat ist
+     */
+    private function dispatchStaffPushForUserMessage(Chat $chat, ?Message $message): void
+    {
+        if (!$message || $message->from !== 'user') {
+            return;
+        }
+
+        try {
+            $chat->loadMissing('visitor');
+            $this->pushNotifications->notifyStaffAboutChatMessage($chat, $message);
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to dispatch staff push notification', [
+                'chat_id' => $chat->id,
+                'message_id' => $message->id ?? null,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     /**

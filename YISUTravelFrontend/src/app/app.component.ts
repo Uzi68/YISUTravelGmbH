@@ -10,6 +10,7 @@ import {ScrolltopComponent} from "./Static/scrolltop/scrolltop.component";
 import { ChatUiComponent} from "./Static/livechat/chatbot-ui/chatbot-ui.component";
 import {NgIf} from "@angular/common";
 import {ChatbotService} from "./Services/chatbot-service/chatbot.service";
+import {StaffPushNotificationService} from "./Services/push-notification/staff-push-notification.service";
 
 @Component({
   selector: 'app-root',
@@ -30,7 +31,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private windowRef: WindowService,
     private seoService: SEOService,
     private activatedRoute: ActivatedRoute,
-    private chatbot: ChatbotService
+    private chatbot: ChatbotService,
+    private staffPushNotifications: StaffPushNotificationService
   ) {
     // Subscribe to chat open state
     this.chatbot.isChatOpen$
@@ -41,6 +43,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.staffPushNotifications.initialize();
+
     // Single optimized subscription to router events - handles all navigation logic
     this.router.events
       .pipe(

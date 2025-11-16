@@ -32,7 +32,7 @@ import { MessageFilterPipe } from "./message-filter.pipe";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatButtonToggle, MatButtonToggleGroup} from "@angular/material/button-toggle";
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule} from "@angular/forms";
-import {RouterLink} from "@angular/router";
+import {ActivatedRoute, RouterLink} from "@angular/router";
 import {NotificationSoundService} from "../../../Services/notification-service/notification-sound.service";
 import {MatOption, MatSelect} from "@angular/material/select";
 import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
@@ -41,6 +41,7 @@ import { StaffManagementComponent } from '../staff-management/staff-management.c
 import { AppointmentManagementComponent } from '../appointment-management/appointment-management.component';
 import { Router } from '@angular/router';
 import {ThemeService} from '../../../Services/theme-service/theme.service';
+import { StaffPushNotificationService } from '../../../Services/push-notification/staff-push-notification.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -110,6 +111,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   isAdmin = false;
   chatRequests: any[] = [];
   private chatRequestSubscription: any;
+  private routeSubscription?: Subscription;
+  private pendingChatId: string | null = null;
   activeChats: Chat[] = [];
   user!: User;
   visitor!: Visitor;
@@ -215,8 +218,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     public notificationSound: NotificationSoundService,
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
+    private route: ActivatedRoute,
     private router: Router,
     private themeService: ThemeService,
+    private staffPushNotifications: StaffPushNotificationService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.darkMode = this.themeService.getDarkMode();
@@ -252,6 +257,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.updateTabTitle();
     this.setupTabVisibilityTracking();
     this.updateViewportState();
+    this.setupDeepLinkListener();
+    const pendingPushChatId = this.staffPushNotifications.consumePendingChatIdentifier();
+    if (pendingPushChatId) {
+      this.handleDeepLinkChat(pendingPushChatId);
+    }
 
     if (isPlatformBrowser(this.platformId)) {
       this.themeSubscription = this.themeService.darkModeChanges().subscribe(enabled => {
@@ -1749,6 +1759,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     this.sortActiveChats();
     this.cdRef.markForCheck();
+    this.tryOpenPendingChat();
   }
 
 
@@ -2536,6 +2547,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.chatRequestSubscription.unsubscribe();
     }
 
+    this.routeSubscription?.unsubscribe();
+
     // ✅ Cooldown Timer bereinigen
     if (this.cooldownUpdateInterval) {
       clearInterval(this.cooldownUpdateInterval);
@@ -2573,6 +2586,56 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
 // ✅ Erweiterte loadActiveChats mit besserer Fehlerbehandlung
+
+  private setupDeepLinkListener(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    this.routeSubscription = this.route.queryParamMap.subscribe(params => {
+      const chatParam = params.get('chatId');
+      if (chatParam) {
+        this.handleDeepLinkChat(chatParam);
+      }
+    });
+  }
+
+  private handleDeepLinkChat(chatIdentifier: string): void {
+    this.pendingChatId = chatIdentifier;
+    this.tryOpenPendingChat();
+  }
+
+  private tryOpenPendingChat(): void {
+    if (!this.pendingChatId) {
+      return;
+    }
+
+    const pendingChat = this.findChatByIdentifier(this.pendingChatId);
+    if (!pendingChat) {
+      return;
+    }
+
+    this.selectChat(pendingChat);
+    this.pendingChatId = null;
+    this.clearChatIdQueryParam();
+  }
+
+  private findChatByIdentifier(identifier: string): Chat | undefined {
+    const normalized = identifier.toString();
+    return this.activeChats.find(chat =>
+      chat.id?.toString() === normalized ||
+      chat.chatId?.toString() === normalized
+    );
+  }
+
+  private clearChatIdQueryParam(): void {
+    this.router.navigate([], {
+      queryParams: { chatId: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
   async loadActiveChats(): Promise<void> {
     try {
       const response: any = await firstValueFrom(this.chatbotService.getActiveChats());
@@ -2601,6 +2664,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.cdRef.markForCheck();
 
       this.hydrateVisitorDetails(chats);
+      this.tryOpenPendingChat();
 
     } catch (error) {
       console.error('Error loading chats:', error);
@@ -4040,6 +4104,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     console.log('Tab title updated:', document.title, '(unread:', this.totalUnreadCount, ')');
+    this.staffPushNotifications.updateBadgeCount(this.totalUnreadCount);
   }
 
   // ========================================

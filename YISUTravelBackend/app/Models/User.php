@@ -56,6 +56,11 @@ class User extends Authenticatable
         return cache()->has('user-is-online-' . $this->id);
     }
 
+    public function pushSubscriptions()
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *
