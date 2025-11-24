@@ -1,8 +1,8 @@
-import {Component, ElementRef, HostListener, Inject, OnDestroy, PLATFORM_ID, ViewChild} from '@angular/core';
+import {Component, ElementRef, Inject, NgZone, OnDestroy, PLATFORM_ID, ViewChild} from '@angular/core';
 import {AsyncPipe, isPlatformBrowser, NgClass, NgIf, NgOptimizedImage, NgTemplateOutlet} from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
-import {MatSidenavModule} from '@angular/material/sidenav';
+import {MatSidenav, MatSidenavModule} from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
@@ -48,20 +48,31 @@ export class NavbarComponent implements OnDestroy {
   isAdminDashboardRoute = false;
   isScrolled = false;
   private themeSubscription?: Subscription;
+  private scrollRafId: number | null = null;
+  private removeScrollListener?: () => void;
   private darkModeSwitchRef?: ElementRef;
   private darkModeSwitchMobileRef?: ElementRef;
 
-  toggleSidenav(sidenav: any) {
-    this.isOpen = !this.isOpen;
-    sidenav.toggle();
+  toggleSidenav(sidenav: MatSidenav) {
+    if (sidenav.opened) {
+      this.closeSidenav(sidenav);
+    } else {
+      this.isOpen = true;
+      sidenav.open();
+    }
   }
 
   toggleSearch() {
     this.searchActive = !this.searchActive;
   }
 
-  closeSidenav() {
-    this.isOpen = false; // Close the sidenav
+  closeSidenav(sidenav?: MatSidenav) {
+    this.isOpen = false;
+    sidenav?.close();
+  }
+
+  onSidenavOpenedChange(opened: boolean) {
+    this.isOpen = opened;
   }
 
   ngAfterViewInit() {
@@ -74,7 +85,8 @@ export class NavbarComponent implements OnDestroy {
     private authService: AuthService,
     private router: Router,
     private chatbot: ChatbotService,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    private ngZone: NgZone
   ) {
     this.authenticated = this.authService.getAuthenticated();
     this.darkMode = this.themeService.getDarkMode();
@@ -110,12 +122,17 @@ export class NavbarComponent implements OnDestroy {
         this.darkMode = value;
       });
 
-      this.onWindowScroll();
+      this.setupScrollListener();
     }
   }
 
   ngOnDestroy(): void {
     this.themeSubscription?.unsubscribe();
+    if (this.scrollRafId !== null) {
+      cancelAnimationFrame(this.scrollRafId);
+      this.scrollRafId = null;
+    }
+    this.removeScrollListener?.();
   }
 
   checkAuth()  {
@@ -135,16 +152,43 @@ export class NavbarComponent implements OnDestroy {
     this.themeService.toggleDarkMode();
   }
 
-  @HostListener('window:scroll', [])
-  onWindowScroll(): void {
+  private setupScrollListener(): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    const scrollTop = window.scrollY
-      || document.documentElement.scrollTop
-      || document.body.scrollTop
-      || 0;
-    this.isScrolled = scrollTop > 40;
+
+    this.ngZone.runOutsideAngular(() => {
+      const handler = () => {
+        if (this.scrollRafId !== null) {
+          return;
+        }
+
+        this.scrollRafId = window.requestAnimationFrame(() => {
+          this.scrollRafId = null;
+          const shouldBeScrolled = window.scrollY > 40;
+          if (shouldBeScrolled !== this.isScrolled) {
+            this.ngZone.run(() => {
+              this.isScrolled = shouldBeScrolled;
+            });
+          }
+        });
+      };
+
+      window.addEventListener('scroll', handler, {passive: true});
+      this.removeScrollListener = () => window.removeEventListener('scroll', handler);
+    });
+
+    this.updateScrollState();
+  }
+
+  private updateScrollState(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    const shouldBeScrolled = window.scrollY > 40;
+    if (shouldBeScrolled !== this.isScrolled) {
+      this.isScrolled = shouldBeScrolled;
+    }
   }
 
   private applySwitchIcons(element?: ElementRef, attempt: number = 0): void {

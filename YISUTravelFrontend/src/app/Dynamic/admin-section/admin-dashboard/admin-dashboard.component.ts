@@ -125,8 +125,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   selectedChatForEscalation: Chat | null = null;
   escalationMessage = '';
   currentAgent = {
-    id: 1,
-    name: 'Thomas Müller',
+    id: 0,
+    name: '',
     avatar: '',
     profile_image_url: '',
     status: 'online'
