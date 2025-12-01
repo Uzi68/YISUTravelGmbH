@@ -1,0 +1,14 @@
+1) c:/ngnix reinkopieren
+2) ngnix config und hls auf 1s ändern
+
+Obs:
+rtmp://192.168.0.24/live
+stream1
+niedrige settings
+2k kbps
+P4
+
+VLC App:
+rtmp://192.168.0.24:1935/live/stream1
+
+shell:startup Verknüpfung reinschieben

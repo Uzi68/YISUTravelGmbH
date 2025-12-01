@@ -1,0 +1,6 @@
+App bearbeiten, Vorgehensweise:
+npm run build
+npx cap sync android
+npx cap open android
+
+Danach in Android Studio compilen oder APK daraus erstellen

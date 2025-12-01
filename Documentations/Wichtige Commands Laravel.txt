@@ -1,0 +1,8 @@
+php artisan serve
+- php8.3 artisan serve
+
+php artisan migrate
+- php8.3 artisan migrate
+
+php artisan db:seed --class=DatabaseSeeder
+- php8.3 artisan db:seed --class=DatabaseSeeder
