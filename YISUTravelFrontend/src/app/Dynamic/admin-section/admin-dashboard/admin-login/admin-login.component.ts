@@ -9,7 +9,7 @@ import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatIcon} from "@angular/material/icon";
 import {finalize} from "rxjs";
 import {AuthService} from "../../../../Services/AuthService/auth.service";
-import {Router, RouterLink} from "@angular/router";
+import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 
 @Component({
   selector: 'app-admin-login',
@@ -37,11 +37,21 @@ export class AdminLoginComponent {
   contactForm: FormGroup;
   isLoading = false;
   errorMessage: string | null = null;
+  private returnUrl: string | null = null;
 
-  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {
     this.contactForm = this.fb.group ({
       email: ['', Validators.required],
       password: ['', Validators.required]
+    });
+
+    this.route.queryParamMap.subscribe(params => {
+      this.returnUrl = params.get('returnUrl');
     });
   }
 
@@ -86,7 +96,7 @@ export class AdminLoginComponent {
         const roles: string[] = Array.isArray(response?.roles) ? response.roles : [];
 
         if (roles.includes('Admin') || roles.includes('Agent')) {
-          this.router.navigate(['/admin-dashboard']);
+          this.navigateAfterLogin();
         } else if (roles.includes('User')) {
           this.router.navigate(['/customer-dashboard']);
         } else {
@@ -105,6 +115,16 @@ export class AdminLoginComponent {
         }
       },
     });
+  }
+
+  private navigateAfterLogin(): void {
+    if (this.returnUrl) {
+      this.router.navigateByUrl(this.returnUrl).catch(() => {
+        this.router.navigate(['/admin-dashboard']);
+      });
+    } else {
+      this.router.navigate(['/admin-dashboard']);
+    }
   }
 
   goToPasswordReset(): void {

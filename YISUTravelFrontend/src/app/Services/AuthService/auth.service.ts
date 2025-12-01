@@ -101,7 +101,7 @@ export class AuthService {
   private persistAuthState(isAuthenticated: boolean): void {
     if (isPlatformBrowser(this.platformId)) {
       const expirationDate = new Date();
-      expirationDate.setHours(expirationDate.getHours() + 1);  // Set cookie to expire in 10 Hours
+      expirationDate.setDate(expirationDate.getDate() + 30);  // Keep native app logins for ~1 month
       document.cookie = `authenticated=${isAuthenticated}; expires=${expirationDate.toUTCString()}; path=/;`;
     }
   }
