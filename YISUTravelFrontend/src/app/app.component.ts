@@ -44,6 +44,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.staffPushNotifications.initialize();
+    const pendingChat = this.staffPushNotifications.consumePendingChatIdentifier();
+    if (pendingChat) {
+      this.router.navigate(['/admin-dashboard'], {
+        queryParams: { chatId: pendingChat }
+      }).catch(console.error);
+    }
 
     // Single optimized subscription to router events - handles all navigation logic
     this.router.events
