@@ -93,6 +93,7 @@ class MessagePusher implements ShouldBroadcast
             : \App\Models\Chat::where('session_id', $this->sessionId)->with('visitor')->first();
 
         if ($chat) {
+            $chat->loadMissing('assignedTo');
             // ✅ WhatsApp-spezifische Daten hinzufügen
             if ($chat->channel === 'whatsapp') {
                 $data['channel'] = 'whatsapp';
@@ -132,6 +133,10 @@ class MessagePusher implements ShouldBroadcast
                 $data['customer_name'] = $chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'WhatsApp Kunde';
                 $data['customer_phone'] = $chat->whatsapp_number ? '+' . $chat->whatsapp_number : null;
             }
+
+            $data['status'] = $chat->status;
+            $data['assigned_to'] = $chat->assigned_to;
+            $data['assigned_agent'] = $chat->assignedTo?->name;
         }
 
         // ✅ DEBUG: Log was gebroadcastet wird (für WhatsApp-Debugging)

@@ -376,9 +376,9 @@ class WhatsAppMessageController extends Controller
         try {
             $chats = Chat::whatsApp()
                 ->with(['visitor', 'messages' => function($query) {
-                    $query->latest()->limit(1);
+                    $query->orderBy('created_at');
                 }])
-                ->whereIn('status', ['human', 'in_progress', 'bot'])
+                ->whereIn('status', ['human', 'in_progress', 'bot', 'closed'])
                 ->orderBy('updated_at', 'desc')
                 ->get();
 

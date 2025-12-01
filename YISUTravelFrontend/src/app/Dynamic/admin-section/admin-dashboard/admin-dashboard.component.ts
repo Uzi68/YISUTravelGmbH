@@ -18,7 +18,7 @@ import { TruncatePipe } from "./truncate.pipe";
 import {MatFormField, MatHint, MatInput, MatLabel} from "@angular/material/input";
 import {MatTooltip} from "@angular/material/tooltip";
 import {animate, style, transition, trigger} from "@angular/animations";
-import {firstValueFrom, forkJoin, of, Subscription} from "rxjs";
+import {firstValueFrom, forkJoin, interval, of, Subject, Subscription} from "rxjs";
 import {ChatbotService} from "../../../Services/chatbot-service/chatbot.service";
 import {AuthService} from "../../../Services/AuthService/auth.service";
 import {PusherService} from "../../../Services/Pusher/pusher.service";
@@ -27,7 +27,7 @@ import {UserManagementService} from "../../../Services/user-management-service.s
 import {OfferManagementComponent} from "../offer-management/offer-management.component";
 import {User} from "../../../Models/User";
 import {Visitor} from "../../../Models/Visitor";
-import {catchError, tap, timeout, finalize} from "rxjs/operators";
+import {catchError, tap, timeout, finalize, debounceTime, takeUntil} from "rxjs/operators";
 import { MessageFilterPipe } from "./message-filter.pipe";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatButtonToggle, MatButtonToggleGroup} from "@angular/material/button-toggle";
@@ -107,6 +107,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   shouldScrollToBottom = true;
   private refreshSub!: Subscription;
   private authSub!: Subscription;
+  private readonly destroy$ = new Subject<void>();
+  private readonly filterChange$ = new Subject<void>();
+  private chatReloadPromise: Promise<void> | null = null;
+  private cooldownUpdateSub?: Subscription;
+  private chatReloadRetryHandle: any;
   //private pusherSubscriptions: any[] = [];
   isAdmin = false;
   chatRequests: any[] = [];
@@ -177,7 +182,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private totalUnreadCount = 0;
 
   // ✅ Cooldown Timer für Live-Update
-  private cooldownUpdateInterval: any;
 
   // ✅ Audio Player Management
   private audioElements = new Map<string, HTMLAudioElement>();
@@ -207,6 +211,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   selectedFileType: 'image' | 'document' | null = null;
   fileCaption = '';
   isMobileView = false;
+  isChatListLoading = false;
+  hasLoadedChatsOnce = false;
   constructor(
     private chatbotService: ChatbotService,
     private authService: AuthService,
@@ -253,6 +259,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.initializeFilterPipeline();
     // ✅ Tab-Titel initialisieren
     this.updateTabTitle();
     this.setupTabVisibilityTracking();
@@ -268,16 +275,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.darkMode = enabled;
         this.cdRef.markForCheck();
       });
+      this.ngZone.runOutsideAngular(() => {
+        this.cooldownUpdateSub = interval(1000)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(() => {
+            this.ngZone.run(() => this.cdRef.markForCheck());
+          });
+      });
     }
 
-    // ✅ Cooldown Counter starten (1x pro Sekunde aktualisieren)
-    this.cooldownUpdateInterval = setInterval(() => {
-      this.cdRef.markForCheck();
-    }, 1000);
-
-    this.loadActiveChats().then(() => {
-      this.filterChats();
-    });
+    this.loadActiveChats(true);
 
     this.authSub = this.authService.getAuthenticated().subscribe(auth => {
       if (auth) {
@@ -317,9 +324,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
     this.loadChatRequests();
-
-    // ✅ WhatsApp Chats laden
-    this.loadWhatsAppChats();
 
   }
 
@@ -457,72 +461,106 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (this.showAllChats && this.allAdminChats.length === 0) {
       this.loadAllChatsForAdmin();
     }
+    this.filterChats();
   }
 
   // Filterfunktion für beide Chat-Listen
   filterChats(event?: Event): void {
-    const searchTerm = event ? (event.target as HTMLInputElement).value.toLowerCase() : this.searchQuery.toLowerCase();
+    if (event) {
+      const value = (event.target as HTMLInputElement).value;
+      this.searchQuery = value;
+    }
+    this.requestFilterUpdate();
+  }
 
-    // Aktive Chats filtern (inklusive geschlossene)
+  private initializeFilterPipeline(): void {
+    this.filterChange$
+      .pipe(debounceTime(150), takeUntil(this.destroy$))
+      .subscribe(() => this.applyChatFilters());
+    this.requestFilterUpdate();
+  }
+
+  private requestFilterUpdate(): void {
+    this.filterChange$.next();
+  }
+
+  private applyChatFilters(): void {
+    const searchTerm = this.searchQuery.trim().toLowerCase();
+
     this.filteredActiveChats = this.activeChats.filter(chat => {
-      const matchesSearch = chat.customerName?.toLowerCase().includes(searchTerm) ||
+      const matchesSearch = !searchTerm ||
+        chat.customerName?.toLowerCase().includes(searchTerm) ||
         chat.lastMessage?.toLowerCase().includes(searchTerm) ||
         chat.whatsapp_number?.includes(searchTerm);
 
-      // Filter basierend auf dem gewählten Status
       const matchesStatus = this.filterStatus === 'all' || chat.status === this.filterStatus;
-
-      // ✅ NEU: Channel Filter
-      let matchesChannel = true;
-      if (this.selectedChannelFilter !== 'all') {
-        if (this.selectedChannelFilter === 'whatsapp') {
-          matchesChannel = chat.channel === 'whatsapp';
-        } else {
-          matchesChannel = chat.channel !== 'whatsapp';
-        }
-      }
+      const matchesChannel = this.matchesSelectedChannel(chat.channel);
 
       return matchesSearch && matchesStatus && matchesChannel;
     });
 
-    // Admin-Chats filtern (unverändert)
     if (this.isAdmin && this.showAllChats) {
       this.filteredAdminChats = this.allAdminChats.filter(chat => {
-        const matchesSearch = (chat.customer_name || '').toLowerCase().includes(searchTerm) ||
+        const matchesSearch = !searchTerm ||
+          (chat.customer_name || '').toLowerCase().includes(searchTerm) ||
           (chat.last_message || '').toLowerCase().includes(searchTerm);
         const matchesStatus = this.filterStatus === 'all' || chat.status === this.filterStatus;
+        const matchesTime = this.matchesSelectedTimeRange(chat.last_message_time);
+        const matchesChannel = this.matchesSelectedChannel(chat.channel);
 
-        let matchesTime = true;
-        if (this.filterTimeRange !== 'all' && chat.last_message_time) {
-          const messageDate = new Date(chat.last_message_time);
-          const now = new Date();
-
-          switch (this.filterTimeRange) {
-            case 'today':
-              matchesTime = messageDate.toDateString() === now.toDateString();
-              break;
-            case 'week':
-              const weekAgo = new Date(now);
-              weekAgo.setDate(weekAgo.getDate() - 7);
-              matchesTime = messageDate >= weekAgo;
-              break;
-            case 'month':
-              const monthAgo = new Date(now);
-              monthAgo.setMonth(monthAgo.getMonth() - 1);
-              matchesTime = messageDate >= monthAgo;
-              break;
-          }
-        }
-
-        return matchesSearch && matchesStatus && matchesTime;
+        return matchesSearch && matchesStatus && matchesTime && matchesChannel;
       });
+    }
+
+    this.cdRef.markForCheck();
+  }
+
+  private matchesSelectedChannel(channel?: string): boolean {
+    if (this.selectedChannelFilter === 'all') {
+      return true;
+    }
+
+    if (this.selectedChannelFilter === 'whatsapp') {
+      return channel === 'whatsapp';
+    }
+
+    return channel !== 'whatsapp';
+  }
+
+  private matchesSelectedTimeRange(dateValue?: string | Date): boolean {
+    if (!dateValue || this.filterTimeRange === 'all') {
+      return true;
+    }
+
+    const messageDate = new Date(dateValue);
+    if (isNaN(messageDate.getTime())) {
+      return false;
+    }
+
+    const now = new Date();
+
+    switch (this.filterTimeRange) {
+      case 'today':
+        return messageDate.toDateString() === now.toDateString();
+      case 'week': {
+        const weekAgo = new Date(now);
+        weekAgo.setDate(now.getDate() - 7);
+        return messageDate >= weekAgo;
+      }
+      case 'month': {
+        const monthAgo = new Date(now);
+        monthAgo.setMonth(now.getMonth() - 1);
+        return messageDate >= monthAgo;
+      }
+      default:
+        return true;
     }
   }
 
 // Statusfilter ändern
   changeStatusFilter(status: string): void {
     this.filterStatus = status;
-    this.filterChats();
+    this.requestFilterUpdate();
   }
 
   /**
@@ -576,7 +614,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 // Zeitfilter ändern
   changeTimeFilter(range: string): void {
     this.filterTimeRange = range;
-    this.filterChats();
+    this.requestFilterUpdate();
   }
 
   /**
@@ -676,6 +714,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.allAdminChats = response.data || [];
         this.filteredAdminChats = [...this.allAdminChats];
         this.loadingAdminChats = false;
+        this.filterChats();
       },
       error: (err) => {
         console.error('Fehler beim Laden aller Admin-Chats:', err);
@@ -732,6 +771,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         
         // ✅ FIX: Prüfe ob dieser Chat bereits in activeChats existiert
         const sessionId = data.message?.session_id;
+        const isWhatsAppMessage = data.channel === 'whatsapp' ||
+          data.message?.message_type?.startsWith('whatsapp') ||
+          data.message?.metadata?.whatsapp_message_id;
+
         if (sessionId) {
           const existingChat = this.activeChats.find(chat => chat.id === sessionId);
           
@@ -2181,6 +2224,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           }
         }
 
+        const updatedStatus = data.status || this.activeChats[activeChatIndex].status;
+        const updatedAssignedTo = data.assigned_to !== undefined
+          ? data.assigned_to
+          : this.activeChats[activeChatIndex].assigned_to;
+        const updatedAssignedAgent = data.assigned_agent !== undefined
+          ? data.assigned_agent
+          : this.activeChats[activeChatIndex].assigned_agent;
+
         const updatedChat = {
           ...this.activeChats[activeChatIndex],
           messages: updatedMessages,
@@ -2191,6 +2242,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           customerLastName: newLastName,
           customerName: newCustomerName,
           customerPhone: data.customer_phone || this.activeChats[activeChatIndex].customerPhone,
+          status: updatedStatus,
+          assigned_to: updatedAssignedTo,
+          assigned_agent: updatedAssignedAgent,
           // ✅ WhatsApp-spezifische Daten
           channel: data.channel || this.activeChats[activeChatIndex].channel,
           whatsapp_number: data.whatsapp_number || this.activeChats[activeChatIndex].whatsapp_number,
@@ -2535,6 +2589,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.cleanupPusherSubscriptions();
 
     if (this.authSub) {
@@ -2548,10 +2604,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.routeSubscription?.unsubscribe();
+    this.cooldownUpdateSub?.unsubscribe();
 
-    // ✅ Cooldown Timer bereinigen
-    if (this.cooldownUpdateInterval) {
-      clearInterval(this.cooldownUpdateInterval);
+    if (this.chatReloadRetryHandle) {
+      clearTimeout(this.chatReloadRetryHandle);
     }
 
     // ✅ Audio cleanup
@@ -2636,43 +2692,149 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  async loadActiveChats(): Promise<void> {
-    try {
-      const response: any = await firstValueFrom(this.chatbotService.getActiveChats());
-      const chats = Array.isArray(response) ? response : response?.data ?? [];
-
-      this.escalationPrompts.clear();
-
-      const mappedChats = chats.map((chat: any) => this.buildChatFromResponse(chat));
-
-      this.activeChats = mappedChats;
-      this.filteredActiveChats = [...mappedChats];
-
-      this.sortActiveChats();
-      this.filterChats();
-
-      const assignedSessionId = localStorage.getItem('assigned_chat_session_id');
-      if (!this.isMobileView && assignedSessionId && (!this.selectedChat || this.selectedChat.id !== assignedSessionId)) {
-        const assignedChat = this.activeChats.find(chat => chat.id === assignedSessionId);
-        if (assignedChat) {
-          this.selectChat(assignedChat);
-        }
-      }
-
-      this.setupPusherListeners();
-      this.updateTabTitle();
-      this.cdRef.markForCheck();
-
-      this.hydrateVisitorDetails(chats);
-      this.tryOpenPendingChat();
-
-    } catch (error) {
-      console.error('Error loading chats:', error);
-      // ✅ Retry nach Fehler
-      setTimeout(() => {
-        this.loadActiveChats();
-      }, 5000);
+  async loadActiveChats(includeWhatsApp: boolean = true): Promise<void> {
+    if (this.chatReloadPromise) {
+      return this.chatReloadPromise;
     }
+
+    if (!this.chatReloadPromise) {
+      this.isChatListLoading = true;
+      this.cdRef.markForCheck();
+    }
+
+    this.chatReloadPromise = (async () => {
+      try {
+        await this.performActiveChatLoad();
+        this.hasLoadedChatsOnce = true;
+      } catch (error) {
+        console.error('Error loading chats:', error);
+        this.scheduleChatReloadRetry();
+      } finally {
+        this.chatReloadPromise = null;
+        this.isChatListLoading = false;
+        this.cdRef.markForCheck();
+      }
+    })();
+
+    return this.chatReloadPromise;
+  }
+
+  private async performActiveChatLoad(): Promise<void> {
+    const [activeChatsResponse, whatsappResponse] = await Promise.all([
+      firstValueFrom(this.chatbotService.getActiveChats()),
+      this.fetchWhatsAppChatsSafe()
+    ]);
+
+    const response = activeChatsResponse;
+    this.whatsappChats = whatsappResponse;
+    const whatsappChats = whatsappResponse;
+
+    const chats = Array.isArray(response) ? response : response?.data ?? [];
+
+    this.escalationPrompts.clear();
+
+    const mappedChats = chats.map((chat: any) => this.buildChatFromResponse(chat));
+    const whatsappMapped = whatsappChats.length
+      ? whatsappChats.map(chat => this.mapWhatsAppChatToChat(chat))
+      : [];
+    const combinedChats = whatsappMapped.length
+      ? this.mergeWebsiteAndWhatsAppChats(mappedChats, whatsappMapped)
+      : mappedChats;
+
+    this.activeChats = combinedChats;
+    this.filteredActiveChats = [...combinedChats];
+
+    this.sortActiveChats();
+    this.requestFilterUpdate();
+
+    const assignedSessionId = localStorage.getItem('assigned_chat_session_id');
+    if (!this.isMobileView && assignedSessionId && (!this.selectedChat || this.selectedChat.id !== assignedSessionId)) {
+      const assignedChat = this.activeChats.find(chat => chat.id === assignedSessionId);
+      if (assignedChat) {
+        this.selectChat(assignedChat);
+      }
+    }
+
+    this.setupPusherListeners();
+    this.updateTabTitle();
+    this.cdRef.markForCheck();
+
+    this.hydrateVisitorDetails(chats);
+    this.tryOpenPendingChat();
+  }
+
+  private scheduleChatReloadRetry(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    if (this.chatReloadRetryHandle) {
+      return;
+    }
+
+    this.chatReloadRetryHandle = setTimeout(() => {
+      this.chatReloadRetryHandle = null;
+      this.loadActiveChats();
+    }, 5000);
+  }
+
+  private mergeWebsiteAndWhatsAppChats(websiteChats: Chat[], whatsappChats: Chat[]): Chat[] {
+    const websiteOnly = websiteChats.filter(chat => chat.channel !== 'whatsapp');
+    return [...websiteOnly, ...whatsappChats];
+  }
+
+  private async fetchWhatsAppChatsSafe(): Promise<WhatsAppChat[]> {
+    try {
+      const response = await firstValueFrom(this.whatsappService.getWhatsAppChats());
+      return response.success ? response.chats : [];
+    } catch (error) {
+      console.error('Fehler beim Laden der WhatsApp-Chats:', error);
+      return [];
+    }
+  }
+
+  private mapWhatsAppChatToChat(wc: WhatsAppChat): Chat {
+    const lastMessage = wc.messages?.[wc.messages.length - 1];
+    const visitorFirstName = wc.visitor?.first_name || 'WhatsApp';
+    const visitorLastName = wc.visitor?.last_name || 'Kunde';
+
+    return {
+      id: wc.session_id,
+      chatId: wc.id.toString(),
+      customerName: wc.visitor
+        ? `${(wc.visitor.first_name || '').trim()} ${(wc.visitor.last_name || '').trim()}`.trim() || 'WhatsApp Kunde'
+        : 'WhatsApp Kunde',
+      customerFirstName: visitorFirstName,
+      customerLastName: visitorLastName,
+      customerPhone: wc.whatsapp_number,
+      customerAvatar: 'assets/whatsapp-avatar.svg',
+      lastMessage: lastMessage?.text || '',
+      lastMessageTime: lastMessage?.created_at ? new Date(lastMessage.created_at) : new Date(wc.created_at),
+      unreadCount: 0,
+      isOnline: false,
+      last_activity: wc.updated_at,
+      messages: wc.messages?.map(msg => ({
+        id: msg.id.toString(),
+        content: msg.text,
+        timestamp: new Date(msg.created_at),
+        isAgent: msg.from === 'agent',
+        isBot: msg.from === 'bot',
+        read: true,
+        from: msg.from,
+        message_type: msg.message_type,
+        metadata: msg.metadata,
+        attachment: msg.attachments?.[0]
+      })) || [],
+      assigned_to: wc.assigned_to ?? undefined,
+      status: wc.status,
+      assigned_agent: wc.assigned_to ? `Agent ${wc.assigned_to}` : undefined,
+      isNew: false,
+      channel: 'whatsapp',
+      whatsapp_number: wc.whatsapp_number,
+      visitor: wc.visitor,
+      updated_at: wc.updated_at,
+      created_at: wc.created_at
+    };
   }
 
   closeChat() {
@@ -4112,70 +4274,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   // ========================================
 
   /**
-   * Lade WhatsApp Chats und merge mit Website Chats
-   */
-  loadWhatsAppChats(): void {
-    this.whatsappService.getWhatsAppChats().subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.whatsappChats = response.chats;
-
-          // Merge WhatsApp Chats mit Website Chats
-          const websiteChats = this.activeChats.filter(c => c.channel !== 'whatsapp');
-          const whatsappChatsConverted = this.whatsappChats.map(wc => ({
-            id: wc.session_id,  // ✅ FIX: Use session_id as id for frontend identification
-            chatId: wc.id,      // ✅ FIX: Use numeric id as chatId for backend API calls
-            customerName: wc.visitor ? `${wc.visitor.first_name || ''} ${wc.visitor.last_name || ''}`.trim() : 'WhatsApp Kunde',
-            customerFirstName: wc.visitor?.first_name || 'WhatsApp',
-            customerLastName: wc.visitor?.last_name || 'Kunde',
-            customerPhone: wc.whatsapp_number,
-            customerAvatar: 'assets/whatsapp-avatar.png',
-            lastMessage: wc.messages?.[wc.messages.length - 1]?.text || '',
-            lastMessageTime: wc.messages?.[wc.messages.length - 1]?.created_at ? new Date(wc.messages[wc.messages.length - 1].created_at) : new Date(wc.created_at),
-            unreadCount: 0,
-            isOnline: false,
-            last_activity: wc.updated_at,
-            messages: wc.messages?.map(msg => ({
-              id: msg.id.toString(),
-              content: msg.text,
-              timestamp: new Date(msg.created_at),
-              isAgent: msg.from === 'agent',
-              isBot: msg.from === 'bot',
-              read: true,
-              from: msg.from,
-              message_type: msg.message_type,
-              metadata: msg.metadata,
-              attachment: msg.attachments?.[0]
-            })) || [],
-            assigned_to: wc.assigned_to,
-            status: wc.status,
-            assigned_agent: wc.assigned_to ? `Agent ${wc.assigned_to}` : undefined,
-            isNew: false,
-            channel: 'whatsapp' as const,
-            whatsapp_number: wc.whatsapp_number,
-            visitor: wc.visitor
-          }));
-
-          this.activeChats = [...websiteChats, ...whatsappChatsConverted as any];
-
-          // Sortiere nach Datum
-          this.activeChats.sort((a, b) => {
-            const dateA = new Date(a.updated_at || a.created_at || new Date()).getTime();
-            const dateB = new Date(b.updated_at || b.created_at || new Date()).getTime();
-            return dateB - dateA;
-          });
-
-          this.filterChats();
-          this.cdRef.markForCheck();
-        }
-      },
-      error: (error) => {
-        console.error('Fehler beim Laden der WhatsApp-Chats:', error);
-      }
-    });
-  }
-
-  /**
    * Sende WhatsApp Text-Nachricht
    */
   sendWhatsAppMessage(message: string, textarea: HTMLTextAreaElement): void {
@@ -4377,41 +4475,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    */
   filterByChannel(channel: 'all' | 'website' | 'whatsapp'): void {
     this.selectedChannelFilter = channel;
-    this.applyAllFilters();
-  }
-
-  /**
-   * Erweiterte Filter-Methode mit Channel-Support
-   */
-  private applyAllFilters(): void {
-    let filtered = [...this.activeChats];
-
-    // Channel Filter
-    if (this.selectedChannelFilter !== 'all') {
-      filtered = filtered.filter(chat => {
-        if (this.selectedChannelFilter === 'whatsapp') {
-          return chat.channel === 'whatsapp';
-        } else {
-          return chat.channel !== 'whatsapp';
-        }
-      });
-    }
-
-    // Bestehende Filter anwenden (Status, Search, etc.)
-    if (this.filterStatus !== 'all') {
-      filtered = filtered.filter(c => c.status === this.filterStatus);
-    }
-
-    if (this.searchQuery) {
-      const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(c =>
-        c.visitor?.first_name?.toLowerCase().includes(query) ||
-        c.visitor?.last_name?.toLowerCase().includes(query) ||
-        c.whatsapp_number?.includes(query)
-      );
-    }
-
-    this.filteredActiveChats = filtered;
+    this.filterChats();
   }
 
   /**
@@ -4604,6 +4668,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         }))
       : [];
 
+    const defaultAvatar = chat.channel === 'whatsapp'
+      ? 'assets/whatsapp-avatar.svg'
+      : 'assets/default-avatar.svg';
+
     return {
       id: sessionId,
       chatId: chat.chat_id || '',
@@ -4612,7 +4680,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       customerLastName: lastName,
       customerPhone: chat.customer_phone || '',
       customerEmail: emailFromChat,
-      customerAvatar: chat.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
+      customerAvatar: chat.customer_avatar || defaultAvatar,
       lastMessage: chat.last_message || '',
       lastMessageTime: new Date(chat.last_message_time || Date.now()),
       unreadCount: isSelected ? 0 : (chat.unread_count || 0),

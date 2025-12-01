@@ -135,9 +135,10 @@ export class PusherService {
     channelName: string,
     event: string,
     callback: (data: T) => void,
-    options: { notify: boolean } = { notify: true }
+    options: { notify?: boolean; forcePrivate?: boolean } = {}
   ): { stop: () => void } {
     const eventKey = `${channelName}:${event}`;
+    const { notify = true, forcePrivate = false } = options;
 
     // Bestehenden Listener stoppen
     if (this.activeListeners.has(eventKey)) {
@@ -150,7 +151,7 @@ export class PusherService {
         // ✅ DEAKTIVIERT: Alte Notification-Logik (wird jetzt von NotificationSoundService übernommen)
         // Die Benachrichtigungen werden jetzt zentral über den NotificationSoundService
         // im admin-dashboard.component.ts handleIncomingMessageGlobal() verwaltet
-        // if (options.notify && this.shouldNotify()) {
+        // if (notify && this.shouldNotify()) {
         //   this.handleNotification(data);
         // }
         callback(data);
@@ -160,11 +161,12 @@ export class PusherService {
     // ✅ WICHTIG: Unterscheide zwischen Public und Private Channels
     // Private Channels: all.active.chats, agent.{id}, admin-dashboard, escalations, transfer.*
     // Public Channels: chat.{sessionId}, visitor.{sessionId}
-    const isPrivateChannel = channelName.includes('all.active.chats') ||
-                           channelName.includes('agent.') ||
-                           channelName.includes('admin-dashboard') ||
-                           channelName.includes('escalations') ||
-                           channelName.includes('transfer.');
+    const isPrivateChannel = forcePrivate ||
+      channelName.includes('all.active.chats') ||
+      channelName.includes('agent.') ||
+      channelName.includes('admin-dashboard') ||
+      channelName.includes('escalations') ||
+      channelName.includes('transfer.');
 
     // Laravel Echo fügt automatisch 'private-' Prefix hinzu bei echo.private()
     const channel = isPrivateChannel
@@ -187,6 +189,18 @@ export class PusherService {
 
     this.activeListeners.set(eventKey, stop);
     return { stop };
+  }
+
+  listenToPrivate<T>(
+    channelName: string,
+    event: string,
+    callback: (data: T) => void,
+    options: { notify?: boolean } = {}
+  ): { stop: () => void } {
+    return this.listenToChannel(channelName, event, callback, {
+      notify: options.notify,
+      forcePrivate: true
+    });
   }
 
   private shouldNotify(): boolean {

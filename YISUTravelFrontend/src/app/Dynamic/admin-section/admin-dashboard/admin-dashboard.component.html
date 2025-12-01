@@ -1,4 +1,8 @@
 <div class="chat-app">
+  <div class="chat-loading-overlay" *ngIf="isChatListLoading && !hasLoadedChatsOnce">
+    <mat-progress-spinner diameter="64" strokeWidth="5" mode="indeterminate"></mat-progress-spinner>
+    <div class="loading-text">Chats werden geladen...</div>
+  </div>
   <!-- Notification Banner - ENTFERNT: Redundant mit Permission Dialog -->
 
   <!-- Sidebar -->
@@ -81,8 +85,8 @@
              [class.is-new]="chat.isNew"
              (click)="selectChat(chat)">
 
-          <div class="avatar-container">
-            <img [src]="chat.customerAvatar || 'assets/default-avatar.png'" [class.online]="chat.isOnline">
+          <div class="avatar-container" [ngClass]="{'whatsapp-avatar': isWhatsAppChat(chat)}">
+            <img [src]="chat.customerAvatar || 'assets/default-avatar.svg'" [class.online]="chat.isOnline">
             <span class="unread-badge" *ngIf="chat.unreadCount > 0">{{chat.unreadCount}}</span>
 
             <div class="escalation-indicator" *ngIf="chat.status === 'human' && !chat.assigned_to">
@@ -165,8 +169,8 @@
              [class.needs-assignment]="chat.status === 'human' && !chat.assigned_to"
              (click)="selectAdminChat(chat)">
 
-          <div class="avatar-container">
-            <img [src]="chat.customer_avatar || 'assets/default-avatar.png'" [class.online]="chat.is_online">
+          <div class="avatar-container" [ngClass]="{'whatsapp-avatar': chat.channel === 'whatsapp'}">
+            <img [src]="chat.customer_avatar || 'assets/default-avatar.svg'" [class.online]="chat.is_online">
 
             <!-- Escalation Indicator für Admin-Chats -->
             <div class="escalation-indicator" *ngIf="chat.status === 'human' && !chat.assigned_to">
@@ -231,7 +235,7 @@
 
     <!-- User Profile Footer -->
     <div class="user-profile">
-      <img [src]="getFullProfileImageUrl(currentAgent.profile_image_url) || currentAgent.avatar || 'assets/default-avatar.png'" class="profile-avatar">
+      <img [src]="getFullProfileImageUrl(currentAgent.profile_image_url) || currentAgent.avatar || 'assets/default-avatar.svg'" class="profile-avatar">
       <div class="profile-info">
         <div class="profile-name">{{currentAgent.name}}</div>
         <div class="profile-status">
@@ -287,8 +291,8 @@
       </button>
 
       <div class="chat-user">
-        <div class="avatar-container">
-          <img [src]="selectedChat.customerAvatar || 'assets/default-avatar.png'"
+        <div class="avatar-container" [ngClass]="{'whatsapp-avatar': isWhatsAppChat(selectedChat)}">
+          <img [src]="selectedChat.customerAvatar || 'assets/default-avatar.svg'"
                [class.online]="selectedChat.isOnline"
                class="user-avatar">
         </div>

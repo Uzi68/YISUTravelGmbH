@@ -462,12 +462,25 @@ class WhatsAppWebhookController extends Controller
      */
     private function findOrCreateWhatsAppChat(Visitor $visitor, string $whatsappNumber): Chat
     {
-        // Suche nach aktivem WhatsApp-Chat für diese Nummer
+        // Suche nach bestehendem WhatsApp-Chat für diese Nummer (auch geschlossene Konversationen)
         $chat = Chat::where('whatsapp_number', $whatsappNumber)
-            ->whereIn('status', ['bot', 'human', 'in_progress'])
+            ->orderByDesc('updated_at')
             ->first();
 
         if ($chat) {
+            // Reaktiviere geschlossene Chats, damit Konversation fortgesetzt wird
+            if ($chat->status === 'closed') {
+                $chat->update([
+                    'status' => 'human',
+                    'assigned_to' => null,
+                    'assigned_at' => null,
+                    'closed_at' => null,
+                    'close_reason' => null,
+                    'closed_by_agent' => null,
+                    'state' => 'active'
+                ]);
+            }
+
             // ✅ WICHTIG: Aktualisiere visitor_id falls er sich geändert hat
             if ($chat->visitor_id !== $visitor->id) {
                 $chat->update(['visitor_id' => $visitor->id]);

@@ -18,7 +18,7 @@ import { MatInput, MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import {ChatbotService} from "../../../Services/chatbot-service/chatbot.service";
 import {AuthService} from "../../../Services/AuthService/auth.service";
-import {catchError, interval, of, Subscription, throwError} from "rxjs";
+import {catchError, debounceTime, interval, of, Subject, Subscription, throwError, timer, takeUntil} from "rxjs";
 import {PusherService} from "../../../Services/Pusher/pusher.service";
 import {MatCheckbox} from "@angular/material/checkbox";
 import {RouterLink} from "@angular/router";
@@ -115,6 +115,12 @@ export class ChatUiComponent implements AfterViewInit {
     agb_accepted: false
   });
   registrationError = signal('');
+  private readonly destroy$ = new Subject<void>();
+  private readonly persistMessages$ = new Subject<void>();
+  private scrollSchedulerId: number | null = null;
+  private pendingScrollImmediate = false;
+  private removeScrollListener?: () => void;
+  private assignmentStatusTimeout?: number;
 
   // SSR browser check
   isBrowser: boolean;
@@ -153,15 +159,16 @@ export class ChatUiComponent implements AfterViewInit {
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
 
+    if (this.isBrowser) {
+      this.persistMessages$
+        .pipe(debounceTime(300), takeUntil(this.destroy$))
+        .subscribe(() => this.saveMessagesToLocalStorage());
+    }
+
     // ✅ Effect: Automatisch Nachrichten im localStorage speichern wenn sie sich ändern
     effect(() => {
       if (this.isBrowser && this.sessionId && this.messages().length > 0 && !this.isLoadingFromStorage) {
-        // Debounce: Nur speichern wenn nicht gerade geladen wird
-        const timeoutId = setTimeout(() => {
-          this.saveMessagesToLocalStorage();
-        }, 300); // 300ms Debounce um zu viele Speichervorgänge zu vermeiden
-
-        return () => clearTimeout(timeoutId);
+        this.persistMessages$.next();
       }
       return undefined;
     });
@@ -169,9 +176,7 @@ export class ChatUiComponent implements AfterViewInit {
     // ✅ Effect: Automatisch nach unten scrollen wenn Typing-Indikator angezeigt wird
     effect(() => {
       if (this.isBrowser && this.isTyping()) {
-        setTimeout(() => {
-          this.scrollToBottom();
-        }, 100);
+        this.scheduleScrollToBottom();
       }
     });
   }
@@ -469,23 +474,21 @@ export class ChatUiComponent implements AfterViewInit {
 
         // ✅ Chat-Historie laden (enthält die Nachricht vom Backend für Persistenz)
         // Die Merge-Logik in loadChatHistory() verhindert Duplikate
-        setTimeout(() => {
-          this.loadChatHistory();
-        }, 500); // Verzögerung für DB-Sync
+        timer(500)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(() => this.loadChatHistory());
 
         // Quick Questions anzeigen
         this.showQuickQuestions.set(true);
 
         // Scroll to bottom nach kurzer Verzögerung
-        setTimeout(() => {
-          this.scrollToBottom();
-
-          // Focus auf Input-Feld setzen
+        this.scheduleScrollToBottom();
+        this.runAfterRender(() => {
           const inputField = this.inputField();
           if (inputField) {
             inputField.nativeElement.focus();
           }
-        }, 100);
+        });
 
         // Optional: Visitor-Daten für spätere Verwendung speichern
         this.contactInfo.set({
@@ -759,6 +762,8 @@ export class ChatUiComponent implements AfterViewInit {
 
 
   ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
     if (this.pusherSubscription) {
       this.pusherSubscription.stop();
     }
@@ -766,21 +771,41 @@ export class ChatUiComponent implements AfterViewInit {
     if (this.authSub) {
       this.authSub.unsubscribe();
     }
+
+    if (this.assignmentStatusTimeout) {
+      clearTimeout(this.assignmentStatusTimeout);
+      this.assignmentStatusTimeout = undefined;
+    }
+
+    if (this.scrollSchedulerId !== null && this.isBrowser) {
+      cancelAnimationFrame(this.scrollSchedulerId);
+      this.scrollSchedulerId = null;
+    }
+
+    this.removeScrollListener?.();
+    this.removeScrollListener = undefined;
   }
 
 
 
 
   ngAfterViewInit() {
-    if (this.isBrowser) {
-      // Wait for viewChild to be properly initialized
-      setTimeout(() => {
-        const container = this.messageContainer()?.nativeElement;
-        if (container) {
-          container.addEventListener('scroll', () => this.checkScrollPosition());
-        }
-      }, 0);
+    if (!this.isBrowser) {
+      return;
     }
+
+    this.runAfterRender(() => {
+      const container = this.messageContainer()?.nativeElement;
+      if (!container) {
+        return;
+      }
+
+      this.ngZone.runOutsideAngular(() => {
+        const handler = () => this.ngZone.run(() => this.checkScrollPosition());
+        container.addEventListener('scroll', handler, { passive: true });
+        this.removeScrollListener = () => container.removeEventListener('scroll', handler);
+      });
+    });
   }
 
   private initializeChatState() {
@@ -1147,9 +1172,7 @@ export class ChatUiComponent implements AfterViewInit {
         this.showToast('✅ Chat erfolgreich beendet', 'success', 3000);
         
         // ✅ Scroll nach unten (falls nötig)
-        setTimeout(() => {
-          this.scrollToBottom();
-        }, 100);
+        this.scheduleScrollToBottom();
 
         this.debugLog('✅ Chat ended, notifications disabled');
       },
@@ -1252,14 +1275,14 @@ export class ChatUiComponent implements AfterViewInit {
         this.showQuickQuestions.set(canShowQuickQuestions);
         
         // ✅ Flag nach kurzer Verzögerung zurücksetzen
-        setTimeout(() => {
-          this.isLoadingFromStorage = false;
-        }, 500);
+        timer(500)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(() => {
+            this.isLoadingFromStorage = false;
+          });
         
         // Scroll nach unten nach kurzer Verzögerung
-        setTimeout(() => {
-          this.scrollToBottom(true);
-        }, 100);
+        this.scheduleScrollToBottom(true);
       }
     } catch (error) {
       this.errorLog('Error loading messages from localStorage:', error);
@@ -1314,9 +1337,7 @@ export class ChatUiComponent implements AfterViewInit {
       this.loadChatHistory();
 
       // ✅ FIX: Scroll sofort nach unten ohne Animation
-      setTimeout(() => {
-        this.scrollToBottom(true); // immediate=true
-      }, 100);
+      this.scheduleScrollToBottom(true); // immediate=true
     } else {
       // ✅ Chat schließen - Titel zurücksetzen
       this.updateTabTitle();
@@ -1734,7 +1755,7 @@ export class ChatUiComponent implements AfterViewInit {
           ]
         });
 
-        setTimeout(() => this.scrollToBottom(), 100);
+        this.scheduleScrollToBottom();
       }
 
       // Assignment Updates
@@ -1853,9 +1874,7 @@ export class ChatUiComponent implements AfterViewInit {
           const agentName = this.assignedAgentName() || 'Mitarbeiter';
 
           // ✅ WICHTIG: Automatisch nach unten scrollen bei Agent/Mitarbeiter-Nachrichten
-          setTimeout(() => {
-            this.scrollToBottom();
-          }, 100);
+          this.scheduleScrollToBottom();
 
           // Unread Counter NUR wenn Chat nicht offen
           if (!this.isOpen()) {
@@ -2047,8 +2066,16 @@ export class ChatUiComponent implements AfterViewInit {
     const sessionId = localStorage.getItem('session_id');
     if (!sessionId) return;
 
+    if (!this.isBrowser) {
+      return;
+    }
+
     if (this.chatStatus() === 'human') {
-      setTimeout(() => {
+      if (this.assignmentStatusTimeout) {
+        clearTimeout(this.assignmentStatusTimeout);
+      }
+
+      this.assignmentStatusTimeout = window.setTimeout(() => {
         this.chatbotService.getAnonymousAssignmentStatus(sessionId).subscribe({
           next: (response) => {
             if (response.success) {
@@ -2651,6 +2678,39 @@ export class ChatUiComponent implements AfterViewInit {
       }
 
       return false;
+    });
+  }
+
+  private scheduleScrollToBottom(immediate: boolean = false): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
+    if (immediate) {
+      this.pendingScrollImmediate = true;
+    }
+
+    if (this.scrollSchedulerId !== null) {
+      return;
+    }
+
+    this.scrollSchedulerId = requestAnimationFrame(() => {
+      this.scrollSchedulerId = null;
+      const shouldForce = this.pendingScrollImmediate;
+      this.pendingScrollImmediate = false;
+      this.scrollToBottom(shouldForce);
+    });
+  }
+
+  private runAfterRender(callback: () => void): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
+    this.ngZone.runOutsideAngular(() => {
+      requestAnimationFrame(() => {
+        this.ngZone.run(callback);
+      });
     });
   }
 

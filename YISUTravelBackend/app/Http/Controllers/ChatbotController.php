@@ -1150,7 +1150,30 @@ class ChatbotController extends Controller
         $user = Auth::user();
 
         // Agents sollen ALLE Chats sehen wie Admins
-        $query = Chat::with(['messages.reads', 'messages.attachments', 'user', 'assignedTo', 'visitor', 'escalationPrompts.sentByAgent']);
+        $query = Chat::query()
+            ->with([
+                'messages' => function ($messageQuery) use ($user) {
+                    $messageQuery->with([
+                        'attachments',
+                        'reads' => function ($readQuery) use ($user) {
+                            $readQuery
+                                ->where('user_id', $user->id)
+                                ->select('id', 'message_id', 'user_id');
+                        },
+                    ])->orderBy('created_at');
+                },
+                'user:id,name,avatar',
+                'assignedTo:id,name',
+                'visitor:id,first_name,last_name,email,phone,whatsapp_number',
+                'escalationPrompts.sentByAgent',
+            ])
+            ->withCount(['messages as unread_count' => function ($messageQuery) use ($user) {
+                $messageQuery
+                    ->where('from', '!=', 'agent')
+                    ->whereDoesntHave('reads', function ($readQuery) use ($user) {
+                        $readQuery->where('user_id', $user->id);
+                    });
+            }]);
 
         $chats = $query->orderBy('updated_at', 'desc')
             ->get()
@@ -1210,12 +1233,7 @@ class ChatbotController extends Controller
                     'customer_avatar' => $chat->user ? $chat->user->avatar : asset('storage/images/user.png'),
                     'last_message' => $lastMessage ? $lastMessage->text : 'No messages yet',
                     'last_message_time' => $lastMessage ? $lastMessage->created_at : $chat->updated_at,
-                    'unread_count' => Message::where('chat_id', $chat->id)
-                        ->where('from', '!=', 'agent')
-                        ->whereDoesntHave('reads', function ($q) use ($user) {
-                            $q->where('user_id', $user->id);
-                        })
-                        ->count(),
+                    'unread_count' => $chat->unread_count,
 
                     'is_online' => $chat->user ? $chat->user->isOnline() : false,
                     'status' => $chat->status,
@@ -1224,13 +1242,13 @@ class ChatbotController extends Controller
                     'last_activity' => $chat->last_activity ? $chat->last_activity->toIso8601String() : null, // ✅ Zuletzt-Online-Status
                     'assigned_to' => $chat->assigned_to,
                     'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
-                    'messages' => $chat->messages->sortBy('created_at')->map(function ($message) use ($user) {
+                    'messages' => $chat->messages->sortBy('created_at')->map(function ($message) {
                         $messageData = [
                             'id' => $message->id,
                             'text' => $message->text,
                             'timestamp' => $message->created_at,
                             'from' => $message->from,
-                            'read' => $message->reads()->where('user_id', $user->id)->exists(),
+                            'read' => $message->reads && $message->reads->isNotEmpty(),
                             'message_type' => $message->message_type,
                             'metadata' => $message->metadata
                         ];
