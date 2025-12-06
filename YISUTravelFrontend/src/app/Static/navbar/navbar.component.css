@@ -560,33 +560,65 @@ body.dark-mode .desktop-menu2 a {
 /* Burger menu button for mobile */
 .mobile-menu-btn {
   display: none;
-  fill: var(--yisu-nav-items);
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  will-change: transform;
 
-  /* Show burger button on tablet/mobile screens */
   @media (max-width: 940px) {
-    display: block;
-    position: relative; /* For the animation */
-    border-radius: 50%; /* Make the button circular for better aesthetics */
-  }
-
-  /* Icon styles */
-  .mat-icon {
-    transition: transform 0.3s ease, opacity 0.3s ease; /* Smooth transition for rotation */
-    color: white; /* Burger icon color */
-    font-size: 25px; /* Increase icon size for better visibility */
-    display: inline-block; /* Use inline-block to allow padding adjustments */
-    margin: 0; /* Remove any default margins */
-  }
-
-  /* Sidenav animation when open */
-  .open {
-    transform: rotate(90deg); /* Rotate the icon to 90 degrees */
+    display: inline-flex;
   }
 }
 
-/* For the main icon */
-.mat-sidenav.open .mobile-menu-btn mat-icon {
-  transition: transform 0.3s ease; /* Smooth transition for rotation */
+.mobile-menu-btn:hover {
+  background: rgba(25, 118, 210, 0.08);
+}
+
+.mobile-menu-btn .burger-line {
+  position: absolute;
+  width: 22px;
+  height: 3px;
+  border-radius: 4px;
+  background: var(--yisu-nav-items);
+  transition: transform 0.35s ease, opacity 0.25s ease, background-color 0.3s ease;
+  will-change: transform, opacity;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+body.dark-mode .mobile-menu-btn .burger-line {
+  background: #f5faff;
+}
+
+.burger-line-top {
+  top: 16px;
+}
+
+.burger-line-middle {
+  top: 22.5px;
+}
+
+.burger-line-bottom {
+  top: 29px;
+}
+
+.mobile-menu-btn.open .burger-line-top {
+  transform: translateX(-50%) rotate(45deg);
+  top: 22.5px;
+}
+
+.mobile-menu-btn.open .burger-line-middle {
+  opacity: 0;
+}
+
+.mobile-menu-btn.open .burger-line-bottom {
+  transform: translateX(-50%) rotate(-45deg);
+  top: 22.5px;
 }
 
 mat-sidenav-content {
@@ -617,12 +649,6 @@ mat-sidenav {
   .darkmode-button {
     display: none;
   }
-}
-
-/* Sidenav animation when open */
-.mat-sidenav.open .mobile-menu-btn mat-icon {
-  transform: rotate(90deg); /* Rotate the burger icon to X */
-  fill: var(--yisu-nav-items-hover);
 }
 
 .mobile-sidenav a {
@@ -706,20 +732,6 @@ body.dark-mode .additional-info span:hover {
   margin-left: 0;
 }
 
-.mobile-menu-btn {
-  transition: transform 0.3s ease; /* Ensure the button itself has a transition */
-}
-
-.mobile-menu-btn.open {
-  transform: rotate(90deg); /* Adjust rotation angle to suit your design */
-}
-
-/* Optional: Apply additional styles to the SVG if needed */
-.mobile-menu-btn svg {
-  transition: transform 0.3s ease; /* Ensure the SVGs also have a smooth transition */
-}
-
-
 #additiona-info-right {
   margin-right: 0px;
 }
@@ -761,7 +773,6 @@ body.dark-mode .additional-info span:hover {
   position: relative;
   z-index: 1;
 }
-
 
 
 /* Other existing styles remain unchanged */

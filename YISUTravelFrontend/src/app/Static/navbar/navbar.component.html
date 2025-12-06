@@ -95,21 +95,14 @@
     <!-- Burger Icon for Mobile -->
     <button
       mat-icon-button
+      type="button"
       (click)="toggleSidenav(sidenav)"
       class="mobile-menu-btn"
-      [class.open]="isOpen">
-      <ng-container *ngIf="!isOpen; else closeIcon">
-        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px">
-          <path
-            d="M96.75-220.83v-89.42h766.66v89.42H96.75Zm0-214.97v-89.26h766.66v89.26H96.75Zm0-215.05v-89.42h766.66v89.42H96.75Z"/>
-        </svg>
-      </ng-container>
-      <ng-template #closeIcon>
-        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px">
-          <path
-            d="m249.14-185.88-62.17-63.26L417.49-480 186.97-711.71l62.17-63.51 231.62 231.71 230.1-231.71 62.17 63.51L543.17-480l229.86 230.86-62.17 63.26-230.1-231.71-231.62 231.71Z"/>
-        </svg>
-      </ng-template>
+      [class.open]="isOpen"
+      aria-label="Navigation öffnen">
+      <span class="burger-line burger-line-top"></span>
+      <span class="burger-line burger-line-middle"></span>
+      <span class="burger-line burger-line-bottom"></span>
     </button>
   </mat-toolbar>
 </div>
@@ -126,7 +119,8 @@
 <mat-sidenav-container class="sidenav-container">
   <mat-sidenav
     #sidenav
-    mode="push"
+    [mode]="sidenavMode"
+    [fixedInViewport]="isMobileViewport"
     class="mobile-sidenav"
     [autoFocus]="false"
     (openedChange)="onSidenavOpenedChange($event)"

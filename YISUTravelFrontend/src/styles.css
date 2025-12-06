@@ -76,6 +76,17 @@ body {
   font-weight: 400;
 }
 
+/* z-index vom container neutralisieren */
+.mat-drawer-container {
+  z-index: auto !important;
+}
+
+/* Drawer ganz nach vorne */
+.mat-drawer {
+  position: fixed !important;
+  z-index: 3000 !important;
+}
+
 /* Ensure Material Icons render correctly */
 .mat-icon {
   font-family: 'Material Icons' !important;

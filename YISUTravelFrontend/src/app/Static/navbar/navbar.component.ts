@@ -1,8 +1,9 @@
 import {Component, ElementRef, Inject, NgZone, OnDestroy, PLATFORM_ID, ViewChild} from '@angular/core';
 import {AsyncPipe, isPlatformBrowser, NgClass, NgIf, NgOptimizedImage, NgTemplateOutlet} from '@angular/common';
+import {BreakpointObserver} from '@angular/cdk/layout';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
-import {MatSidenav, MatSidenavModule} from '@angular/material/sidenav';
+import {MatDrawerMode, MatSidenav, MatSidenavModule} from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
@@ -52,6 +53,9 @@ export class NavbarComponent implements OnDestroy {
   private removeScrollListener?: () => void;
   private darkModeSwitchRef?: ElementRef;
   private darkModeSwitchMobileRef?: ElementRef;
+  private breakpointSub?: Subscription;
+  sidenavMode: MatDrawerMode = 'over';
+  isMobileViewport = false;
 
   toggleSidenav(sidenav: MatSidenav) {
     if (sidenav.opened) {
@@ -86,7 +90,8 @@ export class NavbarComponent implements OnDestroy {
     private router: Router,
     private chatbot: ChatbotService,
     private themeService: ThemeService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private breakpointObserver: BreakpointObserver
   ) {
     this.authenticated = this.authService.getAuthenticated();
     this.darkMode = this.themeService.getDarkMode();
@@ -123,11 +128,13 @@ export class NavbarComponent implements OnDestroy {
       });
 
       this.setupScrollListener();
+      this.observeViewport();
     }
   }
 
   ngOnDestroy(): void {
     this.themeSubscription?.unsubscribe();
+    this.breakpointSub?.unsubscribe();
     if (this.scrollRafId !== null) {
       cancelAnimationFrame(this.scrollRafId);
       this.scrollRafId = null;
@@ -179,6 +186,15 @@ export class NavbarComponent implements OnDestroy {
     });
 
     this.updateScrollState();
+  }
+
+  private observeViewport(): void {
+    this.breakpointSub = this.breakpointObserver
+      .observe('(max-width: 940px)')
+      .subscribe(result => {
+        this.isMobileViewport = result.matches;
+        this.sidenavMode = result.matches ? 'over' : 'push';
+      });
   }
 
   private updateScrollState(): void {
