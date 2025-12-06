@@ -865,11 +865,10 @@ body.dark-mode .additional-info span:hover {
   font-weight: 600;
   color: var(--yisu-nav-items);
   margin: 1.25rem 0 0.75rem;
-  padding: 0 1rem;
+  padding: 0 1rem 3%;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid var(--yisu-nav-items);
-  padding-bottom: 0.5rem;
 }
 
 /* Dark Mode Sidenav Styles */
