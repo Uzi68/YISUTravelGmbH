@@ -24,6 +24,26 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "google080d84130527cbc7.html",
+                "input": ".",
+                "output": "."
+              },
+              {
+                "glob": "robots.txt",
+                "input": ".",
+                "output": "."
+              },
+              {
+                "glob": "sitemap.xml",
+                "input": ".",
+                "output": "."
+              },
+              {
+                "glob": ".htaccess",
+                "input": ".",
+                "output": "."
               }
             ],
             "styles": [

@@ -1,0 +1,48 @@
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" 
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 
+                            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <url>
+    <loc>https://yisu-travel.de</loc>
+    <priority>1.0</priority>
+    <lastmod>2024-10-18T06:07:48+00:00</lastmod>
+    <changefreq>daily</changefreq>
+  </url>
+
+  <url>
+    <loc>https://yisu-travel.de/ueber-uns</loc>
+    <priority>0.8</priority>
+    <lastmod>2024-10-17T09:11:30+00:00</lastmod>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://yisu-travel.de/dienstleistung</loc>
+    <priority>0.8</priority>
+    <lastmod>2024-10-18T13:02:21+00:00</lastmod>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://yisu-travel.de/kontakt</loc>
+    <priority>0.7</priority>
+    <lastmod>2024-10-16T09:17:22+00:00</lastmod>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://yisu-travel.de/impressum</loc>
+    <priority>0.5</priority>
+    <lastmod>2024-10-18T06:16:11+00:00</lastmod>
+    <changefreq>yearly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://yisu-travel.de/datenschutzerklaerung</loc>
+    <priority>0.5</priority>
+    <lastmod>2024-10-18T06:19:50+00:00</lastmod>
+    <changefreq>yearly</changefreq>
+  </url>
+
+</urlset>
