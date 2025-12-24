@@ -118,6 +118,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private chatRequestSubscription: any;
   private routeSubscription?: Subscription;
   private pendingChatId: string | null = null;
+  isDeepLinkOpening = false;
+  private deepLinkFetchInFlight = false;
+  private popStateHandler?: (event: PopStateEvent) => void;
+  private chatHistoryStatePushed = false;
   activeChats: Chat[] = [];
   user!: User;
   visitor!: Visitor;
@@ -264,6 +268,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.updateTabTitle();
     this.setupTabVisibilityTracking();
     this.updateViewportState();
+    this.setupBackButtonHandler();
     this.setupDeepLinkListener();
     const pendingPushChatId = this.staffPushNotifications.consumePendingChatIdentifier();
     if (pendingPushChatId) {
@@ -2589,6 +2594,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.popStateHandler) {
+      window.removeEventListener('popstate', this.popStateHandler);
+      this.popStateHandler = undefined;
+    }
     this.destroy$.next();
     this.destroy$.complete();
     this.cleanupPusherSubscriptions();
@@ -2656,23 +2665,127 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  private setupBackButtonHandler(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    this.popStateHandler = () => {
+      if (!this.selectedChat && !this.isDeepLinkOpening) {
+        return;
+      }
+
+      this.ngZone.run(() => {
+        this.selectedChat = null;
+        this.pendingChatId = null;
+        this.isDeepLinkOpening = false;
+        this.chatHistoryStatePushed = false;
+        this.cdRef.markForCheck();
+      });
+    };
+
+    window.addEventListener('popstate', this.popStateHandler);
+  }
+
+  private pushChatHistoryState(): void {
+    if (!isPlatformBrowser(this.platformId) || this.chatHistoryStatePushed) {
+      return;
+    }
+
+    window.history.pushState({ chatOpen: true }, '');
+    this.chatHistoryStatePushed = true;
+  }
+
   private handleDeepLinkChat(chatIdentifier: string): void {
     this.pendingChatId = chatIdentifier;
+    this.isDeepLinkOpening = true;
+    this.fetchChatForDeepLink(chatIdentifier);
     this.tryOpenPendingChat();
+  }
+
+  private fetchChatForDeepLink(chatIdentifier: string): void {
+    if (this.deepLinkFetchInFlight) {
+      return;
+    }
+
+    this.deepLinkFetchInFlight = true;
+
+    this.chatbotService.getChatByIdentifier(chatIdentifier)
+      .pipe(finalize(() => {
+        this.deepLinkFetchInFlight = false;
+      }))
+      .subscribe({
+        next: (response) => {
+          const chatData = response?.data ?? response;
+          if (!chatData) {
+            return;
+          }
+
+          if (!this.pendingChatId || this.pendingChatId !== chatIdentifier) {
+            return;
+          }
+
+          const chat = this.buildChatFromResponse(chatData);
+          this.upsertChatForDeepLink(chat);
+
+          if (this.selectedChat?.id?.toString() !== chat.id?.toString()) {
+            this.selectChat(chat);
+          } else {
+            this.selectedChat = {
+              ...this.selectedChat,
+              ...chat,
+              messages: this.selectedChat.messages
+            };
+            this.cdRef.markForCheck();
+          }
+
+          this.pendingChatId = null;
+          this.isDeepLinkOpening = false;
+          this.clearChatIdQueryParam();
+        },
+        error: (error) => {
+          console.warn('Deep link chat fetch failed', error);
+          if (this.hasLoadedChatsOnce) {
+            this.isDeepLinkOpening = false;
+          }
+        }
+      });
+  }
+
+  private upsertChatForDeepLink(chat: Chat): void {
+    const chatId = chat.id?.toString();
+    const existingIndex = this.activeChats.findIndex(existing => existing.id?.toString() === chatId);
+
+    if (existingIndex === -1) {
+      this.activeChats = [chat, ...this.activeChats];
+    } else {
+      this.activeChats[existingIndex] = {
+        ...this.activeChats[existingIndex],
+        ...chat,
+        messages: chat.messages
+      };
+    }
+
+    this.sortActiveChats();
   }
 
   private tryOpenPendingChat(): void {
     if (!this.pendingChatId) {
+      this.isDeepLinkOpening = false;
       return;
     }
 
     const pendingChat = this.findChatByIdentifier(this.pendingChatId);
     if (!pendingChat) {
+      if (this.hasLoadedChatsOnce) {
+        this.isDeepLinkOpening = false;
+      }
       return;
     }
 
     this.selectChat(pendingChat);
     this.pendingChatId = null;
+    this.isDeepLinkOpening = false;
     this.clearChatIdQueryParam();
   }
 
@@ -3075,6 +3188,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   selectChat(chat: Chat): void {
     this.ngZone.run(() => {
+      this.pushChatHistoryState();
       // ✅ FIX: Setze Loading-State um Flickern zu vermeiden
       this.isLoadingChat = true;
 

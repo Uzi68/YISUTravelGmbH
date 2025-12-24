@@ -179,6 +179,13 @@ export class ChatbotService {
     );
   }
 
+  getChatByIdentifier(identifier: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/chats/lookup`, {
+      withCredentials: true,
+      params: { identifier }
+    });
+  }
+
 
 
   sendAgentMessage(messageData: {

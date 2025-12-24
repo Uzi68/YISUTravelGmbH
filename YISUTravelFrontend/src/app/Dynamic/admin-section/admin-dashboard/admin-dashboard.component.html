@@ -1,12 +1,14 @@
 <div class="chat-app">
-  <div class="chat-loading-overlay" *ngIf="isChatListLoading && !hasLoadedChatsOnce">
+  <div class="chat-loading-overlay" *ngIf="(isChatListLoading && !hasLoadedChatsOnce) || isDeepLinkOpening">
     <mat-progress-spinner diameter="64" strokeWidth="5" mode="indeterminate"></mat-progress-spinner>
-    <div class="loading-text">Chats werden geladen...</div>
+    <div class="loading-text">
+      {{ isDeepLinkOpening ? 'Chat wird geöffnet...' : 'Chats werden geladen...' }}
+    </div>
   </div>
   <!-- Notification Banner - ENTFERNT: Redundant mit Permission Dialog -->
 
   <!-- Sidebar -->
-  <div class="chat-sidebar" [class.hidden]="selectedChat" @slideInOut>
+  <div class="chat-sidebar" [class.hidden]="selectedChat || isDeepLinkOpening" @slideInOut>
     <div class="sidebar-header">
       <div class="header-content">
         <h2>Live Support</h2>

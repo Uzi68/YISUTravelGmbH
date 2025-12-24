@@ -1150,7 +1150,75 @@ class ChatbotController extends Controller
         $user = Auth::user();
 
         // Agents sollen ALLE Chats sehen wie Admins
-        $query = Chat::query()
+        $query = $this->buildActiveChatQuery($user);
+
+        $chats = $query->orderBy('updated_at', 'desc')
+            ->get()
+            ->map(fn ($chat) => $this->formatChatForDashboard($chat));
+
+        return response()->json([
+            'success' => true,
+            'data' => $chats,
+            'meta' => [
+                'total_chats' => $chats->count(),
+                'unassigned_chats' => Chat::where('status', 'human')
+                    ->whereNull('assigned_to')
+                    ->count()
+            ]
+        ]);
+    }
+
+    public function getChatByIdentifier(Request $request)
+    {
+        $validated = $request->validate([
+            'identifier' => 'nullable|string',
+            'session_id' => 'nullable|string',
+            'chat_id' => 'nullable'
+        ]);
+
+        $identifier = $validated['identifier'] ?? null;
+        $sessionId = $validated['session_id'] ?? null;
+        $chatId = $validated['chat_id'] ?? null;
+
+        if (!$identifier && !$sessionId && !$chatId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Identifier erforderlich'
+            ], 422);
+        }
+
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $query = $this->buildActiveChatQuery($user);
+
+        if ($sessionId) {
+            $query->where('session_id', $sessionId);
+        } elseif ($chatId) {
+            $query->where('id', $chatId);
+        } else {
+            $query->where(function ($inner) use ($identifier) {
+                $inner->where('session_id', $identifier)
+                    ->orWhere('id', $identifier);
+            });
+        }
+
+        $chat = $query->first();
+        if (!$chat) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chat nicht gefunden'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatChatForDashboard($chat)
+        ]);
+    }
+
+    private function buildActiveChatQuery(User $user)
+    {
+        return Chat::query()
             ->with([
                 'messages' => function ($messageQuery) use ($user) {
                     $messageQuery->with([
@@ -1174,125 +1242,112 @@ class ChatbotController extends Controller
                         $readQuery->where('user_id', $user->id);
                     });
             }]);
+    }
 
-        $chats = $query->orderBy('updated_at', 'desc')
-            ->get()
-            ->map(function ($chat) use ($user) {
-                $lastMessage = $chat->messages->last();
+    private function formatChatForDashboard(Chat $chat): array
+    {
+        $lastMessage = $chat->messages->last();
 
-                // ✅ Letzten Escalation-Prompt laden (falls vorhanden)
-                $lastEscalationPrompt = $chat->escalationPrompts
-                    ->where('status', 'sent')
-                    ->sortByDesc('sent_at')
-                    ->first();
+        // ✅ Letzten Escalation-Prompt laden (falls vorhanden)
+        $lastEscalationPrompt = $chat->escalationPrompts
+            ->where('status', 'sent')
+            ->sortByDesc('sent_at')
+            ->first();
 
-                // ✅ NEU: Dynamische Kundenname basierend auf Channel
+        // ✅ NEU: Dynamische Kundenname basierend auf Channel
+        $customerFirstName = 'Anonymous';
+        $customerLastName = '';
+
+        if ($chat->visitor) {
+            // Visitor existiert - prüfe ob er echte Namen hat
+            if ($chat->visitor->first_name && $chat->visitor->first_name !== 'WhatsApp') {
+                // Echter Name vom Visitor
+                $customerFirstName = $chat->visitor->first_name;
+                $customerLastName = $chat->visitor->last_name ?? '';
+            } elseif ($chat->channel === 'whatsapp') {
+                // WhatsApp Visitor ohne echten Namen
+                $customerFirstName = 'WhatsApp';
+                $customerLastName = 'Kunde';
+            } else {
+                // Website Visitor ohne Namen
                 $customerFirstName = 'Anonymous';
                 $customerLastName = '';
+            }
+        } elseif ($chat->channel === 'whatsapp') {
+            // Kein Visitor aber WhatsApp Channel
+            $customerFirstName = 'WhatsApp';
+            $customerLastName = 'Kunde';
+        }
 
-                if ($chat->visitor) {
-                    // Visitor existiert - prüfe ob er echte Namen hat
-                    if ($chat->visitor->first_name && $chat->visitor->first_name !== 'WhatsApp') {
-                        // Echter Name vom Visitor
-                        $customerFirstName = $chat->visitor->first_name;
-                        $customerLastName = $chat->visitor->last_name ?? '';
-                    } elseif ($chat->channel === 'whatsapp') {
-                        // WhatsApp Visitor ohne echten Namen
-                        $customerFirstName = 'WhatsApp';
-                        $customerLastName = 'Kunde';
-                    } else {
-                        // Website Visitor ohne Namen
-                        $customerFirstName = 'Anonymous';
-                        $customerLastName = '';
-                    }
-                } elseif ($chat->channel === 'whatsapp') {
-                    // Kein Visitor aber WhatsApp Channel
-                    $customerFirstName = 'WhatsApp';
-                    $customerLastName = 'Kunde';
-                }
+        // ✅ WICHTIG: customer_name berechnen (für WhatsApp-Namen)
+        $customerName = trim($customerFirstName . ' ' . $customerLastName);
+        if (!$customerName || $customerName === 'Anonymous' || $customerName === 'WhatsApp Kunde') {
+            // Wenn kein Name vorhanden, zeige WhatsApp-Nummer
+            if ($chat->channel === 'whatsapp' && $chat->whatsapp_number) {
+                $customerName = '+' . $chat->whatsapp_number;
+            } else {
+                $customerName = 'Anonymer Benutzer';
+            }
+        }
 
-                // ✅ WICHTIG: customer_name berechnen (für WhatsApp-Namen)
-                $customerName = trim($customerFirstName . ' ' . $customerLastName);
-                if (!$customerName || $customerName === 'Anonymous' || $customerName === 'WhatsApp Kunde') {
-                    // Wenn kein Name vorhanden, zeige WhatsApp-Nummer
-                    if ($chat->channel === 'whatsapp' && $chat->whatsapp_number) {
-                        $customerName = '+' . $chat->whatsapp_number;
-                    } else {
-                        $customerName = 'Anonymer Benutzer';
-                    }
-                }
-
-                $chatData = [
-                    'session_id' => $chat->session_id,
-                    'chat_id' => $chat->id,
-                    'customer_first_name' => $customerFirstName,
-                    'customer_last_name' => $customerLastName,
-                    'customer_name' => $customerName, // ✅ NEU: Vollständiger Name
-                    'customer_phone' => $chat->visitor ? $chat->visitor->phone : ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
-                    'customer_email' => $chat->visitor ? ($chat->visitor->email ?? '') : '', // ✅ FIX: Email direkt im Response für instant Anzeige
-                    'customer_avatar' => $chat->user ? $chat->user->avatar : asset('storage/images/user.png'),
-                    'last_message' => $lastMessage ? $lastMessage->text : 'No messages yet',
-                    'last_message_time' => $lastMessage ? $lastMessage->created_at : $chat->updated_at,
-                    'unread_count' => $chat->unread_count,
-
-                    'is_online' => $chat->user ? $chat->user->isOnline() : false,
-                    'status' => $chat->status,
-                    'channel' => $chat->channel ?? 'website', // ✅ WICHTIG: Channel hinzufügen
-                    'whatsapp_number' => $chat->whatsapp_number ?? null, // ✅ WhatsApp-Nummer falls vorhanden
-                    'last_activity' => $chat->last_activity ? $chat->last_activity->toIso8601String() : null, // ✅ Zuletzt-Online-Status
-                    'assigned_to' => $chat->assigned_to,
-                    'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
-                    'messages' => $chat->messages->sortBy('created_at')->map(function ($message) {
-                        $messageData = [
-                            'id' => $message->id,
-                            'text' => $message->text,
-                            'timestamp' => $message->created_at,
-                            'from' => $message->from,
-                            'read' => $message->reads && $message->reads->isNotEmpty(),
-                            'message_type' => $message->message_type,
-                            'metadata' => $message->metadata
-                        ];
-
-                        // Add attachment if exists
-                        if ($message->attachments && $message->attachments->count() > 0) {
-                            $attachment = $message->attachments->first();
-                            $messageData['has_attachment'] = true;
-                            $messageData['attachment'] = [
-                                'id' => $attachment->id,
-                                'file_name' => $attachment->file_name,
-                                'file_type' => $attachment->file_type,
-                                'file_size' => $attachment->file_size,
-                                'download_url' => url('api/attachments/' . $attachment->id . '/download')
-                            ];
-                        }
-
-                        return $messageData;
-                    })
+        $chatData = [
+            'session_id' => $chat->session_id,
+            'chat_id' => $chat->id,
+            'customer_first_name' => $customerFirstName,
+            'customer_last_name' => $customerLastName,
+            'customer_name' => $customerName, // ✅ NEU: Vollständiger Name
+            'customer_phone' => $chat->visitor ? $chat->visitor->phone : ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
+            'customer_email' => $chat->visitor ? ($chat->visitor->email ?? '') : '', // ✅ FIX: Email direkt im Response für instant Anzeige
+            'customer_avatar' => $chat->user ? $chat->user->avatar : asset('storage/images/user.png'),
+            'last_message' => $lastMessage ? $lastMessage->text : 'No messages yet',
+            'last_message_time' => $lastMessage ? $lastMessage->created_at : $chat->updated_at,
+            'unread_count' => $chat->unread_count,
+            'is_online' => $chat->user ? $chat->user->isOnline() : false,
+            'status' => $chat->status,
+            'channel' => $chat->channel ?? 'website', // ✅ WICHTIG: Channel hinzufügen
+            'whatsapp_number' => $chat->whatsapp_number ?? null, // ✅ WhatsApp-Nummer falls vorhanden
+            'last_activity' => $chat->last_activity ? $chat->last_activity->toIso8601String() : null, // ✅ Zuletzt-Online-Status
+            'assigned_to' => $chat->assigned_to,
+            'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
+            'messages' => $chat->messages->sortBy('created_at')->map(function ($message) {
+                $messageData = [
+                    'id' => $message->id,
+                    'text' => $message->text,
+                    'timestamp' => $message->created_at,
+                    'from' => $message->from,
+                    'read' => $message->reads && $message->reads->isNotEmpty(),
+                    'message_type' => $message->message_type,
+                    'metadata' => $message->metadata
                 ];
 
-                // ✅ Escalation-Prompt Daten hinzufügen (falls vorhanden)
-                if ($lastEscalationPrompt) {
-                    $chatData['escalation_prompt'] = [
-                        'id' => $lastEscalationPrompt->id,
-                        'sent_at' => $lastEscalationPrompt->sent_at,
-                        'sent_by_agent_id' => $lastEscalationPrompt->sent_by_agent_id,
-                        'sent_by_agent_name' => $lastEscalationPrompt->sentByAgent ? $lastEscalationPrompt->sentByAgent->name : 'Unknown'
+                // Add attachment if exists
+                if ($message->attachments && $message->attachments->count() > 0) {
+                    $attachment = $message->attachments->first();
+                    $messageData['has_attachment'] = true;
+                    $messageData['attachment'] = [
+                        'id' => $attachment->id,
+                        'file_name' => $attachment->file_name,
+                        'file_type' => $attachment->file_type,
+                        'file_size' => $attachment->file_size,
+                        'download_url' => url('api/attachments/' . $attachment->id . '/download')
                     ];
                 }
 
-                return $chatData;
-            });
+                return $messageData;
+            })
+        ];
 
-        return response()->json([
-            'success' => true,
-            'data' => $chats,
-            'meta' => [
-                'total_chats' => $chats->count(),
-                'unassigned_chats' => Chat::where('status', 'human')
-                    ->whereNull('assigned_to')
-                    ->count()
-            ]
-        ]);
+        // ✅ Escalation-Prompt Daten hinzufügen (falls vorhanden)
+        if ($lastEscalationPrompt) {
+            $chatData['escalation_prompt'] = [
+                'id' => $lastEscalationPrompt->id,
+                'sent_at' => $lastEscalationPrompt->sent_at,
+                'sent_by_agent_id' => $lastEscalationPrompt->sent_by_agent_id,
+                'sent_by_agent_name' => $lastEscalationPrompt->sentByAgent ? $lastEscalationPrompt->sentByAgent->name : 'Unknown'
+            ];
+        }
+
+        return $chatData;
     }
 
 

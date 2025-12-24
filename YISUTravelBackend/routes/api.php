@@ -42,6 +42,8 @@ Route::get('/check-auth', function (Request $request) {
 })->middleware('auth');
 
 Route::get('/active-chats', [ChatbotController::class, 'getActiveChats'])->middleware('auth');
+Route::get('/chats/lookup', [ChatbotController::class, 'getChatByIdentifier'])
+    ->middleware(['auth', 'role:Admin|Agent']);
 
 //Gibt User Details des aktuell eingeloogten Benutzers
 Route::get('/user', function (Request $request) {
