@@ -61,8 +61,8 @@ class CustomerController extends Controller
             ]);
         }
 
-        // Auto-login after registration
-        Auth::login($user);
+        // Auto-login after registration with persistent session
+        Auth::login($user, true);
         
         // Regenerate session to prevent session fixation
         request()->session()->regenerate();

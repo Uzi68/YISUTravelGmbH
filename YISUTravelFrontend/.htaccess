@@ -24,9 +24,27 @@
   RewriteRule . /index.html [L]
 </IfModule>
 
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+  AddType font/woff .woff
+  AddType application/octet-stream .ttf .otf
+</IfModule>
+
 <IfModule mod_headers.c>
-  # Enable necessary headers for PWA and SSR
-  Header set Cache-Control "no-store, no-cache, must-revalidate"
-  Header set Pragma "no-cache"
-  Header set Expires 0
+  # CORS for fonts (Cache-Directive bewusst ohne Langzeit-Cache)
+  <FilesMatch "\.(woff2?|ttf|otf)$">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  # Statische Assets ohne Langzeit-Cache (bei Bedarf revalidieren)
+  <FilesMatch "\.(css|js|png|jpe?g|gif|svg|ico)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
 </IfModule>

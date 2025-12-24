@@ -1,19 +1,15 @@
 /* You can add global styles to this file, and also import other style files */
 @import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 
-/* DSGVO-konform: Lokale Fonts */
-@import '@fontsource/material-icons';
-@import '@fontsource/playfair-display/400.css';
-@import '@fontsource/playfair-display/600.css';
-@import '@fontsource/playfair-display/700.css';
-@import '@fontsource/poppins/300.css';
-@import '@fontsource/poppins/400.css';
-@import '@fontsource/poppins/500.css';
-@import '@fontsource/poppins/600.css';
-@import '@fontsource/open-sans/300.css';
-@import '@fontsource/open-sans/400.css';
-@import '@fontsource/open-sans/500.css';
-@import '@fontsource/open-sans/600.css';
+/* Lokaler Zeichensatz nur für Material Icons */
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/material-icons/material-icons-latin-400-normal.woff2') format('woff2'),
+       url('/fonts/material-icons/material-icons-latin-400-normal.woff') format('woff');
+}
 
 html, body {
   height: 100%;
@@ -55,24 +51,24 @@ html.dark-mode body {
 /* Font Familie Definitionen */
 body { 
   margin: 0; 
-  font-family: 'Open Sans', "Helvetica Neue", sans-serif;
+  font-family: var(--yisu-font-sans);
   font-weight: 400;
   line-height: 1.6;
 }
 
 /* Font Klassen */
 .font-heading {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--yisu-font-serif, Georgia, serif);
   font-weight: 700;
 }
 
 .font-subheading {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--yisu-font-sans);
   font-weight: 500;
 }
 
 .font-body {
-  font-family: 'Open Sans', sans-serif;
+  font-family: var(--yisu-font-sans);
   font-weight: 400;
 }
 
@@ -105,6 +101,30 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'liga';
 }
+
+.icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: middle;
+  fill: currentColor;
+}
+
+.icon use {
+  fill: currentColor;
+}
+
+.fa-sm {
+  font-size: 0.875em;
+}
+
+.fa-2x {
+  font-size: 2em;
+}
+
+.fa-3x {
+  font-size: 3em;
+}
 body.dark-mode {
   background-color: #121212;
 }
@@ -115,6 +135,8 @@ body.dark-mode {
 
 /* Default (Light Mode) - Flyer-basiertes Travel Farbschema */
 :root {
+  --yisu-font-sans: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --yisu-font-serif: "Times New Roman", Georgia, serif;
   /* === Flyer Travel Agency Farbschema === */
   --yisu-primary: #afdef8;          /* Vorgabe Blau - Logo/Text */
   --yisu-secondary: #1565c0;        /* Sekundäres Blau - Banner/Akzente */
@@ -661,51 +683,3 @@ body.dark-mode .mat-mdc-icon-button:hover {
 
 
 
-/* Roboto Font Faces */
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 100; /* Thin */
-  font-style: normal;
-  src: url('/fonts/Roboto-Thin.ttf') format('truetype'),
-  url('/fonts/Roboto-ThinItalic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 300; /* Light */
-  font-style: normal;
-  src: url('/fonts/Roboto-Light.ttf') format('truetype'),
-  url('/fonts/Roboto-LightItalic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 400; /* Regular */
-  font-style: normal;
-  src: url('/fonts/Roboto-Regular.ttf') format('truetype'),
-  url('/fonts/Roboto-Italic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 500; /* Medium */
-  font-style: normal;
-  src: url('/fonts/Roboto-Medium.ttf') format('truetype'),
-  url('/fonts/Roboto-MediumItalic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 700; /* Bold */
-  font-style: normal;
-  src: url('/fonts/Roboto-Bold.ttf') format('truetype'),
-  url('/fonts/Roboto-BoldItalic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 900; /* Black */
-  font-style: normal;
-  src: url('/fonts/Roboto-Black.ttf') format('truetype'),
-  url('/fonts/Roboto-BlackItalic.ttf') format('truetype');
-}

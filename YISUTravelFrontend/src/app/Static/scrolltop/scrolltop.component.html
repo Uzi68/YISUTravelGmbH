@@ -1,6 +1,8 @@
 <!-- Scroll to top button -->
 <div class="scroll-to-top" [ngClass]="{'show-scrollTop': windowScrolled}">
   <button (click)="scrollToTop()">
-    <i class="fa fa-chevron-up"></i>
+    <svg class="icon icon-chevron-up" aria-hidden="true" focusable="false">
+      <use href="/icons.svg#icon-chevron-up"></use>
+    </svg>
   </button>
 </div>

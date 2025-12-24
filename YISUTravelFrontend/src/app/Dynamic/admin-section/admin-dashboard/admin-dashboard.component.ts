@@ -604,7 +604,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     if (assignedId === null || assignedId === undefined) {
-      return chat.status === 'human';
+      return false;
     }
 
     const currentAgentId = Number(this.currentAgent.id);

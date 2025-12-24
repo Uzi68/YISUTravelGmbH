@@ -2,7 +2,7 @@ body {
   background: #374E59;
   color: #0077b6;
   font-family: 'Sen', sans-serif;
-  margin-bottom: 15px;
+  margin-bottom: 50px;
 }
 
 @media (max-width: 768px) {
@@ -212,7 +212,7 @@ li strong {
 }
 
 /* Contact Info Styles */
-.icon {
+.contact-info .icon {
   color: var(--header-color);
   margin-right: 10px; /* Add space between icon and text */
   height: 15px;
@@ -226,6 +226,42 @@ li strong {
 
 .btn {
   margin-right: 10px; /* Space between buttons */
+}
+
+.social-links {
+  display: flex;
+  gap: 12px;
+}
+
+.social-link {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #fff;
+  background: var(--yisu-secondary);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.social-link svg {
+  width: 20px;
+  height: 20px;
+}
+
+.social-link.instagram {
+  background: #ac2bac;
+}
+
+.social-link.facebook {
+  background: #3b5998;
+}
+
+.social-link:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
 }
 
 /* Button styles werden jetzt global in styles.css verwaltet */

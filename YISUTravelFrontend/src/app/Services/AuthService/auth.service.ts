@@ -15,6 +15,7 @@ export class AuthService {
 
 
   //Cookie is called and the result is set in initialisation (Initialwert)
+  private readonly authStorageKey = 'authenticated';
   private authenticated = new BehaviorSubject<boolean>(this.getPersistedAuthState());
 
   private apiUrl = environment.apiUrl;
@@ -34,10 +35,14 @@ export class AuthService {
   }
 */
 
-  login(credentials: { email: string; password: string }): Observable<any> {
+  login(credentials: { email: string; password: string; remember?: boolean }): Observable<any> {
+    const payload = {
+      ...credentials,
+      remember: credentials.remember ?? true,
+    };
     return this.getCsrfToken().pipe(
       switchMap(() =>
-        this.http.post(`${this.apiUrl}/login`, credentials, {
+        this.http.post(`${this.apiUrl}/login`, payload, {
           withCredentials: true,
         })
       ),
@@ -92,6 +97,17 @@ export class AuthService {
 
   //Authenticated state to cookies
   private getPersistedAuthState(): boolean {
+    if (isPlatformBrowser(this.platformId)) {
+      const stored = localStorage.getItem(this.authStorageKey);
+      if (stored !== null) {
+        try {
+          return JSON.parse(stored) === true;
+        } catch {
+          return stored === 'true';
+        }
+      }
+    }
+
     const authState = this.getCookie('authenticated');
     return authState === 'true'; // Convert string to boolean
   }
@@ -100,6 +116,7 @@ export class AuthService {
   //Persist authentication state to cookies
   private persistAuthState(isAuthenticated: boolean): void {
     if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.authStorageKey, JSON.stringify(isAuthenticated));
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + 30);  // Keep native app logins for ~1 month
       document.cookie = `authenticated=${isAuthenticated}; expires=${expirationDate.toUTCString()}; path=/;`;

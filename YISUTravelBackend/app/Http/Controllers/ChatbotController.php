@@ -2177,7 +2177,7 @@ class ChatbotController extends Controller
             ], 403);
         }
 
-        $chats = Chat::with(['messages', 'user', 'assignedTo', 'visitor'])
+        $chats = Chat::with(['messages.attachments', 'user', 'assignedTo', 'visitor'])
             ->orderBy('updated_at', 'desc')
             ->get()
             ->map(function ($chat) {
@@ -2230,13 +2230,29 @@ class ChatbotController extends Controller
                     'whatsapp_number' => $chat->whatsapp_number ?? null,
                     'assigned_to' => $chat->assigned_to,
                     'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
-                    'messages' => $chat->messages->map(function ($message) use ($user) {
-                        return [
+                    'messages' => $chat->messages->map(function ($message) {
+                        $messageData = [
                             'id' => $message->id,
                             'text' => $message->text,
                             'timestamp' => $message->created_at,
                             'from' => $message->from,
+                            'message_type' => $message->message_type,
+                            'metadata' => $message->metadata
                         ];
+
+                        if ($message->attachments && $message->attachments->count() > 0) {
+                            $attachment = $message->attachments->first();
+                            $messageData['has_attachment'] = true;
+                            $messageData['attachment'] = [
+                                'id' => $attachment->id,
+                                'file_name' => $attachment->file_name,
+                                'file_type' => $attachment->file_type,
+                                'file_size' => $attachment->file_size,
+                                'download_url' => url('api/attachments/' . $attachment->id . '/download')
+                            ];
+                        }
+
+                        return $messageData;
                     })
                 ];
             });

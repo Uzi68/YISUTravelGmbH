@@ -19,8 +19,9 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->only('email', 'password');
+        $remember = $request->has('remember') ? $request->boolean('remember') : true;
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials, $remember)) {
             // Regeneriere die Session-ID für den eingeloggten Benutzer
             $request->session()->regenerate();
 
