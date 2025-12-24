@@ -64,3 +64,6 @@ app-customer-ratings + app-homepage-bezahlmoeglichkeiten-notfallservice {
   }
 }
 
+.section-placeholder {
+  min-height: 120px;
+}

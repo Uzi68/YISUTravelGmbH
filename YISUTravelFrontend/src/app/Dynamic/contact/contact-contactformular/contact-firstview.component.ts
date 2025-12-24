@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import {MatToolbar} from "@angular/material/toolbar";
 import {MatCard} from "@angular/material/card";
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
@@ -8,7 +8,7 @@ import {MatOption} from "@angular/material/core";
 import {MatSelect} from "@angular/material/select";
 import {MatButton, MatFabButton} from "@angular/material/button";
 import {HttpClient, HttpHeaders} from "@angular/common/http";
-import {NgIf} from "@angular/common";
+import {isPlatformBrowser, NgIf} from "@angular/common";
 
 
 @Component({
@@ -36,7 +36,11 @@ export class ContactFirstviewComponent {
   errorMessage: string = '';
   mapLoaded = false;
 
-  constructor(private fb: FormBuilder, private http: HttpClient) {
+  constructor(
+    private fb: FormBuilder,
+    private http: HttpClient,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
     this.contactForm = this.fb.group({
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -47,16 +51,20 @@ export class ContactFirstviewComponent {
 
   ngOnInit(): void {
     // Check if the user has already given consent
-    const consentGiven = localStorage.getItem('mapConsent');
-    if (consentGiven === 'true') {
-      this.mapLoaded = true;
+    if (isPlatformBrowser(this.platformId)) {
+      const consentGiven = localStorage.getItem('mapConsent');
+      if (consentGiven === 'true') {
+        this.mapLoaded = true;
+      }
     }
   }
 
   loadMap(): void {
     // Store the user's consent in localStorage
-    localStorage.setItem('mapConsent', 'true');
-    this.mapLoaded = true;
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem('mapConsent', 'true');
+      this.mapLoaded = true;
+    }
   }
 
 

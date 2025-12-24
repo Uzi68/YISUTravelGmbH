@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-buchung',
@@ -7,7 +8,7 @@ import { Component, OnInit } from '@angular/core';
   templateUrl: './buchung.component.html',
   styleUrl: './buchung.component.css'
 })
-export class BuchungComponent implements OnInit {
+export class BuchungComponent implements OnInit, OnDestroy {
   // Statistics that increase daily with random numbers (3-9)
   buchungen: number = 0;
   zufriedeneKunden: number = 0;
@@ -15,15 +16,21 @@ export class BuchungComponent implements OnInit {
   
   private readonly STORAGE_KEY_PREFIX = 'buchung_stats_';
   private readonly DATE_KEY = 'last_update_date';
+  private updateIntervalId: number | null = null;
+
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
 
   ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
     this.initializeStatistics();
     this.updateDaily();
   }
 
   private initializeStatistics(): void {
     const today = new Date().toDateString();
-    const lastUpdateDate = localStorage.getItem(this.DATE_KEY);
+    const lastUpdateDate = this.getLocalStorageItem(this.DATE_KEY);
 
     if (!lastUpdateDate || lastUpdateDate !== today) {
       // New day - get previous values and add random (3-9)
@@ -44,7 +51,7 @@ export class BuchungComponent implements OnInit {
       this.storeValue('buchungen', this.buchungen);
       this.storeValue('zufriedeneKunden', this.zufriedeneKunden);
       this.storeValue('rechnungen', this.rechnungen);
-      localStorage.setItem(this.DATE_KEY, today);
+      this.setLocalStorageItem(this.DATE_KEY, today);
     } else {
       // Same day - use stored values
       this.buchungen = this.getStoredValue('buchungen', 200000);
@@ -55,9 +62,9 @@ export class BuchungComponent implements OnInit {
 
   private updateDaily(): void {
     // Check daily if a new day has started
-    setInterval(() => {
+    this.updateIntervalId = window.setInterval(() => {
       const today = new Date().toDateString();
-      const lastUpdateDate = localStorage.getItem(this.DATE_KEY);
+      const lastUpdateDate = this.getLocalStorageItem(this.DATE_KEY);
 
       if (lastUpdateDate !== today) {
         this.initializeStatistics();
@@ -66,12 +73,32 @@ export class BuchungComponent implements OnInit {
   }
 
   private getStoredValue(key: string, defaultValue: number): number {
-    const stored = localStorage.getItem(this.STORAGE_KEY_PREFIX + key);
+    const stored = this.getLocalStorageItem(this.STORAGE_KEY_PREFIX + key);
     return stored ? parseInt(stored, 10) : defaultValue;
   }
 
   private storeValue(key: string, value: number): void {
-    localStorage.setItem(this.STORAGE_KEY_PREFIX + key, value.toString());
+    this.setLocalStorageItem(this.STORAGE_KEY_PREFIX + key, value.toString());
+  }
+
+  ngOnDestroy(): void {
+    if (this.updateIntervalId !== null) {
+      clearInterval(this.updateIntervalId);
+      this.updateIntervalId = null;
+    }
+  }
+
+  private getLocalStorageItem(key: string): string | null {
+    if (isPlatformBrowser(this.platformId)) {
+      return localStorage.getItem(key);
+    }
+    return null;
+  }
+
+  private setLocalStorageItem(key: string, value: string): void {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(key, value);
+    }
   }
 }
 

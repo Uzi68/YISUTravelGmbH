@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
 import {HttpClient, HttpHeaders} from "@angular/common/http";
 import {BehaviorSubject, Observable, tap, throwError} from "rxjs";
 import {catchError, map} from "rxjs/operators";
+import { isPlatformBrowser } from "@angular/common";
 import {Visitor} from "../../Models/Visitor";
 import {ChatbotResponse, ChatbotResponseCreate} from "../../Models/Chatbot";
 import {ApiResponse} from "../../Models/apiresponse.model";
@@ -17,18 +18,22 @@ export class ChatbotService {
   private isChatOpen = new BehaviorSubject<boolean>(false);
   isChatOpen$ = this.isChatOpen.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
   }
 
   sendMessage(message: string): Observable<any> {
-    if (localStorage.getItem('session_id') != undefined) {
+    const storedSessionId = this.getLocalStorageItem('session_id');
+    if (storedSessionId != undefined) {
       const headers = new HttpHeaders()
-        .set('X-Session-ID', localStorage.getItem('session_id') || '');
+        .set('X-Session-ID', storedSessionId || '');
 
       return this.http.post<any>(`${this.apiUrl}/chatbot/input`, {message}, {headers, withCredentials: true}).pipe(
         tap(response => {
-          if (localStorage.getItem('session_id') == '') {
-            localStorage.setItem("session_id", response.session_id);
+          if (this.getLocalStorageItem('session_id') == '') {
+            this.setLocalStorageItem("session_id", response.session_id);
           }
         })
       );
@@ -36,7 +41,7 @@ export class ChatbotService {
     } else {
       return this.http.post<any>(`${this.apiUrl}/chatbot/input`, {message}, {withCredentials: true}).pipe(
         tap(response => {
-          localStorage.setItem("session_id", response.session_id);
+          this.setLocalStorageItem("session_id", response.session_id);
         })
       );
     }
@@ -57,14 +62,15 @@ export class ChatbotService {
 
 
   sendMessageAnonymous(message: string): Observable<any> {
-    if (localStorage.getItem('session_id') != undefined) {
+    const storedSessionId = this.getLocalStorageItem('session_id');
+    if (storedSessionId != undefined) {
       const headers = new HttpHeaders()
-        .set('X-Session-ID', localStorage.getItem('session_id') || '');
+        .set('X-Session-ID', storedSessionId || '');
 
       return this.http.post<any>(`${this.apiUrl}/chatbot/input/anonymous`, {message}, {headers}).pipe(
         tap(response => {
-          if (localStorage.getItem('session_id') == '') {
-            localStorage.setItem("session_id", response.session_id);
+          if (this.getLocalStorageItem('session_id') == '') {
+            this.setLocalStorageItem("session_id", response.session_id);
           }
         })
       );
@@ -72,7 +78,7 @@ export class ChatbotService {
     } else {
       return this.http.post<any>(`${this.apiUrl}/chatbot/input/anonymous`, {message},).pipe(
         tap(response => {
-          localStorage.setItem("session_id", response.session_id);
+          this.setLocalStorageItem("session_id", response.session_id);
         })
       );
     }
@@ -86,7 +92,7 @@ export class ChatbotService {
     return this.http.post<any>(
       `${this.apiUrl}/chatbot/end_chatbotSession`, {}, {headers}).pipe(
       tap(response => {
-        localStorage.setItem('session_id', response.new_session_id);
+        this.setLocalStorageItem('session_id', response.new_session_id);
       })
     );
   }
@@ -182,8 +188,8 @@ export class ChatbotService {
     session_id?: string;
   }): Observable<any> {
     // Verwende die assigned_chat_session_id falls vorhanden, sonst die normale session_id
-    const sessionId = messageData.session_id || localStorage.getItem('assigned_chat_session_id') ||
-      localStorage.getItem('session_id') || '';
+    const sessionId = messageData.session_id || this.getLocalStorageItem('assigned_chat_session_id') ||
+      this.getLocalStorageItem('session_id') || '';
 
     return this.http.post(`${this.apiUrl}/chatbot/send-message`, {
       ...messageData,
@@ -196,6 +202,19 @@ export class ChatbotService {
         'X-Session-ID': sessionId
       })
     });
+  }
+
+  private getLocalStorageItem(key: string): string | null {
+    if (isPlatformBrowser(this.platformId)) {
+      return localStorage.getItem(key);
+    }
+    return null;
+  }
+
+  private setLocalStorageItem(key: string, value: string): void {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(key, value);
+    }
   }
 
   // Für den Admin alle Chats ansehen

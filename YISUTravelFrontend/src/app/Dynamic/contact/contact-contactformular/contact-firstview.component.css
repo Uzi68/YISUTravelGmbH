@@ -57,18 +57,8 @@ span {
 
 .social-icons {
   display: flex;
-  gap: 15px;
-}
-
-.social-icons img {
-  width: 40px;
-  height: auto;
-  filter: grayscale(100%);
-  transition: filter 0.3s ease;
-}
-
-.social-icons img:hover {
-  filter: grayscale(0%);
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .contact-card {
@@ -207,11 +197,16 @@ button[type="submit"]:hover {
   }
 }
 
-.icon {
+.contact-info .icon {
   color: var(--header-color); /* Change icon color */
   margin-right: 10px; /* Add space between icon and text */
   height: 15px;
   width: 15px;
+}
+
+.social-icons .icon {
+  width: 20px;
+  height: 20px;
 }
 
 

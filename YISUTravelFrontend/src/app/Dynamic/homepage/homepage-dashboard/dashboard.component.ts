@@ -15,7 +15,6 @@ import {
 } from "../homepage-emergency/homepage-bezahlmoeglichkeiten-notfallservice.component";
 import {SwiperComponent} from "../top-reiseziele/swiper.component";
 import {OffersComponent} from "../offers/offers.component";
-import {TestPusherComponent} from "../../admin-section/admin-dashboard/test-pusher/test-pusher.component";
 
 @Component({
   selector: 'app-dashboard',
@@ -34,8 +33,7 @@ import {TestPusherComponent} from "../../admin-section/admin-dashboard/test-push
     CustomerRatingsComponent,
     HomepageBezahlmoeglichkeitenNotfallserviceComponent,
     SwiperComponent,
-    OffersComponent,
-    TestPusherComponent
+    OffersComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'

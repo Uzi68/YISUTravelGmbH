@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "deploy": "npm run build && bash scripts/deploy-sftp.sh",
     "serve:ssr:YisuTravel": "node dist/yisu-travel/server/server.mjs"
   },
   "private": true,

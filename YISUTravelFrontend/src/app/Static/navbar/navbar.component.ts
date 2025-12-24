@@ -54,6 +54,7 @@ export class NavbarComponent implements OnDestroy {
   private darkModeSwitchRef?: ElementRef;
   private darkModeSwitchMobileRef?: ElementRef;
   private breakpointSub?: Subscription;
+  private routerSub?: Subscription;
   sidenavMode: MatDrawerMode = 'over';
   isMobileViewport = false;
 
@@ -96,7 +97,7 @@ export class NavbarComponent implements OnDestroy {
     this.authenticated = this.authService.getAuthenticated();
     this.darkMode = this.themeService.getDarkMode();
 
-    this.router.events
+    this.routerSub = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.isAdminDashboardRoute = event.url.includes('/admin-dashboard');
@@ -135,6 +136,7 @@ export class NavbarComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.themeSubscription?.unsubscribe();
     this.breakpointSub?.unsubscribe();
+    this.routerSub?.unsubscribe();
     if (this.scrollRafId !== null) {
       cancelAnimationFrame(this.scrollRafId);
       this.scrollRafId = null;

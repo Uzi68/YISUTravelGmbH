@@ -1,10 +1,9 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import {ActivatedRoute, NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {NavbarComponent} from "./Static/navbar/navbar.component";
-import {filter, mergeMap, Subject, takeUntil} from "rxjs";
+import {filter, Subject, takeUntil} from "rxjs";
 import {WindowService} from "./Services/window-service/window.service";
 import {SEOService} from "./Services/SEOServices/seo.service";
-import {map} from "rxjs/operators";
 import {LivechatComponent} from "./Static/livechat/livechat.component";
 import {ScrolltopComponent} from "./Static/scrolltop/scrolltop.component";
 import { ChatUiComponent} from "./Static/livechat/chatbot-ui/chatbot-ui.component";
@@ -51,7 +50,7 @@ export class AppComponent implements OnInit, OnDestroy {
       }).catch(console.error);
     }
 
-    // Single optimized subscription to router events - handles all navigation logic
+    // Single subscription to router events - handles navigation and SEO updates
     this.router.events
       .pipe(
         filter((event) => event instanceof NavigationEnd),
@@ -74,29 +73,16 @@ export class AppComponent implements OnInit, OnDestroy {
         if (this.isInitialNavigation) {
           this.isInitialNavigation = false;
         }
-      });
 
-    // SEO updates - separate subscription but shared filter
-    this.router.events
-      .pipe(
-        filter((event) => event instanceof NavigationEnd),
-        map(() => this.activatedRoute),
-        map((route) => {
-          while (route.firstChild) route = route.firstChild;
-          return route;
-        }),
-        filter((route) => route.outlet === 'primary'),
-        mergeMap((route) => route.data),
-        takeUntil(this.destroy$)
-      )
-      .subscribe((data) => {
+        const route = this.getDeepestRoute(this.activatedRoute);
+        const data = route.snapshot?.data ?? {};
         const { title, description, keywords, ogUrl, author, canonical } = data;
 
         this.seoService.updateTitle(title || 'YISU Travel GmbH');
         this.seoService.updateDescription(description || '');
-        this.seoService.updateKeywords(keywords || ''); // Adding keywords
+        this.seoService.updateKeywords(keywords || '');
         this.seoService.updateOgUrl(ogUrl);
-        this.seoService.updateAuthor(author || ''); // Adding author
+        this.seoService.updateAuthor(author || '');
         this.seoService.updateCanonical(canonical);
       });
   }
@@ -105,6 +91,14 @@ export class AppComponent implements OnInit, OnDestroy {
     // Clean up all subscriptions automatically
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private getDeepestRoute(route: ActivatedRoute): ActivatedRoute {
+    let current = route;
+    while (current.firstChild) {
+      current = current.firstChild;
+    }
+    return current;
   }
 
   /* In styles.css add to skip animation:
