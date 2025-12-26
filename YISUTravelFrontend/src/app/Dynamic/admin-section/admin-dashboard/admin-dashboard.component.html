@@ -366,7 +366,7 @@
       </div>
 
       <!-- Header Actions -->
-      <div class="header-actions">
+      <div class="header-actions" *ngIf="selectedChat && selectedChat.status !== 'closed' && selectedChat.status !== 'bot'">
         <!-- Assignment Button -->
         <button
           *ngIf="selectedChat && selectedChat.status === 'human' && !selectedChat.assigned_to"
@@ -419,7 +419,7 @@
           class="icon-btn"
           matTooltip="Chat beenden"
           (click)="openCloseChatDialog(selectedChat)"
-          *ngIf="selectedChat && selectedChat.status !== 'closed'">
+          *ngIf="selectedChat && selectedChat.status !== 'closed' && selectedChat.status !== 'bot'">
           <mat-icon>close</mat-icon>
         </button>
       </div>
