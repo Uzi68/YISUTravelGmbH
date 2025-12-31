@@ -1426,6 +1426,14 @@ export class ChatUiComponent implements AfterViewInit {
     sendMethod.subscribe({
       next: (response) => {
         this.isTyping.set(false);
+        const nextSessionId = response?.session_id;
+        if (nextSessionId && nextSessionId !== this.sessionId) {
+          this.sessionId = nextSessionId;
+          localStorage.setItem('session_id', nextSessionId);
+          localStorage.removeItem('current_chat_id');
+          this.currentChatId.set(null);
+          this.setupPusherListener();
+        }
 
         // ✅ Wenn Chat reaktiviert wurde, ALLE Nachrichten aus Response verwenden (inkl. User-Nachricht)
         if (response.chat_reactivated && response.new_messages) {

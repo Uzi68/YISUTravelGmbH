@@ -32,8 +32,9 @@ export class ChatbotService {
 
       return this.http.post<any>(`${this.apiUrl}/chatbot/input`, {message}, {headers, withCredentials: true}).pipe(
         tap(response => {
-          if (this.getLocalStorageItem('session_id') == '') {
-            this.setLocalStorageItem("session_id", response.session_id);
+          const nextSessionId = response?.session_id || response?.new_session_id;
+          if (nextSessionId) {
+            this.setLocalStorageItem('session_id', nextSessionId);
           }
         })
       );
@@ -41,7 +42,10 @@ export class ChatbotService {
     } else {
       return this.http.post<any>(`${this.apiUrl}/chatbot/input`, {message}, {withCredentials: true}).pipe(
         tap(response => {
-          this.setLocalStorageItem("session_id", response.session_id);
+          const nextSessionId = response?.session_id || response?.new_session_id;
+          if (nextSessionId) {
+            this.setLocalStorageItem('session_id', nextSessionId);
+          }
         })
       );
     }
@@ -69,8 +73,9 @@ export class ChatbotService {
 
       return this.http.post<any>(`${this.apiUrl}/chatbot/input/anonymous`, {message}, {headers}).pipe(
         tap(response => {
-          if (this.getLocalStorageItem('session_id') == '') {
-            this.setLocalStorageItem("session_id", response.session_id);
+          const nextSessionId = response?.session_id || response?.new_session_id;
+          if (nextSessionId) {
+            this.setLocalStorageItem('session_id', nextSessionId);
           }
         })
       );
@@ -78,7 +83,10 @@ export class ChatbotService {
     } else {
       return this.http.post<any>(`${this.apiUrl}/chatbot/input/anonymous`, {message},).pipe(
         tap(response => {
-          this.setLocalStorageItem("session_id", response.session_id);
+          const nextSessionId = response?.session_id || response?.new_session_id;
+          if (nextSessionId) {
+            this.setLocalStorageItem('session_id', nextSessionId);
+          }
         })
       );
     }

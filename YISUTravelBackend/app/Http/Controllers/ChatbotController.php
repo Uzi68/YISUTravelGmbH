@@ -48,6 +48,11 @@ class ChatbotController extends Controller
         ]);
 
         $originalInput = trim($validated['message']);
+        $existingChat = Chat::where('session_id', $sessionId)->first();
+        if ($existingChat && $existingChat->status === 'closed') {
+            $sessionId = (string) \Illuminate\Support\Str::uuid();
+            $existingChat = null;
+        }
         // Überprüfen, ob der Benutzer authentifiziert ist
         if (!$request->user()) {
             return response()->json([
@@ -100,8 +105,6 @@ class ChatbotController extends Controller
         );
 
         // Chatverlauf für den authentifizierten Benutzer aktualisieren
-        $existingChat = Chat::where('session_id', $sessionId)->first();
-
         if (!$existingChat) {
             $existingChat = Chat::create([
                 'session_id' => $sessionId,
@@ -301,57 +304,16 @@ class ChatbotController extends Controller
 
         // Chat laden
         $chat = Chat::where('session_id', $sessionId)->first();
+        $previousVisitorId = null;
 
-        // ✅ NEUE LOGIK: Wenn Chat "closed" ist, reaktivieren als Bot-Chat
-        $reactivationMessage = null;
         if ($chat && $chat->status === 'closed') {
-            $chat->update([
-                'status' => 'bot',
-                'assigned_to' => null,
-                'assigned_at' => null,
-                'assigned_agent' => null,
-                'last_agent_activity' => null,
-                'closed_at' => null,
-                'closed_by_agent' => null,
-                'close_reason' => null,
-                'state' => self::STATE_IDLE,
-                'context' => json_encode([])
-            ]);
+            $previousVisitorId = $chat->visitor_id;
+            $sessionId = (string) Str::uuid();
+            $chat = null;
 
-            // System-Nachricht für Reaktivierung (ERST ERSTELLEN, SPÄTER BROADCASTEN)
-            $reactivationMessage = Message::create([
-                'chat_id' => $chat->id,
-                'from' => 'system',
-                'text' => 'Sie sprechen jetzt wieder mit unserem YISU Travel-Assistenten',
-                'message_type' => 'chat_reactivated',
-                'metadata' => [
-                    'previous_status' => 'closed',
-                    'new_status' => 'bot',
-                    'reactivated_at' => now()
-                ]
-            ]);
-
-            // Admin-Dashboard über Reaktivierung informieren
-            event(new AllChatsUpdate([
-                'type' => 'chat_reactivated',
-                'chat' => [
-                    'session_id' => $chat->session_id,
-                    'chat_id' => $chat->id,
-                    'status' => 'bot',
-                    'channel' => $chat->channel ?? 'website',
-                    'whatsapp_number' => $chat->whatsapp_number ?? null,
-                    'customer_first_name' => $chat->visitor?->first_name ?? ($chat->channel === 'whatsapp' ? 'WhatsApp' : 'Anonymous'),
-                    'customer_last_name' => $chat->visitor?->last_name ?? ($chat->channel === 'whatsapp' ? 'Kunde' : ''),
-                    'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
-                    'last_message' => 'Chat reaktiviert - Chatbot aktiv',
-                    'last_message_time' => now(),
-                    'assigned_to' => null,
-                    'assigned_agent' => null,
-                    'chat_reactivated' => true
-                ]
-            ]));
-
-            // Broadcasting wird später zusammen mit User-Nachricht gemacht (siehe unten)
+            if ($previousVisitorId) {
+                Visitor::where('id', $previousVisitorId)->update(['session_id' => $sessionId]);
+            }
         }
 
         // Wenn Chat bereits eskaliert wurde (aber nicht closed), Nachricht direkt weiterleiten
@@ -403,9 +365,12 @@ class ChatbotController extends Controller
             ['session_id' => $sessionId],
             [
                 'user_id' => null,
+                'visitor_id' => $previousVisitorId,
+                'visitor_session_id' => $sessionId,
                 'state' => self::STATE_IDLE,
                 'context' => json_encode([]),
-                'status' => 'bot'
+                'status' => 'bot',
+                'channel' => 'website'
             ]
         );
 
@@ -528,42 +493,22 @@ class ChatbotController extends Controller
 
         // Broadcasting mit korrekter Type-Prüfung - IN RICHTIGER REIHENFOLGE
         try {
-            // 1. Reaktivierungsnachricht NUR an Admin (Customer bekommt sie aus Response)
-            if ($reactivationMessage && $reactivationMessage->id) {
-                broadcast(new MessagePusher($reactivationMessage, $sessionId, [
-                    'assigned_to' => null,
-                    'agent_name' => null,
-                    'status' => 'bot',
-                    'chat_reactivated' => true
-                ]))->toOthers(); // toOthers() = nur Admin, nicht Customer
-            }
-
-            // 2. Dann User-Nachricht (nur an Admin)
+            // 1. Dann User-Nachricht (nur an Admin)
             if ($userMessage && $userMessage->id) {
                 broadcast(new MessagePusher($userMessage, $sessionId))->toOthers();
             }
 
-            // 3. Dann Bot-Antwort (nur an Customer)
+            // 2. Dann Bot-Antwort (nur an Customer)
             if ($botMessage && $botMessage->id) {
                 broadcast(new MessagePusher($botMessage, $sessionId))->toOthers();
             }
 
-            // 4. Zuletzt Escalation-Nachricht (nur an Admin - Customer bekommt sie aus Response)
+            // 3. Zuletzt Escalation-Nachricht (nur an Admin - Customer bekommt sie aus Response)
             if ($escalationMessage && $escalationMessage->id) {
                 broadcast(new MessagePusher($escalationMessage, $sessionId))->toOthers();
             }
         } catch (\Exception $e) {
             \Log::error('Broadcasting error: ' . $e->getMessage());
-        }
-
-        // ✅ Reaktivierungsnachricht VOR alle anderen Nachrichten einfügen
-        if ($reactivationMessage) {
-            array_unshift($responseMessages, [
-                'from' => 'system',
-                'text' => $reactivationMessage->text,
-                'timestamp' => $reactivationMessage->created_at,
-                'message_type' => 'chat_reactivated'
-            ]);
         }
 
         return response()->json([
@@ -575,7 +520,6 @@ class ChatbotController extends Controller
             'new_messages' => $responseMessages,
             'messages' => $responseMessages,
             'reply' => $reply,
-            'chat_reactivated' => $reactivationMessage !== null
         ]);
     }
 
@@ -594,19 +538,10 @@ class ChatbotController extends Controller
 
     public function end_chatbotSession(Request $request): \Illuminate\Http\JsonResponse
     {
-        $sessionId = $request->header('X-Session-ID');
-        if ($sessionId) {
-            // Entferne den Chatverlauf aus der Datenbank basierend auf der session_id
-            Chat::where('session_id', $sessionId)->delete();
-        }
-
-        // Generiere eine neue Session-ID für die nächste Sitzung
-        $newSessionId = (string) \Illuminate\Support\Str::uuid();
-
         return response()->json([
-            'message' => 'Sitzung wurde zurückgesetzt',
-            'new_session_id' => $newSessionId,
-        ]);
+            'success' => false,
+            'message' => 'Chat-Löschung ist deaktiviert.',
+        ], 403);
     }
 
     public function requestHuman(Request $request)
