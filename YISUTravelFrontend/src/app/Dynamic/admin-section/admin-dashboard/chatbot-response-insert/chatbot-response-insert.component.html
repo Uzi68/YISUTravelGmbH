@@ -3,31 +3,31 @@
     <div class="header-icon">
 
     </div>
-    <h1>Chatbot Response Manager</h1>
+    <h1>Chatbot Wissensbasis</h1>
   </div>
 
   <div class="form-container">
     <!-- Input Feld -->
     <mat-form-field class="full-width" appearance="outline">
-      <mat-label>Nutzer-Eingabe</mat-label>
+      <mat-label>Titel / Thema</mat-label>
       <input matInput
              [(ngModel)]="newResponse.input"
-             placeholder="z.B. 'Hallo' oder 'Wie geht es dir?'"
+             placeholder="z.B. 'Öffnungszeiten' oder 'Kontakt'"
              required>
       <mat-icon matSuffix>chat</mat-icon>
-      <mat-hint>Was würde der Nutzer sagen, um diese Antwort auszulösen?</mat-hint>
+      <mat-hint>Kurzer Titel, der den Wissenseintrag beschreibt.</mat-hint>
     </mat-form-field>
 
     <!-- Response Feld -->
     <mat-form-field class="full-width" appearance="outline">
-      <mat-label>Bot-Antwort</mat-label>
+      <mat-label>Wissensinhalt</mat-label>
       <textarea matInput
                 [(ngModel)]="newResponse.response"
-                placeholder="z.B. 'Hallo! Wie kann ich helfen?'"
+                placeholder="z.B. 'Unsere Öffnungszeiten sind Montag bis Freitag von 9 bis 18 Uhr.'"
                 rows="3"
                 required></textarea>
       <mat-icon matSuffix>smart_toy</mat-icon>
-      <mat-hint>Wie soll der Bot antworten?</mat-hint>
+      <mat-hint>Fakten, die der Chatbot als Kontext nutzen soll.</mat-hint>
     </mat-form-field>
 
 
@@ -35,8 +35,8 @@
     <!-- Keywords Section -->
     <div class="keywords-container">
       <div class="keywords-header">
-        <span class="keywords-title">Keywords/Synonyme</span>
-        <span class="keywords-subtitle">(Diese erweitern die Erkennung der Nutzer-Eingabe)</span>
+        <span class="keywords-title">Keywords / Synonyme</span>
+        <span class="keywords-subtitle">(Hilft dem Chatbot, den Eintrag zu finden)</span>
       </div>
 
       <mat-form-field class="full-width keyword-input" appearance="outline">
@@ -88,7 +88,7 @@
               color="primary"
               (click)="submit()"
               [disabled]="!newResponse.input || !newResponse.response || isLoading">
-        {{ isLoading ? 'Wird gespeichert...' : 'Antwort speichern' }}
+        {{ isLoading ? 'Wird gespeichert...' : 'Eintrag speichern' }}
       </button>
     </div>
 
@@ -101,7 +101,7 @@
         <div class="header-container">
           <div class="header-content">
             <div class="header-text">
-              <p class="header-subtitle">Trainierte Daten verwalten</p>
+              <p class="header-subtitle">Wissensbasis verwalten</p>
             </div>
           </div>
           <mat-divider class="header-divider"></mat-divider>
@@ -112,13 +112,13 @@
         <!-- Bearbeitungsmodus -->
         <div *ngIf="editingResponse?.id === getResponse.id" class="edit-form">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Nutzer-Eingabe</mat-label>
-            <input matInput [(ngModel)]="editingResponse!.input" placeholder="z.B. 'Hallo'" (click)="$event.stopPropagation()">
+            <mat-label>Titel / Thema</mat-label>
+            <input matInput [(ngModel)]="editingResponse!.input" placeholder="z.B. 'Öffnungszeiten'" (click)="$event.stopPropagation()">
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Bot-Antwort</mat-label>
-            <textarea matInput [(ngModel)]="editingResponse!.response" rows="3" placeholder="z.B. 'Hallo! Wie kann ich helfen?'"></textarea>
+            <mat-label>Wissensinhalt</mat-label>
+            <textarea matInput [(ngModel)]="editingResponse!.response" rows="3" placeholder="z.B. 'Unsere Öffnungszeiten sind Montag bis Freitag von 9 bis 18 Uhr.'"></textarea>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
@@ -147,8 +147,8 @@
 
         <!-- Anzeigemodus -->
         <div *ngIf="editingResponse?.id !== getResponse.id" class="response-content" (click)="startEdit(getResponse)">
-          <p><strong>Eingabe:</strong> {{ getResponse.input }}</p>
-          <p><strong>Antwort:</strong> {{ getResponse.response }}</p>
+          <p><strong>Thema:</strong> {{ getResponse.input }}</p>
+          <p><strong>Wissensinhalt:</strong> {{ getResponse.response }}</p>
           <p><strong>Keywords:</strong>
             <span *ngFor="let keyword of getResponse.keywords ?? []; trackBy: trackByKeyword" class="keyword-tag">{{ keyword }}</span>
           </p>
@@ -166,7 +166,7 @@
       <!-- Keine Antworten Hinweis -->
       <div *ngIf="getResponses.length === 0" class="text-center py-4 text-muted">
         <i class="bi bi-inbox display-4 d-block mb-2"></i>
-        Keine Antworten vorhanden
+        Keine Einträge vorhanden
       </div>
     </div>
 
@@ -182,7 +182,7 @@
       <div class="message-content">
         <div class="message-text">
           <div class="message-title">Erfolgreich gespeichert!</div>
-          <div class="message-subtitle">Die Antwort wurde in der Datenbank gespeichert.</div>
+          <div class="message-subtitle">Der Wissenseintrag wurde in der Datenbank gespeichert.</div>
         </div>
         <button mat-icon-button class="close-btn" (click)="showSuccess = false" [attr.aria-label]="'Meldung schließen'">
           <img src="/livechat/close.svg" alt="Minimize" width="24" height="24" class="black-icon">

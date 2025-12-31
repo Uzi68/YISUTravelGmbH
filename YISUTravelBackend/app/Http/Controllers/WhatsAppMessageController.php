@@ -375,7 +375,10 @@ class WhatsAppMessageController extends Controller
     {
         try {
             $chats = Chat::whatsApp()
-                ->with(['visitor', 'messages' => function($query) {
+                ->with([
+                    'visitor',
+                    'assignedTo:id,name',
+                    'messages' => function($query) {
                     $query->with('attachments')->orderBy('created_at');
                 }])
                 ->whereIn('status', ['human', 'in_progress', 'bot', 'closed'])
@@ -392,6 +395,7 @@ class WhatsAppMessageController extends Controller
                         'channel' => $chat->channel ?? 'whatsapp',
                         'status' => $chat->status,
                         'assigned_to' => $chat->assigned_to,
+                        'assigned_agent' => $chat->assignedTo?->name,
                         'visitor' => $chat->visitor,
                         'messages' => $chat->messages->map(function ($message) {
                             $attachments = $message->attachments->map(function ($attachment) {

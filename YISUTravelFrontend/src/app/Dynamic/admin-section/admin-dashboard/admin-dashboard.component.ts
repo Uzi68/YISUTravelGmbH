@@ -173,7 +173,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   chatToClose: Chat | null = null;
 
   // Escalation Prompts
-  escalationPrompts = new Map<string, any>();
   showEscalationDialog = signal(false);
 
   // ✅ Permission Dialog für Benachrichtigungen
@@ -630,7 +629,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       'human': 'Wartet auf Übernahme',
       'in_progress': 'In Bearbeitung',
       'closed': 'Geschlossen',
-      'bot': 'Chatbot aktiv'
+      'bot': 'KI-Chatbot aktiv'
     };
     return statusMap[status] || status;
   }
@@ -870,19 +869,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       },
     );
 
-    // 8. Escalation Prompt Sent Listener (für orange Nachricht in Echtzeit)
-    const escalationPromptSentSub = this.pusherService.listenToChannel(
-      'all.active.chats',
-      'escalation.prompt.sent',
-      (data: any) => {
-        this.ngZone.run(() => {
-          console.log('🔔 Escalation Prompt Sent Event empfangen:', data);
-          // Verarbeite wie eine normale Nachricht
-          this.handleIncomingMessageGlobal(data);
-        });
-      },
-    );
-
     // ✅ HINWEIS: allChatsUpdateSub wurde entfernt, da chats.updated bereits alle Events verarbeitet
     // Der chatUpdateSub leitet jetzt alle Events an handleAllChatsUpdate weiter
 
@@ -893,7 +879,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       { channel: 'all.active.chats', subscription: assignmentSub },
       { channel: 'all.active.chats', subscription: unassignmentSub },
       { channel: 'all.active.chats', subscription: statusChangeSub },
-      { channel: 'all.active.chats', subscription: escalationPromptSentSub },
       { channel: 'all.active.chats', subscription: chatEndedSub }
     );
 
@@ -1314,41 +1299,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // 📢 Escalation Prompt wurde gesendet
-    if (data.type === 'escalation_prompt_sent' && data.chat) {
-      const chatData = data.chat;
-      const sessionId = chatData.session_id;
-
-      console.log('📢 Escalation Prompt gesendet:', {
-        sessionId,
-        escalationPrompt: chatData.escalation_prompt
-      });
-
-      // ✅ Escalation-Prompt in Map speichern
-      if (chatData.escalation_prompt) {
-        this.escalationPrompts.set(sessionId, {
-          prompt_id: chatData.escalation_prompt.id,
-          sent_at: new Date(chatData.escalation_prompt.sent_at),
-          sent_by: chatData.escalation_prompt.sent_by_agent_name
-        });
-
-        console.log('✅ Escalation-Prompt gespeichert:', {
-          sessionId,
-          sentAt: chatData.escalation_prompt.sent_at,
-          mapSize: this.escalationPrompts.size
-        });
-      }
-
-      // ✅ Chat aktualisieren
-      this.updateChatEverywhere(sessionId, {
-        lastMessage: chatData.last_message || 'Escalation-Anfrage gesendet',
-        lastMessageTime: new Date(chatData.last_message_time || Date.now())
-      });
-
-      this.cdRef.markForCheck();
-      return;
-    }
-
     // 🔄 Chat Reaktivierung (von closed zu bot)
     if (data.type === 'chat_reactivated' && data.chat) {
       const chatData = data.chat;
@@ -1377,17 +1327,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
         // ✅ Assignment Status zurücksetzen
         this.assignmentStatuses.delete(sessionId);
-
-        // ✅ NEU: Escalation-Prompt zurücksetzen bei Reaktivierung
-        // So kann der Agent wieder nachfragen, wenn der Kunde zurückkommt
-        const hadPrompt = this.escalationPrompts.has(sessionId);
-        this.escalationPrompts.delete(sessionId);
-        console.log('✅ Escalation-Prompt zurückgesetzt - Button wieder verfügbar', {
-          sessionId,
-          hadPromptBefore: hadPrompt,
-          currentMapSize: this.escalationPrompts.size,
-          allKeys: Array.from(this.escalationPrompts.keys())
-        });
 
         this.sortActiveChats();
         this.cdRef.markForCheck();
@@ -2844,8 +2783,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     const chats = Array.isArray(response) ? response : response?.data ?? [];
 
-    this.escalationPrompts.clear();
-
     const mappedChats = chats.map((chat: any) => this.buildChatFromResponse(chat));
     const whatsappMapped = whatsappChats.length
       ? whatsappChats.map(chat => this.mapWhatsAppChatToChat(chat))
@@ -2911,6 +2848,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const visitorFirstName = wc.visitor?.first_name || 'WhatsApp';
     const visitorLastName = wc.visitor?.last_name || 'Kunde';
 
+    const assignedAgentName = (wc.assigned_agent || '').trim();
+
     return {
       id: wc.session_id,
       chatId: wc.id.toString(),
@@ -2940,7 +2879,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       })) || [],
       assigned_to: wc.assigned_to ?? undefined,
       status: wc.status,
-      assigned_agent: wc.assigned_to ? `Agent ${wc.assigned_to}` : undefined,
+      assigned_agent: assignedAgentName || (wc.assigned_to ? `Agent ${wc.assigned_to}` : undefined),
       isNew: false,
       channel: 'whatsapp',
       whatsapp_number: wc.whatsapp_number,
@@ -3420,8 +3359,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    const statusCheck = chat.status === 'human';
     const assignmentCheck = chat.assigned_to === null || chat.assigned_to === undefined;
+    const statusCheck = chat.status === 'human' || chat.status === 'bot';
 
     console.log('canAssignChat debug:', {
       chatId: chat.id,
@@ -3448,54 +3387,22 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return (isMyChat || this.isAdmin) && isInProgress;
   }
 
-
-  /**
-   * Kann Escalation Prompt senden?
-   */
-  canSendEscalationPrompt(chat: Chat): boolean {
-    if (chat.status !== 'bot') {
+  canCloseChat(chat: Chat | null): boolean {
+    if (!chat) {
       return false;
     }
 
-    // ✅ NEU: Cooldown-Mechanismus statt permanenter Deaktivierung
-    const lastPrompt = this.escalationPrompts.get(chat.id.toString());
-    if (!lastPrompt) {
-      return true; // Noch nie gesendet
+    if (chat.status === 'closed' || chat.status === 'bot') {
+      return false;
     }
 
-    // ✅ Cooldown: 5 Minuten (300000 ms)
-    const cooldownMs = 5 * 60 * 1000; // 5 Minuten
-    const timeSinceLastPrompt = Date.now() - lastPrompt.sent_at.getTime();
-    return timeSinceLastPrompt >= cooldownMs;
+    if (chat.assigned_to && chat.assigned_to !== this.currentAgent.id && !this.isAdmin) {
+      return false;
+    }
+
+    return true;
   }
 
-  /**
-   * Berechnet den Cooldown-Text für die Escalation
-   */
-  getEscalationCooldownText(chat: Chat): string | null {
-    const lastPrompt = this.escalationPrompts.get(chat.id.toString());
-    if (!lastPrompt) {
-      return null;
-    }
-
-    const cooldownMs = 5 * 60 * 1000; // 5 Minuten
-    const timeSinceLastPrompt = Date.now() - lastPrompt.sent_at.getTime();
-    const remainingMs = cooldownMs - timeSinceLastPrompt;
-
-    if (remainingMs <= 0) {
-      return null; // Cooldown abgelaufen
-    }
-
-    // Umwandeln in Minuten und Sekunden
-    const minutes = Math.floor(remainingMs / 60000);
-    const seconds = Math.floor((remainingMs % 60000) / 1000);
-
-    if (minutes > 0) {
-      return `${minutes}:${seconds.toString().padStart(2, '0')} min`;
-    } else {
-      return `${seconds}s`;
-    }
-  }
 
   /**
    * Fehler anzeigen (implementieren Sie entsprechend Ihrem UI-System)
@@ -3964,85 +3871,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     this.cdRef.markForCheck();
   }
-
-  /**
-   * Escalation Prompt senden
-   */
-  sendEscalationPrompt(chat: Chat): void {
-    if (!this.canSendEscalationPrompt(chat)) {
-      this.showError('Escalation-Prompt kann nicht gesendet werden');
-      return;
-    }
-
-    const payload = {
-      session_id: chat.id,
-    };
-
-    // ✅ OPTIMISTIC UPDATE: Sofort UI aktualisieren
-    const originalEscalationPrompt = this.escalationPrompts.get(chat.id.toString());
-
-    // ✅ Chat in der Liste sofort aktualisieren
-    const chatIndex = this.activeChats.findIndex(c => c.id === chat.id);
-    if (chatIndex !== -1) {
-      this.activeChats[chatIndex] = {
-        ...this.activeChats[chatIndex],
-        lastMessage: 'Escalation-Anfrage gesendet',
-        lastMessageTime: new Date(),
-        unreadCount: 0
-      };
-
-      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === chat.id);
-      if (filteredIndex !== -1) {
-        this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
-      }
-    }
-
-    // ✅ Escalation-Prompts Map sofort aktualisieren (mit temp ID)
-    this.escalationPrompts.set(chat.id.toString(), {
-      prompt_id: 'temp-pending',
-      sent_at: new Date(),
-      sent_by: this.currentAgent.name
-    });
-
-    // ✅ OPTIMISTIC TOAST: Sofort anzeigen
-    this.showToast(`✅ Escalation-Anfrage erfolgreich an ${chat.customerName} gesendet`, 'success');
-    this.cdRef.markForCheck();
-
-    this.chatbotService.sendEscalationPrompt(chat.id.toString(), payload).subscribe({
-      next: (response) => {
-        if (response.success) {
-          // ✅ Echte Prompt-ID setzen
-          this.escalationPrompts.set(chat.id.toString(), {
-            prompt_id: response.prompt_id,
-            sent_at: new Date(),
-            sent_by: response.sent_by || this.currentAgent.name
-          });
-          this.cdRef.markForCheck();
-        } else {
-          // ✅ Bei Fehler: Änderungen rückgängig machen
-          if (originalEscalationPrompt) {
-            this.escalationPrompts.set(chat.id.toString(), originalEscalationPrompt);
-          } else {
-            this.escalationPrompts.delete(chat.id.toString());
-          }
-          this.showError('Escalation konnte nicht gesendet werden');
-        }
-      },
-      error: (err) => {
-        console.error('Fehler beim Senden der Escalation:', err);
-        // ✅ Bei Fehler: Änderungen rückgängig machen
-        if (originalEscalationPrompt) {
-          this.escalationPrompts.set(chat.id.toString(), originalEscalationPrompt);
-        } else {
-          this.escalationPrompts.delete(chat.id.toString());
-        }
-        this.showError('Escalation konnte nicht gesendet werden: ' + (err.error?.message || err.message));
-      }
-    });
-  }
-
-
-
 
 // Neue Methode für Keyboard-Events hinzufügen:
   onKeyDown(event: KeyboardEvent, inputElement: HTMLTextAreaElement): void {
@@ -4757,14 +4585,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     if (sessionId && emailFromChat) {
       this.visitorEmailCache.set(sessionId, emailFromChat);
-    }
-
-    if (sessionId && chat.escalation_prompt) {
-      this.escalationPrompts.set(sessionId, {
-        prompt_id: chat.escalation_prompt.id,
-        sent_at: new Date(chat.escalation_prompt.sent_at),
-        sent_by: chat.escalation_prompt.sent_by_agent_name
-      });
     }
 
     const messages: Message[] = Array.isArray(chat.messages)

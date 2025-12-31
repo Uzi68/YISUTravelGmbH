@@ -9,7 +9,6 @@ use App\Events\ChatEscalated;
 use App\Events\ChatStatusChanged;
 use App\Events\ChatTransferred;
 use App\Events\MessagePusher;
-use App\Models\Booking;
 use App\Models\ChatRequest;
 use App\Models\ContactRequest;
 use App\Models\Escalation;
@@ -25,12 +24,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Models\ChatbotResponse;
 use App\Models\Chat;
-use Illuminate\Support\Facades\Cookie;
+use App\Services\OpenAiChatService;
+use App\Services\EscalationNotifier;
 class ChatbotController extends Controller
 {
-    public function __construct(private readonly PushNotificationService $pushNotifications)
+    public function __construct(
+        private readonly PushNotificationService $pushNotifications,
+        private readonly OpenAiChatService $aiChatService,
+        private readonly EscalationNotifier $escalationNotifier
+    )
     {
     }
 
@@ -44,38 +47,7 @@ class ChatbotController extends Controller
             'message' => 'required|string',
         ]);
 
-        $input = strtolower(trim($validated['message']));
-
-        // Alle gespeicherten Antworten holen
-        $responses = ChatbotResponse::all();
-        $bestMatch = null;
-        $lowestDistance = null;
-        $matchedKeywords = null;
-
-        foreach ($responses as $response) {
-            $distance = levenshtein($input, strtolower($response->input));
-            $keywords = is_array($response->keywords) ? $response->keywords : json_decode($response->keywords, true);
-
-            foreach ($keywords as $keyword) {
-                if (strpos($input, strtolower($keyword)) !== false) {
-                    $bestMatch = $response;
-                    $matchedKeywords = $keyword;
-                    break 2;
-                }
-            }
-
-            if (is_null($lowestDistance) || $distance < $lowestDistance) {
-                $lowestDistance = $distance;
-                $bestMatch = $response;
-            }
-        }
-
-        $reply = $matchedKeywords
-            ? $bestMatch->response
-            : (($lowestDistance !== null && $lowestDistance <= 3)
-                ? $bestMatch->response
-                : $this->generateFallbackReply($input));
-
+        $originalInput = trim($validated['message']);
         // Überprüfen, ob der Benutzer authentifiziert ist
         if (!$request->user()) {
             return response()->json([
@@ -151,16 +123,47 @@ class ChatbotController extends Controller
         $userMessage = Message::create([
             'chat_id' => $existingChat->id,
             'from' => 'user',
-            'text' => $input
+            'text' => $originalInput
         ]);
 
         $this->dispatchStaffPushForUserMessage($existingChat, $userMessage);
 
-        Message::create([
-            'chat_id' => $existingChat->id,
-            'from' => 'bot',
-            'text' => $reply
-        ]);
+        $aiResult = $this->aiChatService->generateReply($existingChat, $originalInput);
+        $reply = $aiResult['reply'];
+        $aiEscalate = $aiResult['needs_escalation'] ?? false;
+        $aiEscalationReason = $aiResult['escalation_reason'] ?? 'none';
+
+        $botMessage = null;
+        $shouldEscalate = (bool) $aiEscalate;
+        $escalationReason = (string) $aiEscalationReason;
+        if ($shouldEscalate && ($escalationReason === '' || $escalationReason === 'none')) {
+            $escalationReason = 'missing_knowledge';
+        }
+
+        if ($shouldEscalate) {
+            $this->escalationNotifier->notify($existingChat, $originalInput, $escalationReason);
+        }
+
+        if ($shouldEscalate) {
+            $reply = $this->getEscalationPromptText();
+            $botMessage = Message::create([
+                'chat_id' => $existingChat->id,
+                'from' => 'bot',
+                'text' => $reply,
+                'message_type' => 'escalation_prompt',
+                'metadata' => [
+                    'escalation_prompt_id' => null,
+                    'is_automatic' => true,
+                    'options' => $this->getEscalationPromptOptions()
+                ]
+            ]);
+        } else {
+            $botMessage = Message::create([
+                'chat_id' => $existingChat->id,
+                'from' => 'bot',
+                'text' => $reply
+            ]);
+        }
 
         // Den gesamten Chatverlauf abfragen
         $messages = Message::where('chat_id', $existingChat->id)
@@ -172,13 +175,29 @@ class ChatbotController extends Controller
             return [
                 'from' => $message->from,
                 'text' => $message->text,
+                'message_type' => $message->message_type,
+                'metadata' => $message->metadata,
             ];
         });
 
-
+        $responseMessages = [
+            [
+                'from' => $userMessage->from,
+                'text' => $userMessage->text,
+                'timestamp' => $userMessage->created_at
+            ],
+            [
+                'from' => $botMessage->from,
+                'text' => $botMessage->text,
+                'timestamp' => $botMessage->created_at,
+                'message_type' => $botMessage->message_type,
+                'metadata' => $botMessage->metadata
+            ]
+        ];
 
         return response()->json([
             'messages' => $formattedMessages,
+            'new_messages' => $responseMessages,
             'session_id' => $sessionId
         ]);
     }
@@ -268,169 +287,8 @@ class ChatbotController extends Controller
         return $chat;
     }
 
-    public function detectEscalationRequest(string $message): bool
-    {
-        $escalationKeywords = [
-            'mitarbeiter', 'mitarbeiterin', 'berater', 'support', 'agent',
-            'person', 'human', 'team', 'kundenservice', 'service', 'sprechen',
-            'chef', 'manager', 'leitung', 'betreuer', 'assistenz', 'helfen',
-            'hilfe', 'unterstützung', 'mensch', 'mitarbeiter sprechen',
-            'mit mitarbeiter', 'echte person', 'echter mensch'
-        ];
-
-        $message = strtolower(trim($message));
-
-        foreach ($escalationKeywords as $keyword) {
-            // Direkter Treffer
-            if (str_contains($message, $keyword)) {
-                \Log::info('Escalation keyword detected: ' . $keyword);
-                return true;
-            }
-
-            // ✅ VERBESSERT: Tippfehler-Toleranz mit prozentualer Ähnlichkeit
-            // Längere Wörter bekommen mehr Toleranz für Tippfehler
-            $words = explode(' ', $message);
-            foreach ($words as $word) {
-                // Nur Wörter mit mindestens 5 Zeichen prüfen (verhindert false positives bei kurzen Wörtern)
-                if (strlen($word) < 5) continue;
-
-                $distance = levenshtein($keyword, $word);
-                $maxLength = max(strlen($keyword), strlen($word));
-                $similarity = 1 - ($distance / $maxLength);
-
-                // ✅ WICHTIG: Verschiedene Toleranz-Levels je nach Wortlänge
-                // Kurze Wörter (5-7 Zeichen): 80% Ähnlichkeit ODER max. 2 Fehler
-                // Lange Wörter (8+ Zeichen): 75% Ähnlichkeit ODER max. 3 Fehler
-                $isShortWord = strlen($word) <= 7;
-                $matchThreshold = $isShortWord ? 0.80 : 0.75;
-                $maxDistance = $isShortWord ? 2 : 3;
-
-                if ($similarity >= $matchThreshold || ($distance <= $maxDistance && strlen($word) >= 8)) {
-                    \Log::info('Escalation detected via typo tolerance: ' . $word . ' -> ' . $keyword . ' (similarity: ' . round($similarity * 100) . '%, distance: ' . $distance . ')');
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-
-
-    /*
-    public function handleInputAnonymous(Request $request): \Illuminate\Http\JsonResponse
-    {
-        $sessionId = $request->header('X-Session-ID') ?? (string) \Illuminate\Support\Str::uuid();
-        $chat = Chat::where('session_id', $sessionId)->first();
-
-        // Wenn Chat bereits eskaliert wurde, Nachricht direkt speichern
-        if ($chat && in_array($chat->status, ['human', 'in_progress', 'assigned'])) {
-            $userMessage = Message::create([
-                'chat_id' => $chat->id,
-                'from' => 'user',
-                'text' => $request->message,
-                'is_escalation_trigger' => false
-            ]);
-
-            $this->dispatchStaffPushForUserMessage($chat, $userMessage);
-
-            return response()->json([
-                'status' => 'human',
-                'session_id' => $sessionId,
-                'message' => 'Nachricht wurde an Mitarbeiter weitergeleitet'
-            ]);
-        }
-
-        $validated = $request->validate([
-            'message' => 'required|string',
-        ]);
-
-
-
-        // Originale Benutzereingabe (für Speicherung)
-        $originalInput = trim($validated['message']);
-
-        // Normalisierte Eingabe (nur für Vergleich)
-        $normalizedInput = mb_strtolower($originalInput);
-
-        $responses = ChatbotResponse::all();
-        $bestMatch = null;
-        $lowestDistance = null;
-        $matchedKeywords = null;
-        $shouldEscalate = $this->detectEscalationRequest($normalizedInput);
-
-        foreach ($responses as $response) {
-            $distance = levenshtein($normalizedInput, mb_strtolower($response->input));
-            $keywords = is_array($response->keywords)
-                ? $response->keywords
-                : json_decode($response->keywords, true);
-
-            foreach ($keywords as $keyword) {
-                if (strpos($normalizedInput, mb_strtolower($keyword)) !== false) {
-                    $bestMatch = $response;
-                    $matchedKeywords = $keyword;
-                    break 2;
-                }
-            }
-
-            if (is_null($lowestDistance) || $distance < $lowestDistance) {
-                $lowestDistance = $distance;
-                $bestMatch = $response;
-            }
-        }
-
-        $reply = $matchedKeywords
-            ? $bestMatch->response
-            : (($lowestDistance !== null && $lowestDistance <= 3)
-                ? $bestMatch->response
-                : $this->generateFallbackReply($normalizedInput));
-
-        // Chat-Sitzung prüfen oder erstellen
-        $chat = Chat::firstOrCreate(
-            ['session_id' => $sessionId],
-            ['user_id' => null]
-        );
-
-        // ✅ Originale Eingabe speichern (nicht lowercased!)
-        Message::create([
-            'chat_id' => $chat->id,
-            'from' => 'user',
-            'text' => $originalInput,
-        ]);
-
-        Message::create([
-            'chat_id' => $chat->id,
-            'from' => 'bot',
-            'text' => $reply,
-        ]);
-
-        $messages = Message::where('chat_id', $chat->id)
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        $formattedMessages = $messages->map(function ($message) {
-            return [
-                'from' => $message->from,
-                'text' => $message->text,
-            ];
-        });
-
-        return response()->json([
-            'messages' => $formattedMessages,
-            'session_id' => $sessionId,
-            'should_escalate' => $shouldEscalate
-        ]);
-    }
-    */
-
-
     // Zustandsdefinitionen
     const STATE_IDLE = 'idle';
-    const STATE_BOOKING_DESTINATION = 'booking_destination';
-    const STATE_BOOKING_DATE = 'booking_date';
-    const STATE_BOOKING_PERSONS = 'booking_persons';
-    const STATE_BOOKING_CONTACT_INFO = 'booking_contact_info';
-    const STATE_BOOKING_CONFIRMATION = 'booking_confirmation';
 
     public function handleInputAnonymous(Request $request): \Illuminate\Http\JsonResponse
     {
@@ -537,8 +395,6 @@ class ChatbotController extends Controller
 
         $validated = $request->validate(['message' => 'required|string']);
         $originalInput = trim($validated['message']);
-        $normalizedInput = mb_strtolower($originalInput);
-
         // Chat-Sitzung laden oder erstellen
         $chat = Chat::firstOrCreate(
             ['session_id' => $sessionId],
@@ -549,11 +405,6 @@ class ChatbotController extends Controller
                 'status' => 'bot'
             ]
         );
-
-        // Zustandsbehaftete Verarbeitung
-        $replyData = $this->processWithState($chat, $normalizedInput, $originalInput);
-        $reply = $replyData['reply'];
-        $shouldEscalate = $replyData['should_escalate'] ?? $this->detectEscalationRequest($normalizedInput);
 
         // Nachrichten speichern
         $userMessage = Message::create([
@@ -568,6 +419,25 @@ class ChatbotController extends Controller
         $chat->update(['last_activity' => now()]);
         // ✅ WICHTIG: Chat neu laden damit last_activity im Event verfügbar ist
         $chat->refresh();
+
+        $aiResult = $this->aiChatService->generateReply($chat, $originalInput);
+        $reply = $aiResult['reply'];
+        $aiEscalate = $aiResult['needs_escalation'] ?? false;
+        $aiEscalationReason = $aiResult['escalation_reason'] ?? 'none';
+
+        $shouldEscalate = (bool) $aiEscalate;
+        $escalationReason = (string) $aiEscalationReason;
+        if ($shouldEscalate && ($escalationReason === '' || $escalationReason === 'none')) {
+            $escalationReason = 'missing_knowledge';
+        }
+
+        if ($shouldEscalate) {
+            $this->escalationNotifier->notify($chat, $originalInput, $escalationReason);
+        }
+
+        $reply = $shouldEscalate
+            ? $this->getEscalationPromptText()
+            : $reply;
 
         /*
         $botMessage = Message::create([
@@ -602,15 +472,12 @@ class ChatbotController extends Controller
             $escalationMessage = Message::create([
                 'chat_id' => $chat->id,
                 'from' => 'bot',
-                'text' => 'Möchten Sie mit einem unserer Mitarbeiter sprechen?',
+                'text' => $this->getEscalationPromptText(),
                 'message_type' => 'escalation_prompt',
                 'metadata' => [
                     'escalation_prompt_id' => null,
                     'is_automatic' => true,
-                    'options' => [
-                        ['text' => 'Ja, gerne', 'value' => 'accept'],
-                        ['text' => 'Nein, danke', 'value' => 'decline']
-                    ]
+                    'options' => $this->getEscalationPromptOptions()
                 ]
             ]);
 
@@ -623,16 +490,13 @@ class ChatbotController extends Controller
                 ],
                 [
                     'from' => 'bot',
-                    'text' => 'Möchten Sie mit einem unserer Mitarbeiter sprechen?',
+                    'text' => $this->getEscalationPromptText(),
                     'timestamp' => $escalationMessage->created_at,
                     'message_type' => 'escalation_prompt',
                     'metadata' => [
                         'is_automatic' => true,
                         'escalation_prompt_id' => null,
-                        'options' => [
-                            ['text' => 'Ja, gerne', 'value' => 'accept'],
-                            ['text' => 'Nein, danke', 'value' => 'decline']
-                        ]
+                        'options' => $this->getEscalationPromptOptions()
                     ]
                 ]
             ];
@@ -702,8 +566,7 @@ class ChatbotController extends Controller
         return response()->json([
             'success' => true,
             'session_id' => $sessionId,
-            'should_escalate' => false,
-            'is_in_booking_process' => $replyData['is_in_booking_process'] ?? false,
+            'should_escalate' => $shouldEscalate,
             'state' => $chat->state,
             'status' => $chat->status,
             'new_messages' => $responseMessages,
@@ -713,334 +576,18 @@ class ChatbotController extends Controller
         ]);
     }
 
-    protected function processWithState(Chat $chat, string $input, string $originalInput): array
+    private function getEscalationPromptText(): string
     {
-        $context = json_decode($chat->context, true) ?? [];
-        $currentState = $chat->state ?? self::STATE_IDLE;
-        $reply = '';
-        $shouldEscalate = false;
-        $isInBookingProcess = $currentState !== self::STATE_IDLE;
-        switch ($currentState) {
-            case self::STATE_IDLE:
-                if ($this->isBookingIntent($input)) {
-                    $reply = "Alles klar! Wohin soll die Reise gehen?";
-                    $chat->state = self::STATE_BOOKING_DESTINATION;
-                    $chat->context = json_encode(['intent' => 'booking']);
-                    $isInBookingProcess = true; // Immer noch im Prozess
-                } else {
-                    $reply = $this->getStandardResponse($input);
-                    $isInBookingProcess = false;
-                }
-                break;
+        return 'Wollen Sie mit einem Mitarbeiter sprechen?';
+    }
 
-            case self::STATE_BOOKING_DESTINATION:
-                // ✅ Ziel aus dem Text extrahieren
-                $destination = $this->extractDestination($originalInput);
-
-                if ($destination === 'unbekannt') {
-                    $reply = "Entschuldigung, ich habe das Ziel nicht verstanden. " .
-                        "Bitte gib das Reiseziel noch einmal an (z.B. 'Antalya', 'Berlin', etc.)";
-                    // Zustand bleibt gleich - wir fragen nochmal nach der Destination
-                    $isInBookingProcess = true; // Immer noch im Prozess
-                } else {
-                    $context['destination'] = $destination;
-                    $reply = "Notiert. Für welches Datum soll nach {$destination} gebucht werden? (Format: TT.MM.JJJJ)";
-                    $chat->state = self::STATE_BOOKING_DATE;
-                    $chat->context = json_encode($context);
-                    $isInBookingProcess = true; // Immer noch im Prozess
-                }
-                break;
-
-            case self::STATE_BOOKING_DATE:
-                if ($this->isValidDate($input)) {
-                    $context['date'] = $input;
-                    $reply = "Danke! Für wie viele Personen soll gebucht werden?";
-                    $chat->state = self::STATE_BOOKING_PERSONS;
-                    $chat->context = json_encode($context);
-                    $isInBookingProcess = true; // Immer noch im Prozess
-                } else {
-                    $reply = "Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein.";
-                }
-                break;
-
-            case self::STATE_BOOKING_PERSONS:
-                if (is_numeric($input) && $input > 0) {
-                    $context['persons'] = (int)$input;
-                    $reply = "Danke! Nun benötige ich noch deine Kontaktdaten.\nBitte gib deinen vollständigen Namen ein:";
-                    $chat->state = self::STATE_BOOKING_CONTACT_INFO;
-                    $chat->context = json_encode($context);
-                    $isInBookingProcess = true;
-                } else {
-                    $reply = "Bitte gib eine gültige Anzahl Personen an (Zahl größer 0).";
-                }
-                break;
-
-            case self::STATE_BOOKING_CONTACT_INFO:
-                // Schritt-für-Schritt Kontaktdaten erfassen
-                if (!isset($context['contact_step'])) {
-                    // Namen in Vor- und Nachname aufteilen
-                    $nameParts = explode(' ', $originalInput, 2);
-                    $context['first_name'] = $nameParts[0];
-                    $context['last_name'] = count($nameParts) > 1 ? $nameParts[1] : '';
-                    $context['contact_step'] = 'email';
-
-                    $reply = "Vielen Dank, " . $context['first_name'] . "!\nBitte gib nun deine E-Mail-Adresse ein:";
-                    $chat->context = json_encode($context);
-                }
-                elseif ($context['contact_step'] === 'email') {
-                    // E-Mail validieren
-                    if (filter_var($input, FILTER_VALIDATE_EMAIL)) {
-                        $context['email'] = $input;
-                        $context['contact_step'] = 'phone';
-                        $reply = "Perfekt! Nun benötige ich noch deine Telefonnummer:";
-                        $chat->context = json_encode($context);
-                    } else {
-                        $reply = "Das scheint keine gültige E-Mail-Adresse zu sein. Bitte gib eine gültige E-Mail-Adresse ein:";
-                    }
-                }
-                elseif ($context['contact_step'] === 'phone') {
-                    // Telefonnummer validieren (einfache Validierung)
-                    if (preg_match('/^[0-9+\s\(\)\-]{6,20}$/', $input)) {
-                        $context['phone'] = $input;
-
-                        // Zusammenfassung anzeigen
-                        $destination = $context['destination'] ?? 'unbekannt';
-                        $date = $context['date'] ?? 'unbekannt';
-                        $persons = $context['persons'] ?? 'unbekannt';
-                        $name = trim(($context['first_name'] ?? '') . ' ' . ($context['last_name'] ?? ''));
-
-                        $reply = "✅ Zusammenfassung deiner Buchung:\n" .
-                            "📍 Ziel: $destination\n" .
-                            "📅 Datum: $date\n" .
-                            "👥 Personen: $persons\n" .
-                            "👤 Name: $name\n" .
-                            "📧 E-Mail: " . $context['email'] . "\n" .
-                            "📞 Telefon: " . $context['phone'] . "\n\n" .
-                            "Möchtest du die Buchung bestätigen? (Ja/Nein)";
-
-                        $chat->state = self::STATE_BOOKING_CONFIRMATION;
-                        $chat->context = json_encode($context);
-                        $isInBookingProcess = true;
-                    } else {
-                        $reply = "Bitte gib eine gültige Telefonnummer ein:";
-                    }
-                }
-                break;
-
-            case self::STATE_BOOKING_CONFIRMATION:
-                if ($this->isConfirmation($input)) {
-                    // Visitor erstellen/speichern
-                    $visitor = Visitor::updateOrCreate(
-                        ['session_id' => $chat->session_id],
-                        [
-                            'first_name' => $context['first_name'],
-                            'last_name' => $context['last_name'],
-                            'email' => $context['email'],
-                            'phone' => $context['phone']
-                        ]
-                    );
-
-                    // Booking mit Visitor-ID speichern
-                    $booking = $this->saveBooking($chat, $context, $visitor->id);
-
-                    $reply = "✅ Buchung erfolgreich bestätigt! Vielen Dank für deine Buchung, " . ($context['first_name'] ?? '') . ".\n" .
-                        "Wir haben eine Bestätigung an " . $context['email'] . " gesendet.";
-                    $chat->state = self::STATE_IDLE;
-                    $chat->context = json_encode([]);
-                    $isInBookingProcess = false;
-                }
-                elseif ($this->isRejection($input)) {
-                    $reply = "Buchung abgebrochen. Kann ich dir anderweitig helfen?";
-                    $chat->state = self::STATE_IDLE;
-                    $chat->context = json_encode([]);
-                    $isInBookingProcess = false;
-                }
-                else {
-                    $reply = "Bitte antworte mit 'Ja' zur Bestätigung oder 'Nein' zum Abbruch.";
-                    $isInBookingProcess = true;
-                }
-                break;
-
-            default:
-                $reply = $this->getStandardResponse($input);
-                $chat->state = self::STATE_IDLE;
-                $chat->context = json_encode([]);
-        }
-
-        $chat->save();
-        $shouldEscalate = $this->detectEscalationRequest($input);
+    private function getEscalationPromptOptions(): array
+    {
         return [
-            'reply' => $reply,
-            'should_escalate' => $shouldEscalate,
-            'is_in_booking_process' => $isInBookingProcess,
-            'state' => $chat->state
+            ['text' => 'Ja, gerne', 'value' => 'accept'],
+            ['text' => 'Nein, danke', 'value' => 'decline']
         ];
     }
-
-    protected function isBookingIntent(string $input): bool
-    {
-        $bookingKeywords = [
-            'reise buchen', 'urlaub buchen', 'flug buchen', 'hotel buchen',
-            'buchung', 'reise', 'urlaub', 'reiseplanung', 'reise buchen'
-        ];
-
-        foreach ($bookingKeywords as $keyword) {
-            if (str_contains($input, $keyword)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    protected function extractDestination(string $text): string
-    {
-        $originalText = $text; // Originaltext speichern
-        $lowerText = mb_strtolower($text); // Nur für Vergleiche
-
-        // Erweiterte Liste mit verschiedenen Schreibweisen
-        $destinationPatterns = [
-            'Antalya' => ['antalya', 'antalia', 'antalja'],
-            'Konya' => ['konya', 'conya'],
-            'Istanbul' => ['istanbul', 'constantinople', 'stambul'],
-            'Berlin' => ['berlin', 'berlín'],
-            'Paris' => ['paris'],
-            'London' => ['london', 'londra'],
-            'Frankreich' => ['frankreich', 'france', 'französisch'],
-            'Spanien' => ['spanien', 'spain', 'españa'],
-            'Italien' => ['italien', 'italy', 'italia'],
-            'Österreich' => ['österreich'],
-            // ... weitere Destinationen
-        ];
-
-        foreach ($destinationPatterns as $mainDestination => $variations) {
-            foreach ($variations as $variation) {
-                if (str_contains($lowerText, $variation)) {
-                    return $mainDestination; // Gib den Haupt-Destinationsnamen zurück
-                }
-            }
-        }
-
-        // Versuche, die Destination mit Keywords zu finden (mit Originaltext)
-        if (preg_match('/nach\s+(\w+)/i', $originalText, $matches)) {
-            return ucfirst($matches[1]); // Ersten Buchstaben groß machen
-        }
-
-        if (preg_match('/nach\s+([\w\s]+)/i', $originalText, $matches)) {
-            return ucfirst(trim($matches[1]));
-        }
-
-        if (preg_match('/\b(?:reise|urlaub|flug)\s+(?:nach|to)\s+([\w\s]+)/i', $originalText, $matches)) {
-            return ucfirst(trim($matches[1]));
-        }
-
-        return 'unbekannt';
-    }
-
-    protected function isValidDate(string $date): bool
-    {
-        // Einfache Validierung für Datum im Format TT.MM.JJJJ
-        $pattern = '/^\d{2}\.\d{2}\.\d{4}$/';
-        return preg_match($pattern, $date) === 1;
-    }
-
-    protected function isConfirmation(string $input): bool
-    {
-        $confirmations = ['ja', 'yes', 'j', 'y', 'ok', 'bestätigen', 'confirm'];
-        return in_array($input, $confirmations);
-    }
-
-    protected function isRejection(string $input): bool
-    {
-        $rejections = ['nein', 'no', 'n', 'abbrechen', 'cancel', 'stop'];
-        return in_array($input, $rejections);
-    }
-
-    protected function getStandardResponse(string $input): string
-    {
-        // Deine bestehende Logik für Standardantworten
-        $responses = ChatbotResponse::all();
-        $bestMatch = null;
-        $lowestDistance = null;
-        $matchedKeywords = null;
-
-        foreach ($responses as $response) {
-            $distance = levenshtein($input, mb_strtolower($response->input));
-            $keywords = is_array($response->keywords)
-                ? $response->keywords
-                : json_decode($response->keywords, true);
-
-            foreach ($keywords as $keyword) {
-                if (str_contains($input, mb_strtolower($keyword))) {
-                    return $response->response;
-                }
-            }
-
-            if (is_null($lowestDistance) || $distance < $lowestDistance) {
-                $lowestDistance = $distance;
-                $bestMatch = $response;
-            }
-        }
-
-        return $matchedKeywords ? $bestMatch->response :
-            (($lowestDistance !== null && $lowestDistance <= 3)
-                ? $bestMatch->response
-                : $this->generateFallbackReply($input));
-    }
-
-
-
-    protected function saveBooking(Chat $chat, array $context): Booking
-    {
-        // Visitor finden oder erstellen
-        $visitor = Visitor::updateOrCreate(
-            ['session_id' => $chat->session_id],
-            [
-           //     'name' => $context['name'],
-                'first_name' => $context['first_name'],
-                'last_name' => $context['last_name'] ?? '',
-                'email' => $context['email'],
-                'phone' => $context['phone']
-            ]
-        );
-
-        // Datum konvertieren
-        $travelDate = \Carbon\Carbon::createFromFormat('d.m.Y', $context['date']);
-
-        // Booking erstellen
-        $booking = Booking::create([
-            'booking_number' => Booking::generateBookingNumber(),
-            'session_id' => $chat->session_id,
-            'chat_id' => $chat->id,
-            'visitor_id' => $visitor->id, // Direkte Relation
-            'destination' => $context['destination'],
-            'travel_date' => $travelDate,
-            'persons' => $context['persons'],
-            'status' => 'confirmed',
-            'metadata' => [
-                'created_via' => 'chatbot',
-                'original_context' => $context,
-                'chat_session' => $chat->session_id
-            ]
-        ]);
-
-        return $booking;
-    }
-    protected function generateFallbackReply(string $input): string
-    {
-        // Optional: Ähnliche Eingaben suchen
-        $similar = ChatbotResponse::where('input', 'LIKE', "%$input%")->pluck('input');
-
-        // Standardantwort zurückgeben
-        return $similar->isEmpty()
-            ? "Entschuldigung, ich habe das nicht verstanden. Bitte versuchen Sie es mit einer anderen Frage."
-            : "Meinten Sie: " . $similar->join(', ');
-    }
-
-
-
-
-
 
     public function end_chatbotSession(Request $request): \Illuminate\Http\JsonResponse
     {

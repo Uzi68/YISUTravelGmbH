@@ -356,15 +356,6 @@ export class ChatbotService {
   }
 
 
-// Escalation Prompt Methoden
-  sendEscalationPrompt(sessionId: string, payload?: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/chats/${sessionId}/escalation-prompt`, {
-      session_id: sessionId
-    }, {
-      withCredentials: true
-    });
-  }
-
   handleEscalationPromptResponse(payload: {
     session_id: string;
     response: string;

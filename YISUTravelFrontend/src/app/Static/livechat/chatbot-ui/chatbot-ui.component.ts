@@ -52,10 +52,6 @@ export class ChatUiComponent implements AfterViewInit {
   inputMessage = signal('');
   showScrollButton = signal(false);
 
-  //Prüfe, ob Nutzer gerade im Buchungsprozess ist
-  isInBookingProcess = signal(false);
-
-
   // ✅ Neue Properties für Escalation Prompt Features
   showEscalationOptions = signal(false);
   currentEscalationPrompt = signal<any>(null);
@@ -87,7 +83,7 @@ export class ChatUiComponent implements AfterViewInit {
   messages = signal<any[]>([]);
   quickQuestions = signal([
     'Was sind Ihre Öffnungszeiten?',
-    'Ich möchte eine Reise buchen',
+    'Welche Reiseangebote haben Sie?',
     'Wie kann ich Sie kontaktieren?'
   ]);
   showCloseConfirmationInChat  = signal(false);
@@ -1137,7 +1133,6 @@ export class ChatUiComponent implements AfterViewInit {
   // In chatbot-ui.component.ts
   endChat() {
     this.showEscalationPrompt.set(false);
-    this.isInBookingProcess.set(false);
 
     // ✅ FIX: UI-States SOFORT setzen (vor Backend-Call) um Glitching zu vermeiden
     // Nachrichten wurden bereits in confirmCloseChat() geleert
@@ -1431,10 +1426,6 @@ export class ChatUiComponent implements AfterViewInit {
     sendMethod.subscribe({
       next: (response) => {
         this.isTyping.set(false);
-
-        if (response.is_in_booking_process !== undefined) {
-          this.isInBookingProcess.set(response.is_in_booking_process);
-        }
 
         // ✅ Wenn Chat reaktiviert wurde, ALLE Nachrichten aus Response verwenden (inkl. User-Nachricht)
         if (response.chat_reactivated && response.new_messages) {
@@ -2397,16 +2388,6 @@ export class ChatUiComponent implements AfterViewInit {
       }
     });
   }
-
-  /*
-    private shouldShowEscalationPrompt(): boolean {
-      // Mindestens 3 Nachrichtenaustausche (User + Bot) und nicht im Buchungsprozess
-      return this.messageCountForEscalation >= 3 &&
-        !this.isEscalated() &&
-        this.chatStatus() === 'bot' &&
-        !this.isInBookingProcess();
-    }
-  */
 
   continueWithBot() {
     this.showEscalationPrompt.set(false);

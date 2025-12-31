@@ -16,6 +16,14 @@
           <button
             mat-icon-button
             class="header-icon-btn"
+            routerLink="/admin/chatbot-trainieren"
+            *ngIf="isAdmin"
+            matTooltip="Chatbot trainieren">
+            <mat-icon>smart_toy</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            class="header-icon-btn"
             (click)="toggleStaffManagement()"
             *ngIf="isAdmin"
             matTooltip="Mitarbeiter verwalten">
@@ -125,9 +133,8 @@
             <div class="chat-time">{{ chat.lastMessageTime | date:'dd.MM HH:mm' }}</div>
 
             <!-- Quick Action Buttons in der Chat-Liste -->
-            <div class="quick-action" *ngIf="chat.status === 'human' && !chat.assigned_to">
+            <div class="quick-action" *ngIf="canAssignChat(chat)">
               <button
-                *ngIf="canAssignChat(chat)"
                 mat-raised-button
                 color="primary"
                 class="action-btn assign-btn"
@@ -211,7 +218,7 @@
             <div class="chat-time">{{chat.last_message_time | date:'dd.MM HH:mm'}}</div>
 
             <!-- Quick Action für Admin-Chats -->
-            <div class="quick-action" *ngIf="chat.status === 'human' && !chat.assigned_to">
+            <div class="quick-action" *ngIf="canAssignChat(chat)">
               <button mat-mini-fab
                       color="primary"
                       (click)="assignAdminChat(chat); $event.stopPropagation()"
@@ -369,7 +376,7 @@
       <div class="header-actions" *ngIf="selectedChat && selectedChat.status !== 'closed' && selectedChat.status !== 'bot'">
         <!-- Assignment Button -->
         <button
-          *ngIf="selectedChat && selectedChat.status === 'human' && !selectedChat.assigned_to"
+          *ngIf="selectedChat && canAssignChat(selectedChat)"
           mat-raised-button
           color="primary"
           class="action-btn assign-btn"
@@ -419,7 +426,7 @@
           class="icon-btn"
           matTooltip="Chat beenden"
           (click)="openCloseChatDialog(selectedChat)"
-          *ngIf="selectedChat && selectedChat.status !== 'closed' && selectedChat.status !== 'bot'">
+          *ngIf="canCloseChat(selectedChat)">
           <mat-icon>close</mat-icon>
         </button>
       </div>
@@ -561,22 +568,14 @@
           <mat-icon>smart_toy</mat-icon>
           <span>Dieser Chat läuft aktuell über den Bot</span>
 
-          <!-- Escalation Prompt Button -->
-          <button *ngIf="canSendEscalationPrompt(selectedChat)"
+          <button *ngIf="selectedChat && canAssignChat(selectedChat)"
                   mat-raised-button
-                  color="accent"
-                  (click)="sendEscalationPrompt(selectedChat)"
+                  color="primary"
+                  (click)="handleChatAssignment(selectedChat)"
                   class="escalation-btn">
-            <mat-icon>help_outline</mat-icon>
-            Nachfragen
+            <mat-icon>person_add</mat-icon>
+            Übernehmen
           </button>
-
-          <!-- Cooldown Counter -->
-          <div *ngIf="!canSendEscalationPrompt(selectedChat) && selectedChat.status === 'bot' && getEscalationCooldownText(selectedChat)"
-               class="escalation-cooldown">
-            <mat-icon>schedule</mat-icon>
-            <span>Bis zur nächsten Anfrage: {{ getEscalationCooldownText(selectedChat) }}</span>
-          </div>
         </div>
       </div>
 

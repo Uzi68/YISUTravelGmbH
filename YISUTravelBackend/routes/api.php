@@ -197,7 +197,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/chats/{chatId}/unassign', [ChatAssignmentController::class, 'unassignChat']);
 
     // Escalation Prompts (nur für Agents)
-    Route::post('/chats/{chatId}/escalation-prompt', [ChatAssignmentController::class, 'sendEscalationPrompt']);
     Route::post('/escalation-response', [ChatAssignmentController::class, 'respondToEscalationPrompt']);
 
     // Transfer History & Permissions (nur für authentifizierte Benutzer)

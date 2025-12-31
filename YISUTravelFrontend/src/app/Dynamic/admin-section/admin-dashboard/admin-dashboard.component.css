@@ -1305,14 +1305,72 @@ body.dark-mode .profile-status .status-dot {
   }
 
   .profile-actions {
+    grid-area: actions;
     width: 100%;
-    justify-content: space-between;
-    gap: 12px;
+    justify-content: flex-start;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
   }
 
   .user-profile {
-    flex-direction: column;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "avatar info"
+      "actions actions";
+    align-items: center;
+    gap: 6px 10px;
+    padding: 10px 12px;
+  }
+
+  .profile-avatar {
+    grid-area: avatar;
+    width: 32px;
+    height: 32px;
+    border-width: 1px;
+    box-shadow: none;
+  }
+
+  .profile-info {
+    grid-area: info;
+  }
+
+  .profile-name {
+    font-size: 0.82rem;
+  }
+
+  .profile-status {
+    font-size: 0.68rem;
+  }
+
+  .profile-status .status-dot {
+    width: 6px;
+    height: 6px;
+    font-size: 6px;
+  }
+
+  .profile-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-action-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .profile-action-btn mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+
+  .profile-action-btn.mat-mdc-icon-button {
+    --mdc-icon-button-state-layer-size: 32px;
   }
 }
 
@@ -1335,7 +1393,7 @@ body.dark-mode .profile-status .status-dot {
 
   .profile-actions {
     justify-content: flex-start;
-    gap: 10px;
+    gap: 6px;
   }
 }
 

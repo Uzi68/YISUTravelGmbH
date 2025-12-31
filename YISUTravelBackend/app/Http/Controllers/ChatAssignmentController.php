@@ -7,7 +7,6 @@ use App\Events\ChatAssigned;
 use App\Events\ChatAssignmentUpdated;
 use App\Events\ChatStatusChanged;
 use App\Events\ChatTransferred;
-use App\Events\EscalationPromptSent;
 use App\Events\MessagePusher;
 use App\Models\Chat;
 use App\Models\ChatTransfer;
@@ -32,7 +31,7 @@ class ChatAssignmentController extends Controller
 
         return DB::transaction(function () use ($chatId, $validated) {
             $chat = Chat::where('session_id', $chatId)
-                ->where('status', 'human')
+                ->whereIn('status', ['human', 'bot'])
                 ->lockForUpdate()
                 ->first();
 
@@ -367,105 +366,6 @@ class ChatAssignmentController extends Controller
             ]);
         });
     }
-    /**
-     * Escalation-Prompt an Visitor senden
-     */
-    /**
-     * Escalation-Prompt manuell an Visitor senden (von Admin/Agent ausgelöst)
-     */
-    public function sendEscalationPrompt(Request $request, $chatId): JsonResponse
-    {
-        $validated = $request->validate([
-            'session_id' => 'required|string',
-            'message' => 'nullable|string|max:500'
-        ]);
-
-        return DB::transaction(function () use ($chatId, $validated) {
-            $chat = Chat::where('session_id', $chatId)
-                ->where('status', 'bot')
-                ->first();
-
-            if (!$chat) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Chat nicht gefunden oder bereits eskaliert'
-                ], 404);
-            }
-
-            $agent = Auth::user();
-
-            // Prüfen ob bereits ein offener Prompt existiert
-            $existingPrompt = EscalationPrompt::where('chat_id', $chat->id)
-                ->where('status', 'sent')
-                ->first();
-
-            if ($existingPrompt) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Es wurde bereits eine Escalation-Anfrage gesendet'
-                ], 409);
-            }
-
-            // Escalation-Prompt erstellen
-            $escalationPrompt = EscalationPrompt::create([
-                'chat_id' => $chat->id,
-                'sent_by_agent_id' => $agent->id,
-                'status' => 'sent',
-                'sent_at' => now(),
-                'trigger_type' => 'manual'
-            ]);
-
-            // Bot-Nachricht erstellen
-            $botMessage = Message::create([
-                'chat_id' => $chat->id,
-                'from' => 'bot',
-                'text' => 'Möchten Sie mit einem unserer Mitarbeiter sprechen?',
-                'message_type' => 'escalation_prompt',
-                'metadata' => [
-                    'escalation_prompt_id' => $escalationPrompt->id,
-                    'sent_by_agent_id' => $agent->id,
-                    'sent_by_agent_name' => $agent->name,
-                    'is_manual' => true,
-                    'options' => [
-                        ['text' => 'Ja, gerne', 'value' => 'accept'],
-                        ['text' => 'Nein, danke', 'value' => 'decline']
-                    ]
-                ]
-            ]);
-
-            // ✅ WICHTIG: Event für Echtzeit-Broadcasting - OHNE toOthers() damit auch der Admin die Message sieht
-            broadcast(new EscalationPromptSent($botMessage, $chat->session_id));
-
-            // ✅ Admin Dashboard Update
-            event(new AllChatsUpdate([
-                'type' => 'escalation_prompt_sent',
-                'chat' => [
-                    'session_id' => $chat->session_id,
-                    'chat_id' => $chat->id,
-                    'status' => $chat->status,
-                    'customer_first_name' => $chat->visitor?->first_name ?? 'Anonymous',
-                    'customer_last_name' => $chat->visitor?->last_name ?? '',
-                    'last_message' => 'Escalation-Anfrage gesendet',
-                    'last_message_time' => now(),
-                    'sent_by' => $agent->name,
-                    'escalation_prompt' => [
-                        'id' => $escalationPrompt->id,
-                        'sent_at' => $escalationPrompt->sent_at,
-                        'sent_by_agent_id' => $agent->id,
-                        'sent_by_agent_name' => $agent->name
-                    ]
-                ]
-            ]));
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Escalation-Prompt erfolgreich gesendet',
-                'prompt_id' => $escalationPrompt->id,
-                'sent_by' => $agent->name
-            ]);
-        });
-    }
-
     /**
      * Verfügbare Agents für Transfer abrufen
      */
