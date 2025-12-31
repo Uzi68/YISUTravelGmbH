@@ -13,10 +13,12 @@ use App\Models\ChatTransfer;
 use App\Models\EscalationPrompt;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\WhatsAppService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ChatAssignmentController extends Controller
 {
@@ -71,6 +73,28 @@ class ChatAssignmentController extends Controller
                     'assigned_at' => now()
                 ]
             ]);
+
+            if ($chat->channel === 'whatsapp' && $chat->whatsapp_number) {
+                try {
+                    $whatsappService = app(WhatsAppService::class);
+                    $waResult = $whatsappService->sendTextMessage(
+                        $chat->whatsapp_number,
+                        $systemMessage->text
+                    );
+                    if (empty($waResult['success'])) {
+                        Log::warning('WhatsApp assignment message failed', [
+                            'chat_id' => $chat->id,
+                            'whatsapp_number' => $chat->whatsapp_number,
+                            'error' => $waResult['error'] ?? 'Unknown error'
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('WhatsApp assignment message exception', [
+                        'chat_id' => $chat->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             // ✅ WICHTIG: Assignment-Daten mit broadcasten UND session_id setzen
             $assignmentData = [
@@ -189,6 +213,28 @@ class ChatAssignmentController extends Controller
                     'reason' => $validated['reason']
                 ]
             ]);
+
+            if ($chat->channel === 'whatsapp' && $chat->whatsapp_number) {
+                try {
+                    $whatsappService = app(WhatsAppService::class);
+                    $waResult = $whatsappService->sendTextMessage(
+                        $chat->whatsapp_number,
+                        $systemMessage->text
+                    );
+                    if (empty($waResult['success'])) {
+                        Log::warning('WhatsApp transfer message failed', [
+                            'chat_id' => $chat->id,
+                            'whatsapp_number' => $chat->whatsapp_number,
+                            'error' => $waResult['error'] ?? 'Unknown error'
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('WhatsApp transfer message exception', [
+                        'chat_id' => $chat->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             // ✅ WICHTIG: Assignment-Daten für Broadcasting
             $assignmentData = [
@@ -312,6 +358,28 @@ class ChatAssignmentController extends Controller
                     'chat_reopened' => true
                 ]
             ]);
+
+            if ($chat->channel === 'whatsapp' && $chat->whatsapp_number) {
+                try {
+                    $whatsappService = app(WhatsAppService::class);
+                    $waResult = $whatsappService->sendTextMessage(
+                        $chat->whatsapp_number,
+                        $systemMessage->text
+                    );
+                    if (empty($waResult['success'])) {
+                        Log::warning('WhatsApp unassignment message failed', [
+                            'chat_id' => $chat->id,
+                            'whatsapp_number' => $chat->whatsapp_number,
+                            'error' => $waResult['error'] ?? 'Unknown error'
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('WhatsApp unassignment message exception', [
+                        'chat_id' => $chat->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             // ✅ Assignment-Daten für Broadcasting mit expliziten null-Werten
             $assignmentData = [
