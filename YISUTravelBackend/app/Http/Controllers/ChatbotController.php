@@ -126,6 +126,9 @@ class ChatbotController extends Controller
             'text' => $originalInput
         ]);
 
+        $existingChat->update(['last_activity' => now()]);
+        $existingChat->refresh();
+
         $this->dispatchStaffPushForUserMessage($existingChat, $userMessage);
 
         $aiResult = $this->aiChatService->generateReply($existingChat, $originalInput);
