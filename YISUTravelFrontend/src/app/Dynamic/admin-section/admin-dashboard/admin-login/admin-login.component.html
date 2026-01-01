@@ -17,6 +17,10 @@
           <input matInput formControlName="password" type="password" required placeholder="Passwort eingeben">
         </mat-form-field>
 
+        <mat-checkbox formControlName="remember" class="remember-row">
+          Login merken
+        </mat-checkbox>
+
         <div class="login-actions">
           <button mat-raised-button class="submitButton" type="submit" [disabled]="contactForm.invalid || isLoading">
             <mat-progress-spinner

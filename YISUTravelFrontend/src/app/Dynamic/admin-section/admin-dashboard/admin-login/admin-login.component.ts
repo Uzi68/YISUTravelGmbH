@@ -7,6 +7,7 @@ import {MatInput} from "@angular/material/input";
 import {MatButton} from "@angular/material/button";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatIcon} from "@angular/material/icon";
+import {MatCheckboxModule} from "@angular/material/checkbox";
 import {finalize} from "rxjs";
 import {AuthService} from "../../../../Services/AuthService/auth.service";
 import {ActivatedRoute, Router, RouterLink} from "@angular/router";
@@ -27,6 +28,7 @@ import {ActivatedRoute, Router, RouterLink} from "@angular/router";
     MatCardHeader,
     MatProgressSpinner,
     MatIcon,
+    MatCheckboxModule,
     RouterLink
 
   ],
@@ -47,7 +49,8 @@ export class AdminLoginComponent {
   ) {
     this.contactForm = this.fb.group ({
       email: ['', Validators.required],
-      password: ['', Validators.required]
+      password: ['', Validators.required],
+      remember: [false]
     });
 
     this.route.queryParamMap.subscribe(params => {

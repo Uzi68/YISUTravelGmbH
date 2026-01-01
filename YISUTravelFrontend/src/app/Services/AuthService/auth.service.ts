@@ -52,7 +52,10 @@ export class AuthService {
 
 
   logout(): Observable<any> {
-    return this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).pipe(
+    const deviceId = isPlatformBrowser(this.platformId)
+      ? localStorage.getItem('yisu_push_device_id')
+      : null;
+    return this.http.post(`${this.apiUrl}/logout`, { device_id: deviceId }, { withCredentials: true }).pipe(
       tap(() => this.setAuthenticated(false)),
       tap(() => this.router.navigate(['/admin-login'])),
       catchError((error) => {

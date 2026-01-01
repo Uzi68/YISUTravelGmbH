@@ -699,7 +699,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           from: msg.from,
           message_type: msg.message_type,
           metadata: msg.metadata, // ✅ WICHTIG: Metadata speichern (enthält agent_name)
-          attachment: msg.has_attachment ? msg.attachment : undefined
+          attachment: this.resolveAttachment(msg)
         }))
         .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()), // ✅ Sortiere nach Timestamp (chronologisch)
       status: chat.status,
@@ -2088,7 +2088,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         isBot: messageData.from === 'bot',
         message_type: messageData.message_type,
         metadata: messageData.metadata,
-        attachment: messageData.has_attachment ? messageData.attachment : undefined
+        attachment: this.resolveAttachment(messageData)
       };
 
       // ✅ OPTIMIERT: Immutable Update für smooth UI ohne Flicker
@@ -2875,7 +2875,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         from: msg.from,
         message_type: msg.message_type,
         metadata: msg.metadata,
-        attachment: msg.attachments?.[0]
+        attachment: this.resolveAttachment(msg)
       })) || [],
       assigned_to: wc.assigned_to ?? undefined,
       status: wc.status,
@@ -2922,7 +2922,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       isAgent: isAgentMessage,
       isBot: messageData.from === 'bot',
       read: shouldMarkAsRead,
-      attachment: messageData.has_attachment ? messageData.attachment : undefined
+      attachment: this.resolveAttachment(messageData)
     };
 
     // Unread count Logik
@@ -3361,15 +3361,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     const assignmentCheck = chat.assigned_to === null || chat.assigned_to === undefined;
     const statusCheck = chat.status === 'human' || chat.status === 'bot';
-
-    console.log('canAssignChat debug:', {
-      chatId: chat.id,
-      status: chat.status,
-      statusCheck,
-      assigned_to: chat.assigned_to,
-      assignmentCheck,
-      result: statusCheck && assignmentCheck
-    });
 
     return statusCheck && assignmentCheck;
   }
@@ -4598,7 +4589,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           from: msg.from,
           message_type: msg.message_type,
           metadata: msg.metadata,
-          attachment: msg.has_attachment ? msg.attachment : undefined
+          attachment: this.resolveAttachment(msg)
         }))
       : [];
 
@@ -4652,6 +4643,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       firstName: firstName || '',
       lastName: lastName || ''
     };
+  }
+
+  private resolveAttachment(messageData: any): any | undefined {
+    if (!messageData) {
+      return undefined;
+    }
+    return messageData.attachment || messageData.attachments?.[0];
   }
 
   private hydrateVisitorDetails(rawChats: any[]): void {

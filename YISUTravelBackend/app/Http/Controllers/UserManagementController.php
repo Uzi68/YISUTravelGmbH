@@ -19,9 +19,20 @@ class UserManagementController extends Controller
     public function getStaffUsers(): JsonResponse
     {
         $staffUsers = User::where('user_type', User::USER_TYPE_STAFF)
-            ->with('roles')
+            ->with([
+                'roles',
+                'pushSubscriptions' => function ($query) {
+                    $query->where('is_active', true)
+                        ->orderByDesc('last_seen_at');
+                }
+            ])
             ->get()
             ->map(function ($user) {
+                $activeSubscriptions = $user->pushSubscriptions ?? collect();
+                $pushDeviceCount = $activeSubscriptions->count();
+                $pushLastSeenAt = $activeSubscriptions->max('last_seen_at');
+                $pushLastNotifiedAt = $activeSubscriptions->max('last_notified_at');
+
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -35,6 +46,10 @@ class UserManagementController extends Controller
                     'roles' => $user->getRoleNames(),
                     'created_at' => $user->created_at,
                     'updated_at' => $user->updated_at,
+                    'push_enabled' => $pushDeviceCount > 0,
+                    'push_device_count' => $pushDeviceCount,
+                    'push_last_seen_at' => $pushLastSeenAt,
+                    'push_last_notified_at' => $pushLastNotifiedAt,
                 ];
             });
 
