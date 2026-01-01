@@ -9,26 +9,34 @@ use App\Events\ChatEscalated;
 use App\Events\ChatStatusChanged;
 use App\Events\ChatTransferred;
 use App\Events\MessagePusher;
-use App\Models\Booking;
 use App\Models\ChatRequest;
 use App\Models\ContactRequest;
 use App\Models\Escalation;
 use App\Models\EscalationPrompt;
 use App\Models\Message;
 use App\Models\MessageRead;
-use App\Models\Visitor;
 use App\Models\User;
+use App\Models\Visitor;
+use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Models\ChatbotResponse;
 use App\Models\Chat;
-use Illuminate\Support\Facades\Cookie;
+use App\Services\OpenAiChatService;
+use App\Services\EscalationNotifier;
 class ChatbotController extends Controller
 {
+    public function __construct(
+        private readonly PushNotificationService $pushNotifications,
+        private readonly OpenAiChatService $aiChatService,
+        private readonly EscalationNotifier $escalationNotifier
+    )
+    {
+    }
+
     public function handleInput(Request $request): \Illuminate\Http\JsonResponse
     {
         // 1. Überprüfen, ob eine session_id übergeben wurde, oder eine neue generieren
@@ -39,38 +47,12 @@ class ChatbotController extends Controller
             'message' => 'required|string',
         ]);
 
-        $input = strtolower(trim($validated['message']));
-
-        // Alle gespeicherten Antworten holen
-        $responses = ChatbotResponse::all();
-        $bestMatch = null;
-        $lowestDistance = null;
-        $matchedKeywords = null;
-
-        foreach ($responses as $response) {
-            $distance = levenshtein($input, strtolower($response->input));
-            $keywords = is_array($response->keywords) ? $response->keywords : json_decode($response->keywords, true);
-
-            foreach ($keywords as $keyword) {
-                if (strpos($input, strtolower($keyword)) !== false) {
-                    $bestMatch = $response;
-                    $matchedKeywords = $keyword;
-                    break 2;
-                }
-            }
-
-            if (is_null($lowestDistance) || $distance < $lowestDistance) {
-                $lowestDistance = $distance;
-                $bestMatch = $response;
-            }
+        $originalInput = trim($validated['message']);
+        $existingChat = Chat::where('session_id', $sessionId)->first();
+        if ($existingChat && $existingChat->status === 'closed') {
+            $sessionId = (string) \Illuminate\Support\Str::uuid();
+            $existingChat = null;
         }
-
-        $reply = $matchedKeywords
-            ? $bestMatch->response
-            : (($lowestDistance !== null && $lowestDistance <= 3)
-                ? $bestMatch->response
-                : $this->generateFallbackReply($input));
-
         // Überprüfen, ob der Benutzer authentifiziert ist
         if (!$request->user()) {
             return response()->json([
@@ -78,31 +60,116 @@ class ChatbotController extends Controller
             ], 401); // Falls der Benutzer nicht authentifiziert ist, eine 401-Antwort zurückgeben
         }
 
-        // Chatverlauf für den authentifizierten Benutzer aktualisieren
-        $existingChat = Chat::where('session_id', $sessionId)
-            ->where('user_id', $request->user()->id) // Chat für den authentifizierten Benutzer abrufen
-            ->first();
+        $user = $request->user();
 
-        // Falls kein Chatverlauf existiert, einen neuen erstellen
+        $firstName = $user->first_name;
+        $lastName = $user->last_name;
+
+        if ((!$firstName || !$lastName) && $user->name) {
+            $nameParts = preg_split('/\s+/', trim($user->name));
+            if (!$firstName && !empty($nameParts)) {
+                $firstName = array_shift($nameParts);
+            }
+            if (!$lastName && !empty($nameParts)) {
+                $lastName = implode(' ', $nameParts);
+            }
+        }
+
+        $visitorAttributes = [
+            'channel' => 'website',
+            'agb_accepted' => true,
+            'agb_accepted_at' => now(),
+            'agb_version' => '1.0'
+        ];
+
+        if ($firstName) {
+            $visitorAttributes['first_name'] = $firstName;
+        }
+
+        if ($lastName) {
+            $visitorAttributes['last_name'] = $lastName;
+        }
+
+        if ($user->email) {
+            $visitorAttributes['email'] = $user->email;
+        }
+
+        if ($user->phone) {
+            $visitorAttributes['phone'] = $user->phone;
+        }
+
+        // Besucherprofil mit Kundendaten synchronisieren
+        $visitor = Visitor::updateOrCreate(
+            ['session_id' => $sessionId],
+            $visitorAttributes
+        );
+
+        // Chatverlauf für den authentifizierten Benutzer aktualisieren
         if (!$existingChat) {
             $existingChat = Chat::create([
                 'session_id' => $sessionId,
-                'user_id' => $request->user()->id,  // Setze die user_id aus dem authentifizierten Benutzer
+                'user_id' => $user->id,
+                'visitor_id' => $visitor->id,
+                'visitor_session_id' => $sessionId,
+                'status' => 'bot',
+                'channel' => 'website'
             ]);
+        } else {
+            $existingChat->user_id = $user->id;
+            $existingChat->visitor_id = $visitor->id;
+            $existingChat->visitor_session_id = $sessionId;
+            $existingChat->channel = $existingChat->channel ?: 'website';
+            $existingChat->save();
         }
 
         // Speichern der Benutzer- und Bot-Nachricht in der Tabelle 'messages'
-        Message::create([
+        $userMessage = Message::create([
             'chat_id' => $existingChat->id,
             'from' => 'user',
-            'text' => $input
+            'text' => $originalInput
         ]);
 
-        Message::create([
-            'chat_id' => $existingChat->id,
-            'from' => 'bot',
-            'text' => $reply
-        ]);
+        $existingChat->update(['last_activity' => now()]);
+        $existingChat->refresh();
+
+        $this->dispatchStaffPushForUserMessage($existingChat, $userMessage);
+
+        $aiResult = $this->aiChatService->generateReply($existingChat, $originalInput);
+        $reply = $aiResult['reply'];
+        $aiEscalate = $aiResult['needs_escalation'] ?? false;
+        $aiEscalationReason = $aiResult['escalation_reason'] ?? 'none';
+
+        $botMessage = null;
+        $shouldEscalate = (bool) $aiEscalate;
+        $escalationReason = (string) $aiEscalationReason;
+        if ($shouldEscalate && ($escalationReason === '' || $escalationReason === 'none')) {
+            $escalationReason = 'missing_knowledge';
+        }
+
+        if ($shouldEscalate) {
+            $this->escalationNotifier->notify($existingChat, $originalInput, $escalationReason);
+        }
+
+        if ($shouldEscalate) {
+            $reply = $this->getEscalationPromptText();
+            $botMessage = Message::create([
+                'chat_id' => $existingChat->id,
+                'from' => 'bot',
+                'text' => $reply,
+                'message_type' => 'escalation_prompt',
+                'metadata' => [
+                    'escalation_prompt_id' => null,
+                    'is_automatic' => true,
+                    'options' => $this->getEscalationPromptOptions()
+                ]
+            ]);
+        } else {
+            $botMessage = Message::create([
+                'chat_id' => $existingChat->id,
+                'from' => 'bot',
+                'text' => $reply
+            ]);
+        }
 
         // Den gesamten Chatverlauf abfragen
         $messages = Message::where('chat_id', $existingChat->id)
@@ -114,13 +181,29 @@ class ChatbotController extends Controller
             return [
                 'from' => $message->from,
                 'text' => $message->text,
+                'message_type' => $message->message_type,
+                'metadata' => $message->metadata,
             ];
         });
 
-
+        $responseMessages = [
+            [
+                'from' => $userMessage->from,
+                'text' => $userMessage->text,
+                'timestamp' => $userMessage->created_at
+            ],
+            [
+                'from' => $botMessage->from,
+                'text' => $botMessage->text,
+                'timestamp' => $botMessage->created_at,
+                'message_type' => $botMessage->message_type,
+                'metadata' => $botMessage->metadata
+            ]
+        ];
 
         return response()->json([
             'messages' => $formattedMessages,
+            'new_messages' => $responseMessages,
             'session_id' => $sessionId
         ]);
     }
@@ -210,167 +293,8 @@ class ChatbotController extends Controller
         return $chat;
     }
 
-    public function detectEscalationRequest(string $message): bool
-    {
-        $escalationKeywords = [
-            'mitarbeiter', 'mitarbeiterin', 'berater', 'support', 'agent',
-            'person', 'human', 'team', 'kundenservice', 'service', 'sprechen',
-            'chef', 'manager', 'leitung', 'betreuer', 'assistenz', 'helfen',
-            'hilfe', 'unterstützung', 'mensch', 'mitarbeiter sprechen',
-            'mit mitarbeiter', 'echte person', 'echter mensch'
-        ];
-
-        $message = strtolower(trim($message));
-
-        foreach ($escalationKeywords as $keyword) {
-            // Direkter Treffer
-            if (str_contains($message, $keyword)) {
-                \Log::info('Escalation keyword detected: ' . $keyword);
-                return true;
-            }
-
-            // ✅ VERBESSERT: Tippfehler-Toleranz mit prozentualer Ähnlichkeit
-            // Längere Wörter bekommen mehr Toleranz für Tippfehler
-            $words = explode(' ', $message);
-            foreach ($words as $word) {
-                // Nur Wörter mit mindestens 5 Zeichen prüfen (verhindert false positives bei kurzen Wörtern)
-                if (strlen($word) < 5) continue;
-
-                $distance = levenshtein($keyword, $word);
-                $maxLength = max(strlen($keyword), strlen($word));
-                $similarity = 1 - ($distance / $maxLength);
-
-                // ✅ WICHTIG: Verschiedene Toleranz-Levels je nach Wortlänge
-                // Kurze Wörter (5-7 Zeichen): 80% Ähnlichkeit ODER max. 2 Fehler
-                // Lange Wörter (8+ Zeichen): 75% Ähnlichkeit ODER max. 3 Fehler
-                $isShortWord = strlen($word) <= 7;
-                $matchThreshold = $isShortWord ? 0.80 : 0.75;
-                $maxDistance = $isShortWord ? 2 : 3;
-
-                if ($similarity >= $matchThreshold || ($distance <= $maxDistance && strlen($word) >= 8)) {
-                    \Log::info('Escalation detected via typo tolerance: ' . $word . ' -> ' . $keyword . ' (similarity: ' . round($similarity * 100) . '%, distance: ' . $distance . ')');
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-
-
-    /*
-    public function handleInputAnonymous(Request $request): \Illuminate\Http\JsonResponse
-    {
-        $sessionId = $request->header('X-Session-ID') ?? (string) \Illuminate\Support\Str::uuid();
-        $chat = Chat::where('session_id', $sessionId)->first();
-
-        // Wenn Chat bereits eskaliert wurde, Nachricht direkt speichern
-        if ($chat && in_array($chat->status, ['human', 'in_progress', 'assigned'])) {
-            Message::create([
-                'chat_id' => $chat->id,
-                'from' => 'user',
-                'text' => $request->message,
-                'is_escalation_trigger' => false
-            ]);
-
-            return response()->json([
-                'status' => 'human',
-                'session_id' => $sessionId,
-                'message' => 'Nachricht wurde an Mitarbeiter weitergeleitet'
-            ]);
-        }
-
-        $validated = $request->validate([
-            'message' => 'required|string',
-        ]);
-
-
-
-        // Originale Benutzereingabe (für Speicherung)
-        $originalInput = trim($validated['message']);
-
-        // Normalisierte Eingabe (nur für Vergleich)
-        $normalizedInput = mb_strtolower($originalInput);
-
-        $responses = ChatbotResponse::all();
-        $bestMatch = null;
-        $lowestDistance = null;
-        $matchedKeywords = null;
-        $shouldEscalate = $this->detectEscalationRequest($normalizedInput);
-
-        foreach ($responses as $response) {
-            $distance = levenshtein($normalizedInput, mb_strtolower($response->input));
-            $keywords = is_array($response->keywords)
-                ? $response->keywords
-                : json_decode($response->keywords, true);
-
-            foreach ($keywords as $keyword) {
-                if (strpos($normalizedInput, mb_strtolower($keyword)) !== false) {
-                    $bestMatch = $response;
-                    $matchedKeywords = $keyword;
-                    break 2;
-                }
-            }
-
-            if (is_null($lowestDistance) || $distance < $lowestDistance) {
-                $lowestDistance = $distance;
-                $bestMatch = $response;
-            }
-        }
-
-        $reply = $matchedKeywords
-            ? $bestMatch->response
-            : (($lowestDistance !== null && $lowestDistance <= 3)
-                ? $bestMatch->response
-                : $this->generateFallbackReply($normalizedInput));
-
-        // Chat-Sitzung prüfen oder erstellen
-        $chat = Chat::firstOrCreate(
-            ['session_id' => $sessionId],
-            ['user_id' => null]
-        );
-
-        // ✅ Originale Eingabe speichern (nicht lowercased!)
-        Message::create([
-            'chat_id' => $chat->id,
-            'from' => 'user',
-            'text' => $originalInput,
-        ]);
-
-        Message::create([
-            'chat_id' => $chat->id,
-            'from' => 'bot',
-            'text' => $reply,
-        ]);
-
-        $messages = Message::where('chat_id', $chat->id)
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        $formattedMessages = $messages->map(function ($message) {
-            return [
-                'from' => $message->from,
-                'text' => $message->text,
-            ];
-        });
-
-        return response()->json([
-            'messages' => $formattedMessages,
-            'session_id' => $sessionId,
-            'should_escalate' => $shouldEscalate
-        ]);
-    }
-    */
-
-
     // Zustandsdefinitionen
     const STATE_IDLE = 'idle';
-    const STATE_BOOKING_DESTINATION = 'booking_destination';
-    const STATE_BOOKING_DATE = 'booking_date';
-    const STATE_BOOKING_PERSONS = 'booking_persons';
-    const STATE_BOOKING_CONTACT_INFO = 'booking_contact_info';
-    const STATE_BOOKING_CONFIRMATION = 'booking_confirmation';
 
     public function handleInputAnonymous(Request $request): \Illuminate\Http\JsonResponse
     {
@@ -380,57 +304,16 @@ class ChatbotController extends Controller
 
         // Chat laden
         $chat = Chat::where('session_id', $sessionId)->first();
+        $previousVisitorId = null;
 
-        // ✅ NEUE LOGIK: Wenn Chat "closed" ist, reaktivieren als Bot-Chat
-        $reactivationMessage = null;
         if ($chat && $chat->status === 'closed') {
-            $chat->update([
-                'status' => 'bot',
-                'assigned_to' => null,
-                'assigned_at' => null,
-                'assigned_agent' => null,
-                'last_agent_activity' => null,
-                'closed_at' => null,
-                'closed_by_agent' => null,
-                'close_reason' => null,
-                'state' => self::STATE_IDLE,
-                'context' => json_encode([])
-            ]);
+            $previousVisitorId = $chat->visitor_id;
+            $sessionId = (string) Str::uuid();
+            $chat = null;
 
-            // System-Nachricht für Reaktivierung (ERST ERSTELLEN, SPÄTER BROADCASTEN)
-            $reactivationMessage = Message::create([
-                'chat_id' => $chat->id,
-                'from' => 'system',
-                'text' => 'Sie sprechen jetzt wieder mit unserem YISU Travel-Assistenten',
-                'message_type' => 'chat_reactivated',
-                'metadata' => [
-                    'previous_status' => 'closed',
-                    'new_status' => 'bot',
-                    'reactivated_at' => now()
-                ]
-            ]);
-
-            // Admin-Dashboard über Reaktivierung informieren
-            event(new AllChatsUpdate([
-                'type' => 'chat_reactivated',
-                'chat' => [
-                    'session_id' => $chat->session_id,
-                    'chat_id' => $chat->id,
-                    'status' => 'bot',
-                    'channel' => $chat->channel ?? 'website',
-                    'whatsapp_number' => $chat->whatsapp_number ?? null,
-                    'customer_first_name' => $chat->visitor?->first_name ?? ($chat->channel === 'whatsapp' ? 'WhatsApp' : 'Anonymous'),
-                    'customer_last_name' => $chat->visitor?->last_name ?? ($chat->channel === 'whatsapp' ? 'Kunde' : ''),
-                    'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
-                    'last_message' => 'Chat reaktiviert - Chatbot aktiv',
-                    'last_message_time' => now(),
-                    'assigned_to' => null,
-                    'assigned_agent' => null,
-                    'chat_reactivated' => true
-                ]
-            ]));
-
-            // Broadcasting wird später zusammen mit User-Nachricht gemacht (siehe unten)
+            if ($previousVisitorId) {
+                Visitor::where('id', $previousVisitorId)->update(['session_id' => $sessionId]);
+            }
         }
 
         // Wenn Chat bereits eskaliert wurde (aber nicht closed), Nachricht direkt weiterleiten
@@ -441,6 +324,11 @@ class ChatbotController extends Controller
                 'text' => $request->message,
                 'is_escalation_trigger' => false
             ]);
+
+            // ✅ FIX: Aktualisiere last_activity für Website-Besucher
+            $chat->update(['last_activity' => now()]);
+            // ✅ WICHTIG: Chat neu laden damit last_activity im Event verfügbar ist
+            $chat->refresh();
 
             // Assignment-Daten für Broadcasting
             $assignmentData = null;
@@ -472,23 +360,19 @@ class ChatbotController extends Controller
 
         $validated = $request->validate(['message' => 'required|string']);
         $originalInput = trim($validated['message']);
-        $normalizedInput = mb_strtolower($originalInput);
-
         // Chat-Sitzung laden oder erstellen
         $chat = Chat::firstOrCreate(
             ['session_id' => $sessionId],
             [
                 'user_id' => null,
+                'visitor_id' => $previousVisitorId,
+                'visitor_session_id' => $sessionId,
                 'state' => self::STATE_IDLE,
                 'context' => json_encode([]),
-                'status' => 'bot'
+                'status' => 'bot',
+                'channel' => 'website'
             ]
         );
-
-        // Zustandsbehaftete Verarbeitung
-        $replyData = $this->processWithState($chat, $normalizedInput, $originalInput);
-        $reply = $replyData['reply'];
-        $shouldEscalate = $replyData['should_escalate'] ?? $this->detectEscalationRequest($normalizedInput);
 
         // Nachrichten speichern
         $userMessage = Message::create([
@@ -496,6 +380,32 @@ class ChatbotController extends Controller
             'from' => 'user',
             'text' => $originalInput,
         ]);
+
+        $this->dispatchStaffPushForUserMessage($chat, $userMessage);
+
+        // ✅ FIX: Aktualisiere last_activity für Website-Besucher beim Senden einer Nachricht
+        $chat->update(['last_activity' => now()]);
+        // ✅ WICHTIG: Chat neu laden damit last_activity im Event verfügbar ist
+        $chat->refresh();
+
+        $aiResult = $this->aiChatService->generateReply($chat, $originalInput);
+        $reply = $aiResult['reply'];
+        $aiEscalate = $aiResult['needs_escalation'] ?? false;
+        $aiEscalationReason = $aiResult['escalation_reason'] ?? 'none';
+
+        $shouldEscalate = (bool) $aiEscalate;
+        $escalationReason = (string) $aiEscalationReason;
+        if ($shouldEscalate && ($escalationReason === '' || $escalationReason === 'none')) {
+            $escalationReason = 'missing_knowledge';
+        }
+
+        if ($shouldEscalate) {
+            $this->escalationNotifier->notify($chat, $originalInput, $escalationReason);
+        }
+
+        $reply = $shouldEscalate
+            ? $this->getEscalationPromptText()
+            : $reply;
 
         /*
         $botMessage = Message::create([
@@ -530,15 +440,12 @@ class ChatbotController extends Controller
             $escalationMessage = Message::create([
                 'chat_id' => $chat->id,
                 'from' => 'bot',
-                'text' => 'Möchten Sie mit einem unserer Mitarbeiter sprechen?',
+                'text' => $this->getEscalationPromptText(),
                 'message_type' => 'escalation_prompt',
                 'metadata' => [
                     'escalation_prompt_id' => null,
                     'is_automatic' => true,
-                    'options' => [
-                        ['text' => 'Ja, gerne', 'value' => 'accept'],
-                        ['text' => 'Nein, danke', 'value' => 'decline']
-                    ]
+                    'options' => $this->getEscalationPromptOptions()
                 ]
             ]);
 
@@ -551,16 +458,13 @@ class ChatbotController extends Controller
                 ],
                 [
                     'from' => 'bot',
-                    'text' => 'Möchten Sie mit einem unserer Mitarbeiter sprechen?',
+                    'text' => $this->getEscalationPromptText(),
                     'timestamp' => $escalationMessage->created_at,
                     'message_type' => 'escalation_prompt',
                     'metadata' => [
                         'is_automatic' => true,
                         'escalation_prompt_id' => null,
-                        'options' => [
-                            ['text' => 'Ja, gerne', 'value' => 'accept'],
-                            ['text' => 'Nein, danke', 'value' => 'decline']
-                        ]
+                        'options' => $this->getEscalationPromptOptions()
                     ]
                 ]
             ];
@@ -589,27 +493,17 @@ class ChatbotController extends Controller
 
         // Broadcasting mit korrekter Type-Prüfung - IN RICHTIGER REIHENFOLGE
         try {
-            // 1. Reaktivierungsnachricht NUR an Admin (Customer bekommt sie aus Response)
-            if ($reactivationMessage && $reactivationMessage->id) {
-                broadcast(new MessagePusher($reactivationMessage, $sessionId, [
-                    'assigned_to' => null,
-                    'agent_name' => null,
-                    'status' => 'bot',
-                    'chat_reactivated' => true
-                ]))->toOthers(); // toOthers() = nur Admin, nicht Customer
-            }
-
-            // 2. Dann User-Nachricht (nur an Admin)
+            // 1. Dann User-Nachricht (nur an Admin)
             if ($userMessage && $userMessage->id) {
                 broadcast(new MessagePusher($userMessage, $sessionId))->toOthers();
             }
 
-            // 3. Dann Bot-Antwort (nur an Customer)
+            // 2. Dann Bot-Antwort (nur an Customer)
             if ($botMessage && $botMessage->id) {
                 broadcast(new MessagePusher($botMessage, $sessionId))->toOthers();
             }
 
-            // 4. Zuletzt Escalation-Nachricht (nur an Admin - Customer bekommt sie aus Response)
+            // 3. Zuletzt Escalation-Nachricht (nur an Admin - Customer bekommt sie aus Response)
             if ($escalationMessage && $escalationMessage->id) {
                 broadcast(new MessagePusher($escalationMessage, $sessionId))->toOthers();
             }
@@ -617,374 +511,37 @@ class ChatbotController extends Controller
             \Log::error('Broadcasting error: ' . $e->getMessage());
         }
 
-        // ✅ Reaktivierungsnachricht VOR alle anderen Nachrichten einfügen
-        if ($reactivationMessage) {
-            array_unshift($responseMessages, [
-                'from' => 'system',
-                'text' => $reactivationMessage->text,
-                'timestamp' => $reactivationMessage->created_at,
-                'message_type' => 'chat_reactivated'
-            ]);
-        }
-
         return response()->json([
             'success' => true,
             'session_id' => $sessionId,
-            'should_escalate' => false,
-            'is_in_booking_process' => $replyData['is_in_booking_process'] ?? false,
+            'should_escalate' => $shouldEscalate,
             'state' => $chat->state,
             'status' => $chat->status,
             'new_messages' => $responseMessages,
             'messages' => $responseMessages,
             'reply' => $reply,
-            'chat_reactivated' => $reactivationMessage !== null
         ]);
     }
 
-    protected function processWithState(Chat $chat, string $input, string $originalInput): array
+    private function getEscalationPromptText(): string
     {
-        $context = json_decode($chat->context, true) ?? [];
-        $currentState = $chat->state ?? self::STATE_IDLE;
-        $reply = '';
-        $shouldEscalate = false;
-        $isInBookingProcess = $currentState !== self::STATE_IDLE;
-        switch ($currentState) {
-            case self::STATE_IDLE:
-                if ($this->isBookingIntent($input)) {
-                    $reply = "Alles klar! Wohin soll die Reise gehen?";
-                    $chat->state = self::STATE_BOOKING_DESTINATION;
-                    $chat->context = json_encode(['intent' => 'booking']);
-                    $isInBookingProcess = true; // Immer noch im Prozess
-                } else {
-                    $reply = $this->getStandardResponse($input);
-                    $isInBookingProcess = false;
-                }
-                break;
+        return 'Wollen Sie mit einem Mitarbeiter sprechen?';
+    }
 
-            case self::STATE_BOOKING_DESTINATION:
-                // ✅ Ziel aus dem Text extrahieren
-                $destination = $this->extractDestination($originalInput);
-
-                if ($destination === 'unbekannt') {
-                    $reply = "Entschuldigung, ich habe das Ziel nicht verstanden. " .
-                        "Bitte gib das Reiseziel noch einmal an (z.B. 'Antalya', 'Berlin', etc.)";
-                    // Zustand bleibt gleich - wir fragen nochmal nach der Destination
-                    $isInBookingProcess = true; // Immer noch im Prozess
-                } else {
-                    $context['destination'] = $destination;
-                    $reply = "Notiert. Für welches Datum soll nach {$destination} gebucht werden? (Format: TT.MM.JJJJ)";
-                    $chat->state = self::STATE_BOOKING_DATE;
-                    $chat->context = json_encode($context);
-                    $isInBookingProcess = true; // Immer noch im Prozess
-                }
-                break;
-
-            case self::STATE_BOOKING_DATE:
-                if ($this->isValidDate($input)) {
-                    $context['date'] = $input;
-                    $reply = "Danke! Für wie viele Personen soll gebucht werden?";
-                    $chat->state = self::STATE_BOOKING_PERSONS;
-                    $chat->context = json_encode($context);
-                    $isInBookingProcess = true; // Immer noch im Prozess
-                } else {
-                    $reply = "Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein.";
-                }
-                break;
-
-            case self::STATE_BOOKING_PERSONS:
-                if (is_numeric($input) && $input > 0) {
-                    $context['persons'] = (int)$input;
-                    $reply = "Danke! Nun benötige ich noch deine Kontaktdaten.\nBitte gib deinen vollständigen Namen ein:";
-                    $chat->state = self::STATE_BOOKING_CONTACT_INFO;
-                    $chat->context = json_encode($context);
-                    $isInBookingProcess = true;
-                } else {
-                    $reply = "Bitte gib eine gültige Anzahl Personen an (Zahl größer 0).";
-                }
-                break;
-
-            case self::STATE_BOOKING_CONTACT_INFO:
-                // Schritt-für-Schritt Kontaktdaten erfassen
-                if (!isset($context['contact_step'])) {
-                    // Namen in Vor- und Nachname aufteilen
-                    $nameParts = explode(' ', $originalInput, 2);
-                    $context['first_name'] = $nameParts[0];
-                    $context['last_name'] = count($nameParts) > 1 ? $nameParts[1] : '';
-                    $context['contact_step'] = 'email';
-
-                    $reply = "Vielen Dank, " . $context['first_name'] . "!\nBitte gib nun deine E-Mail-Adresse ein:";
-                    $chat->context = json_encode($context);
-                }
-                elseif ($context['contact_step'] === 'email') {
-                    // E-Mail validieren
-                    if (filter_var($input, FILTER_VALIDATE_EMAIL)) {
-                        $context['email'] = $input;
-                        $context['contact_step'] = 'phone';
-                        $reply = "Perfekt! Nun benötige ich noch deine Telefonnummer:";
-                        $chat->context = json_encode($context);
-                    } else {
-                        $reply = "Das scheint keine gültige E-Mail-Adresse zu sein. Bitte gib eine gültige E-Mail-Adresse ein:";
-                    }
-                }
-                elseif ($context['contact_step'] === 'phone') {
-                    // Telefonnummer validieren (einfache Validierung)
-                    if (preg_match('/^[0-9+\s\(\)\-]{6,20}$/', $input)) {
-                        $context['phone'] = $input;
-
-                        // Zusammenfassung anzeigen
-                        $destination = $context['destination'] ?? 'unbekannt';
-                        $date = $context['date'] ?? 'unbekannt';
-                        $persons = $context['persons'] ?? 'unbekannt';
-                        $name = trim(($context['first_name'] ?? '') . ' ' . ($context['last_name'] ?? ''));
-
-                        $reply = "✅ Zusammenfassung deiner Buchung:\n" .
-                            "📍 Ziel: $destination\n" .
-                            "📅 Datum: $date\n" .
-                            "👥 Personen: $persons\n" .
-                            "👤 Name: $name\n" .
-                            "📧 E-Mail: " . $context['email'] . "\n" .
-                            "📞 Telefon: " . $context['phone'] . "\n\n" .
-                            "Möchtest du die Buchung bestätigen? (Ja/Nein)";
-
-                        $chat->state = self::STATE_BOOKING_CONFIRMATION;
-                        $chat->context = json_encode($context);
-                        $isInBookingProcess = true;
-                    } else {
-                        $reply = "Bitte gib eine gültige Telefonnummer ein:";
-                    }
-                }
-                break;
-
-            case self::STATE_BOOKING_CONFIRMATION:
-                if ($this->isConfirmation($input)) {
-                    // Visitor erstellen/speichern
-                    $visitor = Visitor::updateOrCreate(
-                        ['session_id' => $chat->session_id],
-                        [
-                            'first_name' => $context['first_name'],
-                            'last_name' => $context['last_name'],
-                            'email' => $context['email'],
-                            'phone' => $context['phone']
-                        ]
-                    );
-
-                    // Booking mit Visitor-ID speichern
-                    $booking = $this->saveBooking($chat, $context, $visitor->id);
-
-                    $reply = "✅ Buchung erfolgreich bestätigt! Vielen Dank für deine Buchung, " . ($context['first_name'] ?? '') . ".\n" .
-                        "Wir haben eine Bestätigung an " . $context['email'] . " gesendet.";
-                    $chat->state = self::STATE_IDLE;
-                    $chat->context = json_encode([]);
-                    $isInBookingProcess = false;
-                }
-                elseif ($this->isRejection($input)) {
-                    $reply = "Buchung abgebrochen. Kann ich dir anderweitig helfen?";
-                    $chat->state = self::STATE_IDLE;
-                    $chat->context = json_encode([]);
-                    $isInBookingProcess = false;
-                }
-                else {
-                    $reply = "Bitte antworte mit 'Ja' zur Bestätigung oder 'Nein' zum Abbruch.";
-                    $isInBookingProcess = true;
-                }
-                break;
-
-            default:
-                $reply = $this->getStandardResponse($input);
-                $chat->state = self::STATE_IDLE;
-                $chat->context = json_encode([]);
-        }
-
-        $chat->save();
-        $shouldEscalate = $this->detectEscalationRequest($input);
+    private function getEscalationPromptOptions(): array
+    {
         return [
-            'reply' => $reply,
-            'should_escalate' => $shouldEscalate,
-            'is_in_booking_process' => $isInBookingProcess,
-            'state' => $chat->state
+            ['text' => 'Ja, gerne', 'value' => 'accept'],
+            ['text' => 'Nein, danke', 'value' => 'decline']
         ];
     }
-
-    protected function isBookingIntent(string $input): bool
-    {
-        $bookingKeywords = [
-            'reise buchen', 'urlaub buchen', 'flug buchen', 'hotel buchen',
-            'buchung', 'reise', 'urlaub', 'reiseplanung', 'reise buchen'
-        ];
-
-        foreach ($bookingKeywords as $keyword) {
-            if (str_contains($input, $keyword)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    protected function extractDestination(string $text): string
-    {
-        $originalText = $text; // Originaltext speichern
-        $lowerText = mb_strtolower($text); // Nur für Vergleiche
-
-        // Erweiterte Liste mit verschiedenen Schreibweisen
-        $destinationPatterns = [
-            'Antalya' => ['antalya', 'antalia', 'antalja'],
-            'Konya' => ['konya', 'conya'],
-            'Istanbul' => ['istanbul', 'constantinople', 'stambul'],
-            'Berlin' => ['berlin', 'berlín'],
-            'Paris' => ['paris'],
-            'London' => ['london', 'londra'],
-            'Frankreich' => ['frankreich', 'france', 'französisch'],
-            'Spanien' => ['spanien', 'spain', 'españa'],
-            'Italien' => ['italien', 'italy', 'italia'],
-            'Österreich' => ['österreich'],
-            // ... weitere Destinationen
-        ];
-
-        foreach ($destinationPatterns as $mainDestination => $variations) {
-            foreach ($variations as $variation) {
-                if (str_contains($lowerText, $variation)) {
-                    return $mainDestination; // Gib den Haupt-Destinationsnamen zurück
-                }
-            }
-        }
-
-        // Versuche, die Destination mit Keywords zu finden (mit Originaltext)
-        if (preg_match('/nach\s+(\w+)/i', $originalText, $matches)) {
-            return ucfirst($matches[1]); // Ersten Buchstaben groß machen
-        }
-
-        if (preg_match('/nach\s+([\w\s]+)/i', $originalText, $matches)) {
-            return ucfirst(trim($matches[1]));
-        }
-
-        if (preg_match('/\b(?:reise|urlaub|flug)\s+(?:nach|to)\s+([\w\s]+)/i', $originalText, $matches)) {
-            return ucfirst(trim($matches[1]));
-        }
-
-        return 'unbekannt';
-    }
-
-    protected function isValidDate(string $date): bool
-    {
-        // Einfache Validierung für Datum im Format TT.MM.JJJJ
-        $pattern = '/^\d{2}\.\d{2}\.\d{4}$/';
-        return preg_match($pattern, $date) === 1;
-    }
-
-    protected function isConfirmation(string $input): bool
-    {
-        $confirmations = ['ja', 'yes', 'j', 'y', 'ok', 'bestätigen', 'confirm'];
-        return in_array($input, $confirmations);
-    }
-
-    protected function isRejection(string $input): bool
-    {
-        $rejections = ['nein', 'no', 'n', 'abbrechen', 'cancel', 'stop'];
-        return in_array($input, $rejections);
-    }
-
-    protected function getStandardResponse(string $input): string
-    {
-        // Deine bestehende Logik für Standardantworten
-        $responses = ChatbotResponse::all();
-        $bestMatch = null;
-        $lowestDistance = null;
-        $matchedKeywords = null;
-
-        foreach ($responses as $response) {
-            $distance = levenshtein($input, mb_strtolower($response->input));
-            $keywords = is_array($response->keywords)
-                ? $response->keywords
-                : json_decode($response->keywords, true);
-
-            foreach ($keywords as $keyword) {
-                if (str_contains($input, mb_strtolower($keyword))) {
-                    return $response->response;
-                }
-            }
-
-            if (is_null($lowestDistance) || $distance < $lowestDistance) {
-                $lowestDistance = $distance;
-                $bestMatch = $response;
-            }
-        }
-
-        return $matchedKeywords ? $bestMatch->response :
-            (($lowestDistance !== null && $lowestDistance <= 3)
-                ? $bestMatch->response
-                : $this->generateFallbackReply($input));
-    }
-
-
-
-    protected function saveBooking(Chat $chat, array $context): Booking
-    {
-        // Visitor finden oder erstellen
-        $visitor = Visitor::updateOrCreate(
-            ['session_id' => $chat->session_id],
-            [
-           //     'name' => $context['name'],
-                'first_name' => $context['first_name'],
-                'last_name' => $context['last_name'] ?? '',
-                'email' => $context['email'],
-                'phone' => $context['phone']
-            ]
-        );
-
-        // Datum konvertieren
-        $travelDate = \Carbon\Carbon::createFromFormat('d.m.Y', $context['date']);
-
-        // Booking erstellen
-        $booking = Booking::create([
-            'booking_number' => Booking::generateBookingNumber(),
-            'session_id' => $chat->session_id,
-            'chat_id' => $chat->id,
-            'visitor_id' => $visitor->id, // Direkte Relation
-            'destination' => $context['destination'],
-            'travel_date' => $travelDate,
-            'persons' => $context['persons'],
-            'status' => 'confirmed',
-            'metadata' => [
-                'created_via' => 'chatbot',
-                'original_context' => $context,
-                'chat_session' => $chat->session_id
-            ]
-        ]);
-
-        return $booking;
-    }
-    protected function generateFallbackReply(string $input): string
-    {
-        // Optional: Ähnliche Eingaben suchen
-        $similar = ChatbotResponse::where('input', 'LIKE', "%$input%")->pluck('input');
-
-        // Standardantwort zurückgeben
-        return $similar->isEmpty()
-            ? "Entschuldigung, ich habe das nicht verstanden. Bitte versuchen Sie es mit einer anderen Frage."
-            : "Meinten Sie: " . $similar->join(', ');
-    }
-
-
-
-
-
 
     public function end_chatbotSession(Request $request): \Illuminate\Http\JsonResponse
     {
-        $sessionId = $request->header('X-Session-ID');
-        if ($sessionId) {
-            // Entferne den Chatverlauf aus der Datenbank basierend auf der session_id
-            Chat::where('session_id', $sessionId)->delete();
-        }
-
-        // Generiere eine neue Session-ID für die nächste Sitzung
-        $newSessionId = (string) \Illuminate\Support\Str::uuid();
-
         return response()->json([
-            'message' => 'Sitzung wurde zurückgesetzt',
-            'new_session_id' => $newSessionId,
-        ]);
+            'success' => false,
+            'message' => 'Chat-Löschung ist deaktiviert.',
+        ], 403);
     }
 
     public function requestHuman(Request $request)
@@ -1078,119 +635,11 @@ class ChatbotController extends Controller
         $user = Auth::user();
 
         // Agents sollen ALLE Chats sehen wie Admins
-        $query = Chat::with(['messages.reads', 'messages.attachments', 'user', 'assignedTo', 'visitor', 'escalationPrompts.sentByAgent']);
+        $query = $this->buildActiveChatQuery($user);
 
         $chats = $query->orderBy('updated_at', 'desc')
             ->get()
-            ->map(function ($chat) use ($user) {
-                $lastMessage = $chat->messages->last();
-
-                // ✅ Letzten Escalation-Prompt laden (falls vorhanden)
-                $lastEscalationPrompt = $chat->escalationPrompts
-                    ->where('status', 'sent')
-                    ->sortByDesc('sent_at')
-                    ->first();
-
-                // ✅ NEU: Dynamische Kundenname basierend auf Channel
-                $customerFirstName = 'Anonymous';
-                $customerLastName = '';
-
-                if ($chat->visitor) {
-                    // Visitor existiert - prüfe ob er echte Namen hat
-                    if ($chat->visitor->first_name && $chat->visitor->first_name !== 'WhatsApp') {
-                        // Echter Name vom Visitor
-                        $customerFirstName = $chat->visitor->first_name;
-                        $customerLastName = $chat->visitor->last_name ?? '';
-                    } elseif ($chat->channel === 'whatsapp') {
-                        // WhatsApp Visitor ohne echten Namen
-                        $customerFirstName = 'WhatsApp';
-                        $customerLastName = 'Kunde';
-                    } else {
-                        // Website Visitor ohne Namen
-                        $customerFirstName = 'Anonymous';
-                        $customerLastName = '';
-                    }
-                } elseif ($chat->channel === 'whatsapp') {
-                    // Kein Visitor aber WhatsApp Channel
-                    $customerFirstName = 'WhatsApp';
-                    $customerLastName = 'Kunde';
-                }
-
-                // ✅ WICHTIG: customer_name berechnen (für WhatsApp-Namen)
-                $customerName = trim($customerFirstName . ' ' . $customerLastName);
-                if (!$customerName || $customerName === 'Anonymous' || $customerName === 'WhatsApp Kunde') {
-                    // Wenn kein Name vorhanden, zeige WhatsApp-Nummer
-                    if ($chat->channel === 'whatsapp' && $chat->whatsapp_number) {
-                        $customerName = '+' . $chat->whatsapp_number;
-                    } else {
-                        $customerName = 'Anonymer Benutzer';
-                    }
-                }
-
-                $chatData = [
-                    'session_id' => $chat->session_id,
-                    'chat_id' => $chat->id,
-                    'customer_first_name' => $customerFirstName,
-                    'customer_last_name' => $customerLastName,
-                    'customer_name' => $customerName, // ✅ NEU: Vollständiger Name
-                    'customer_phone' => $chat->visitor ? $chat->visitor->phone : ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
-                    'customer_avatar' => $chat->user ? $chat->user->avatar : asset('storage/images/user.png'),
-                    'last_message' => $lastMessage ? $lastMessage->text : 'No messages yet',
-                    'last_message_time' => $lastMessage ? $lastMessage->created_at : $chat->updated_at,
-                    'unread_count' => Message::where('chat_id', $chat->id)
-                        ->where('from', '!=', 'agent')
-                        ->whereDoesntHave('reads', function ($q) use ($user) {
-                            $q->where('user_id', $user->id);
-                        })
-                        ->count(),
-
-                    'is_online' => $chat->user ? $chat->user->isOnline() : false,
-                    'status' => $chat->status,
-                    'channel' => $chat->channel ?? 'website', // ✅ WICHTIG: Channel hinzufügen
-                    'whatsapp_number' => $chat->whatsapp_number ?? null, // ✅ WhatsApp-Nummer falls vorhanden
-                    'last_activity' => $chat->last_activity ? $chat->last_activity->toIso8601String() : null, // ✅ Zuletzt-Online-Status
-                    'assigned_to' => $chat->assigned_to,
-                    'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
-                    'messages' => $chat->messages->map(function ($message) use ($user) {
-                        $messageData = [
-                            'id' => $message->id,
-                            'text' => $message->text,
-                            'timestamp' => $message->created_at,
-                            'from' => $message->from,
-                            'read' => $message->reads()->where('user_id', $user->id)->exists(),
-                            'message_type' => $message->message_type,
-                            'metadata' => $message->metadata
-                        ];
-
-                        // Add attachment if exists
-                        if ($message->attachments && $message->attachments->count() > 0) {
-                            $attachment = $message->attachments->first();
-                            $messageData['has_attachment'] = true;
-                            $messageData['attachment'] = [
-                                'id' => $attachment->id,
-                                'file_name' => $attachment->file_name,
-                                'file_type' => $attachment->file_type,
-                                'file_size' => $attachment->file_size,
-                                'download_url' => url('api/attachments/' . $attachment->id . '/download')
-                            ];
-                        }
-
-                        return $messageData;
-                    })
-                ];
-
-                // ✅ Escalation-Prompt Daten hinzufügen (falls vorhanden)
-                if ($lastEscalationPrompt) {
-                    $chatData['escalation_prompt'] = [
-                        'id' => $lastEscalationPrompt->id,
-                        'sent_at' => $lastEscalationPrompt->sent_at,
-                        'sent_by_agent_id' => $lastEscalationPrompt->sent_by_agent_id,
-                        'sent_by_agent_name' => $lastEscalationPrompt->sentByAgent ? $lastEscalationPrompt->sentByAgent->name : 'Unknown'
-                    ];
-                }
-
-                return $chatData;
-            });
+            ->map(fn ($chat) => $this->formatChatForDashboard($chat));
 
         return response()->json([
             'success' => true,
@@ -1202,6 +651,188 @@ class ChatbotController extends Controller
                     ->count()
             ]
         ]);
+    }
+
+    public function getChatByIdentifier(Request $request)
+    {
+        $validated = $request->validate([
+            'identifier' => 'nullable|string',
+            'session_id' => 'nullable|string',
+            'chat_id' => 'nullable'
+        ]);
+
+        $identifier = $validated['identifier'] ?? null;
+        $sessionId = $validated['session_id'] ?? null;
+        $chatId = $validated['chat_id'] ?? null;
+
+        if (!$identifier && !$sessionId && !$chatId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Identifier erforderlich'
+            ], 422);
+        }
+
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $query = $this->buildActiveChatQuery($user);
+
+        if ($sessionId) {
+            $query->where('session_id', $sessionId);
+        } elseif ($chatId) {
+            $query->where('id', $chatId);
+        } else {
+            $query->where(function ($inner) use ($identifier) {
+                $inner->where('session_id', $identifier)
+                    ->orWhere('id', $identifier);
+            });
+        }
+
+        $chat = $query->first();
+        if (!$chat) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chat nicht gefunden'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatChatForDashboard($chat)
+        ]);
+    }
+
+    private function buildActiveChatQuery(User $user)
+    {
+        return Chat::query()
+            ->with([
+                'messages' => function ($messageQuery) use ($user) {
+                    $messageQuery->with([
+                        'attachments',
+                        'reads' => function ($readQuery) use ($user) {
+                            $readQuery
+                                ->where('user_id', $user->id)
+                                ->select('id', 'message_id', 'user_id');
+                        },
+                    ])->orderBy('created_at');
+                },
+                'user:id,name,avatar',
+                'assignedTo:id,name',
+                'visitor:id,first_name,last_name,email,phone,whatsapp_number',
+                'escalationPrompts.sentByAgent',
+            ])
+            ->withCount(['messages as unread_count' => function ($messageQuery) use ($user) {
+                $messageQuery
+                    ->where('from', '!=', 'agent')
+                    ->whereDoesntHave('reads', function ($readQuery) use ($user) {
+                        $readQuery->where('user_id', $user->id);
+                    });
+            }]);
+    }
+
+    private function formatChatForDashboard(Chat $chat): array
+    {
+        $lastMessage = $chat->messages->last();
+
+        // ✅ Letzten Escalation-Prompt laden (falls vorhanden)
+        $lastEscalationPrompt = $chat->escalationPrompts
+            ->where('status', 'sent')
+            ->sortByDesc('sent_at')
+            ->first();
+
+        // ✅ NEU: Dynamische Kundenname basierend auf Channel
+        $customerFirstName = 'Anonymous';
+        $customerLastName = '';
+
+        if ($chat->visitor) {
+            // Visitor existiert - prüfe ob er echte Namen hat
+            if ($chat->visitor->first_name && $chat->visitor->first_name !== 'WhatsApp') {
+                // Echter Name vom Visitor
+                $customerFirstName = $chat->visitor->first_name;
+                $customerLastName = $chat->visitor->last_name ?? '';
+            } elseif ($chat->channel === 'whatsapp') {
+                // WhatsApp Visitor ohne echten Namen
+                $customerFirstName = 'WhatsApp';
+                $customerLastName = 'Kunde';
+            } else {
+                // Website Visitor ohne Namen
+                $customerFirstName = 'Anonymous';
+                $customerLastName = '';
+            }
+        } elseif ($chat->channel === 'whatsapp') {
+            // Kein Visitor aber WhatsApp Channel
+            $customerFirstName = 'WhatsApp';
+            $customerLastName = 'Kunde';
+        }
+
+        // ✅ WICHTIG: customer_name berechnen (für WhatsApp-Namen)
+        $customerName = trim($customerFirstName . ' ' . $customerLastName);
+        if (!$customerName || $customerName === 'Anonymous' || $customerName === 'WhatsApp Kunde') {
+            // Wenn kein Name vorhanden, zeige WhatsApp-Nummer
+            if ($chat->channel === 'whatsapp' && $chat->whatsapp_number) {
+                $customerName = '+' . $chat->whatsapp_number;
+            } else {
+                $customerName = 'Anonymer Benutzer';
+            }
+        }
+
+        $chatData = [
+            'session_id' => $chat->session_id,
+            'chat_id' => $chat->id,
+            'customer_first_name' => $customerFirstName,
+            'customer_last_name' => $customerLastName,
+            'customer_name' => $customerName, // ✅ NEU: Vollständiger Name
+            'customer_phone' => $chat->visitor ? $chat->visitor->phone : ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
+            'customer_email' => $chat->visitor ? ($chat->visitor->email ?? '') : '', // ✅ FIX: Email direkt im Response für instant Anzeige
+            'customer_avatar' => $chat->user ? $chat->user->avatar : asset('storage/images/user.png'),
+            'last_message' => $lastMessage ? $lastMessage->text : 'No messages yet',
+            'last_message_time' => $lastMessage ? $lastMessage->created_at : $chat->updated_at,
+            'unread_count' => $chat->unread_count,
+            'is_online' => $chat->user ? $chat->user->isOnline() : false,
+            'status' => $chat->status,
+            'channel' => $chat->channel ?? 'website', // ✅ WICHTIG: Channel hinzufügen
+            'whatsapp_number' => $chat->whatsapp_number ?? null, // ✅ WhatsApp-Nummer falls vorhanden
+            'last_activity' => $chat->last_activity ? $chat->last_activity->toIso8601String() : null, // ✅ Zuletzt-Online-Status
+            'assigned_to' => $chat->assigned_to,
+            'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
+            'messages' => $chat->messages->sortBy('created_at')->map(function ($message) {
+                $messageData = [
+                    'id' => $message->id,
+                    'text' => $message->text,
+                    'timestamp' => $message->created_at,
+                    'from' => $message->from,
+                    'read' => $message->reads && $message->reads->isNotEmpty(),
+                    'message_type' => $message->message_type,
+                    'metadata' => $message->metadata
+                ];
+
+                // Add attachment if exists
+                if ($message->attachments && $message->attachments->count() > 0) {
+                    $attachment = $message->attachments->first();
+                    $messageData['has_attachment'] = true;
+                    $messageData['attachment'] = [
+                        'id' => $attachment->id,
+                        'file_name' => $attachment->file_name,
+                        'file_type' => $attachment->file_type,
+                        'file_size' => $attachment->file_size,
+                        'download_url' => url('api/attachments/' . $attachment->id . '/download')
+                    ];
+                }
+
+                return $messageData;
+            })
+        ];
+
+        // ✅ Escalation-Prompt Daten hinzufügen (falls vorhanden)
+        if ($lastEscalationPrompt) {
+            $chatData['escalation_prompt'] = [
+                'id' => $lastEscalationPrompt->id,
+                'sent_at' => $lastEscalationPrompt->sent_at,
+                'sent_by_agent_id' => $lastEscalationPrompt->sent_by_agent_id,
+                'sent_by_agent_name' => $lastEscalationPrompt->sentByAgent ? $lastEscalationPrompt->sentByAgent->name : 'Unknown'
+            ];
+        }
+
+        return $chatData;
     }
 
 
@@ -1671,7 +1302,12 @@ class ChatbotController extends Controller
             ->first();
 
         if (!$chat) {
-            return response()->json(['error' => 'Chat session not found'], 404);
+            return response()->json([
+                'session_id' => $validated['session_id'],
+                'user_id' => null,
+                'messages' => [],
+                'chat_exists' => false
+            ]);
         }
 
         // Für authentifizierte Benutzer: Sicherstellen, dass sie nur ihre eigenen Chats sehen
@@ -1785,8 +1421,15 @@ class ChatbotController extends Controller
         if (!$chat) {
             return response()->json([
                 'success' => false,
+                'status' => 'not_found',
+                'chat_id' => null,
+                'session_id' => $sessionId,
+                'assigned_to' => null,
+                'assigned_agent_name' => null,
+                'can_write' => false,
+                'is_escalated' => false,
                 'message' => 'Chat nicht gefunden'
-            ], 404);
+            ]);
         }
 
         $agent = Auth::user();
@@ -2074,7 +1717,7 @@ class ChatbotController extends Controller
             ], 403);
         }
 
-        $chats = Chat::with(['messages', 'user', 'assignedTo', 'visitor'])
+        $chats = Chat::with(['messages.attachments', 'user', 'assignedTo', 'visitor'])
             ->orderBy('updated_at', 'desc')
             ->get()
             ->map(function ($chat) {
@@ -2127,13 +1770,29 @@ class ChatbotController extends Controller
                     'whatsapp_number' => $chat->whatsapp_number ?? null,
                     'assigned_to' => $chat->assigned_to,
                     'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
-                    'messages' => $chat->messages->map(function ($message) use ($user) {
-                        return [
+                    'messages' => $chat->messages->map(function ($message) {
+                        $messageData = [
                             'id' => $message->id,
                             'text' => $message->text,
                             'timestamp' => $message->created_at,
                             'from' => $message->from,
+                            'message_type' => $message->message_type,
+                            'metadata' => $message->metadata
                         ];
+
+                        if ($message->attachments && $message->attachments->count() > 0) {
+                            $attachment = $message->attachments->first();
+                            $messageData['has_attachment'] = true;
+                            $messageData['attachment'] = [
+                                'id' => $attachment->id,
+                                'file_name' => $attachment->file_name,
+                                'file_type' => $attachment->file_type,
+                                'file_size' => $attachment->file_size,
+                                'download_url' => url('api/attachments/' . $attachment->id . '/download')
+                            ];
+                        }
+
+                        return $messageData;
                     })
                 ];
             });
@@ -2226,6 +1885,33 @@ class ChatbotController extends Controller
                 'user_id' => null
             ]
         );
+
+        // ✅ Willkommensnachricht erstellen und speichern
+        $welcomeMessage = Message::create([
+            'chat_id' => $chat->id,
+            'from' => 'bot',
+            'text' => "Vielen Dank für Ihre Registrierung, {$validated['first_name']}! Wie kann ich Ihnen helfen?",
+            'message_type' => 'registration_welcome'
+        ]);
+
+        // ✅ Nachricht über Pusher broadcasten, damit sie im Admin-Dashboard erscheint
+        broadcast(new MessagePusher($welcomeMessage, $chat->session_id));
+
+        // ✅ Admin-Dashboard über neuen Chat informieren
+        event(new AllChatsUpdate([
+            'type' => 'chat_updated',
+            'chat' => [
+                'session_id' => $chat->session_id,
+                'chat_id' => $chat->id,
+                'status' => 'bot',
+                'channel' => $chat->channel ?? 'website',
+                'customer_first_name' => $visitor->first_name,
+                'customer_last_name' => $visitor->last_name,
+                'customer_phone' => $visitor->phone,
+                'last_message' => $welcomeMessage->text,
+                'last_message_time' => $welcomeMessage->created_at,
+            ]
+        ]));
 
         return response()->json([
             'success' => true,
@@ -2425,6 +2111,13 @@ class ChatbotController extends Controller
             ], 400);
         }
 
+        \Log::info('sendToHumanChat invoked', [
+            'chat_id' => $chat->id,
+            'session_id' => $sessionId,
+            'is_agent' => $validated['isAgent'] ?? false,
+            'chat_status' => $chat->status,
+        ]);
+
         return DB::transaction(function () use ($chat, $validated, $sessionId) {
             // ✅ WICHTIG: Bei Agent-Nachrichten den aktuellen Agent-Namen speichern
             $isAgent = $validated['isAgent'] ?? false;
@@ -2445,10 +2138,13 @@ class ChatbotController extends Controller
             ]);
 
             // Chat als aktiv markieren (ohne Assignment zu ändern)
-            $chat->update([
-                'updated_at' => now()
-                // assigned_to NICHT ändern!
-            ]);
+            // ✅ FIX: Aktualisiere last_activity wenn Benutzer eine Nachricht sendet (nicht bei Agent)
+            $updateData = ['updated_at' => now()];
+            if (!$isAgent) {
+                $updateData['last_activity'] = now(); // ✅ Aktualisiere Zuletzt-Online-Status für Website-Besucher
+            }
+            $chat->update($updateData);
+            // assigned_to NICHT ändern!
 
             // Assignment-Daten für Broadcasting - nur wenn bereits assigned
             $assignmentData = null;
@@ -2478,6 +2174,7 @@ class ChatbotController extends Controller
                         'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
                         'last_message' => $message->text,
                         'last_message_time' => $message->created_at,
+                        'last_activity' => $chat->last_activity ? $chat->last_activity->toIso8601String() : null, // ✅ FIX: last_activity im Event mitgeben
                         'unread_count' => Message::where('chat_id', $chat->id)
                             ->where('from', '!=', 'agent')
                             ->whereDoesntHave('reads')
@@ -2486,6 +2183,14 @@ class ChatbotController extends Controller
                         'assigned_agent' => $chat->assignedTo?->name
                     ]
                 ]));
+
+                $chat->loadMissing('visitor');
+                Log::info('ChatbotController dispatching push notification', [
+                    'chat_id' => $chat->id,
+                    'message_id' => $message->id ?? null,
+                ]);
+
+                $this->pushNotifications->notifyStaffAboutChatMessage($chat, $message);
             }
 
             return response()->json([
@@ -2572,6 +2277,27 @@ class ChatbotController extends Controller
             'success' => true,
             'message' => 'Notification status saved'
         ]);
+    }
+
+    /**
+     * ✅ Helper: Sende Nachricht via WhatsApp wenn es ein WhatsApp-Chat ist
+     */
+    private function dispatchStaffPushForUserMessage(Chat $chat, ?Message $message): void
+    {
+        if (!$message || $message->from !== 'user') {
+            return;
+        }
+
+        try {
+            $chat->loadMissing('visitor');
+            $this->pushNotifications->notifyStaffAboutChatMessage($chat, $message);
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to dispatch staff push notification', [
+                'chat_id' => $chat->id,
+                'message_id' => $message->id ?? null,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     /**

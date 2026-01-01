@@ -1,64 +1,58 @@
 <div class="container mt-5">
   <div class="row">
-    <!-- Left Side Swiper Slider -->
+    <!-- Left Side Bootstrap Carousel -->
     <div class="col-lg-6 col-md-12">
-      <!-- Desktop Swiper -->
-      <swiper-container
-        loop="true"
-        pagination="true"
-        pagination-clickable="true"
-        slides-per-view="1"
-        slides-per-group="1"
-        speed="500"
-        class="desktop contact-images-swiper"
-        autoplay-delay="3000"
-        autoplay-disable-on-interaction="false"
-      >
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact1.jpg" class="slider-img" alt="YISU Travel Office 1">
+      <!-- Desktop Carousel -->
+      <div id="contactImagesDesktopCarousel" class="carousel slide desktop contact-images-swiper" data-bs-ride="carousel" data-bs-interval="3000" appCarouselSwipe>
+        <div class="carousel-indicators">
+          <button type="button" data-bs-target="#contactImagesDesktopCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+          <button type="button" data-bs-target="#contactImagesDesktopCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+          <button type="button" data-bs-target="#contactImagesDesktopCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        </div>
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact1.jpg" class="slider-img w-100" alt="YISU Travel Office 1">
+            </div>
           </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact2.jpg" class="slider-img" alt="YISU Travel Office 2">
+          <div class="carousel-item">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact2.jpg" class="slider-img w-100" alt="YISU Travel Office 2">
+            </div>
           </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact3.jpg" class="slider-img" alt="YISU Travel Office 3">
+          <div class="carousel-item">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact3.jpg" class="slider-img w-100" alt="YISU Travel Office 3">
+            </div>
           </div>
-        </swiper-slide>
-      </swiper-container>
+        </div>
+      </div>
 
-      <!-- Mobile Swiper -->
-      <swiper-container
-        loop="true"
-        pagination="true"
-        pagination-clickable="true"
-        slides-per-view="1"
-        slides-per-group="1"
-        speed="500"
-        class="mobile contact-images-swiper"
-        autoplay-delay="3000"
-        autoplay-disable-on-interaction="false"
-      >
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact1.jpg" class="slider-img" alt="YISU Travel Office 1">
+      <!-- Mobile Carousel -->
+      <div id="contactImagesMobileCarousel" class="carousel slide mobile contact-images-swiper" data-bs-ride="carousel" data-bs-interval="3000" appCarouselSwipe>
+        <div class="carousel-indicators">
+          <button type="button" data-bs-target="#contactImagesMobileCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+          <button type="button" data-bs-target="#contactImagesMobileCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+          <button type="button" data-bs-target="#contactImagesMobileCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        </div>
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact1.jpg" class="slider-img w-100" alt="YISU Travel Office 1">
+            </div>
           </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact2.jpg" class="slider-img" alt="YISU Travel Office 2">
+          <div class="carousel-item">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact2.jpg" class="slider-img w-100" alt="YISU Travel Office 2">
+            </div>
           </div>
-        </swiper-slide>
-        <swiper-slide>
-          <div class="slider-wrapper">
-            <img src="/homepage/contact3.jpg" class="slider-img" alt="YISU Travel Office 3">
+          <div class="carousel-item">
+            <div class="slider-wrapper">
+              <img src="/homepage/contact3.jpg" class="slider-img w-100" alt="YISU Travel Office 3">
+            </div>
           </div>
-        </swiper-slide>
-      </swiper-container>
+        </div>
+      </div>
     </div>
 
     <!-- Right Side Contact Info -->
@@ -68,25 +62,35 @@
       <div class="contact-info">
         <a href="https://maps.app.goo.gl/LNGXjt9hFe8KuUwt9" target="_blank" class="address-link">
           <span>
-            <i class="fas fa-map-marker-alt icon" style="margin-right: 8px"></i>
+            <svg class="icon icon-map-marker-alt" aria-hidden="true" focusable="false" style="margin-right: 8px">
+              <use href="/icons.svg#icon-map-marker-alt"></use>
+            </svg>
             Schnurstraße 15, 63450 Hanau
           </span>
         </a>
         <br>
         <span>
-    <i class="fas fa-phone icon" style="margin-right: 8px"></i>
-    Tel.: <a href="tel:061814341810">06181 4341810</a>
+    <svg class="icon icon-phone" aria-hidden="true" focusable="false" style="margin-right: 8px">
+      <use href="/icons.svg#icon-phone"></use>
+    </svg>
+    Tel.: <a href="tel:+4961814341810">06181 4341810</a>
   </span><br>
         <span>
-    <i class="fas fa-fax icon" style="margin-right: 8px"></i>
+    <svg class="icon icon-fax" aria-hidden="true" focusable="false" style="margin-right: 8px">
+      <use href="/icons.svg#icon-fax"></use>
+    </svg>
     Fax: 06181 4341811
   </span><br>
         <span>
-    <i class="fas fa-mobile-alt icon" style="margin-right: 8px"></i>
-    Mobil: <a href="tel:01727049131">0172 7049131</a>
+    <svg class="icon icon-mobile-alt" aria-hidden="true" focusable="false" style="margin-right: 8px">
+      <use href="/icons.svg#icon-mobile-alt"></use>
+    </svg>
+    Mobil: <a href="tel:+491727049131">0172 7049131</a>
   </span><br>
         <span>
-    <i class="fas fa-envelope icon" style="margin-right: 8px"></i>
+    <svg class="icon icon-envelope" aria-hidden="true" focusable="false" style="margin-right: 8px">
+      <use href="/icons.svg#icon-envelope"></use>
+    </svg>
     E-Mail: <a href="mailto:info@yisu-travel.de">info&#64;yisu-travel.de</a>
   </span>
       </div>
@@ -132,10 +136,8 @@
 
 
       <!-- Social Media Icons -->
-      <div class="mt-3">
-        <a href="https://www.instagram.com/yisu.travel/?hl=de" class="me-3"><i class="bi bi-instagram fs-4"></i></a>
-        <a href="https://www.facebook.com/p/Yisu-Travel-GmbH-100063462493141/?locale=de_DE" class="me-3"><i
-          class="bi bi-facebook fs-4"></i></a>
+      <div class="mt-3 social-links">
+
       </div>
     </div>
   </div>

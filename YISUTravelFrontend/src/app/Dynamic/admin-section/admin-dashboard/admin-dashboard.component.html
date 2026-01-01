@@ -1,16 +1,39 @@
 <div class="chat-app">
+  <div class="chat-loading-overlay" *ngIf="(isChatListLoading && !hasLoadedChatsOnce) || isDeepLinkOpening">
+    <mat-progress-spinner diameter="64" strokeWidth="5" mode="indeterminate"></mat-progress-spinner>
+    <div class="loading-text">
+      {{ isDeepLinkOpening ? 'Chat wird geöffnet...' : 'Chats werden geladen...' }}
+    </div>
+  </div>
   <!-- Notification Banner - ENTFERNT: Redundant mit Permission Dialog -->
 
   <!-- Sidebar -->
-  <div class="chat-sidebar" [class.hidden]="selectedChat" @slideInOut>
+  <div class="chat-sidebar" [class.hidden]="selectedChat || isDeepLinkOpening" @slideInOut>
     <div class="sidebar-header">
       <div class="header-content">
         <h2>Live Support</h2>
         <div class="header-actions">
-          <button mat-icon-button (click)="toggleStaffManagement()" *ngIf="isAdmin" matTooltip="Mitarbeiter verwalten">
+          <button
+            mat-icon-button
+            class="header-icon-btn"
+            routerLink="/admin/chatbot-trainieren"
+            *ngIf="isAdmin"
+            matTooltip="Chatbot trainieren">
+            <mat-icon>smart_toy</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            class="header-icon-btn"
+            (click)="toggleStaffManagement()"
+            *ngIf="isAdmin"
+            matTooltip="Mitarbeiter verwalten">
             <mat-icon>people</mat-icon>
           </button>
-          <button mat-icon-button (click)="goToProfile()" matTooltip="Profil bearbeiten">
+          <button
+            mat-icon-button
+            class="header-icon-btn"
+            (click)="goToProfile()"
+            matTooltip="Profil bearbeiten">
             <mat-icon>person</mat-icon>
           </button>
           <mat-slide-toggle #darkModeSwitch (click)="toggleDarkMode()" [checked]="darkMode" class="darkmode-button"></mat-slide-toggle>
@@ -72,8 +95,8 @@
              [class.is-new]="chat.isNew"
              (click)="selectChat(chat)">
 
-          <div class="avatar-container">
-            <img [src]="chat.customerAvatar || 'assets/default-avatar.png'" [class.online]="chat.isOnline">
+          <div class="avatar-container" [ngClass]="{'whatsapp-avatar': isWhatsAppChat(chat)}">
+            <img [src]="chat.customerAvatar || 'assets/default-avatar.svg'" [class.online]="chat.isOnline">
             <span class="unread-badge" *ngIf="chat.unreadCount > 0">{{chat.unreadCount}}</span>
 
             <div class="escalation-indicator" *ngIf="chat.status === 'human' && !chat.assigned_to">
@@ -110,13 +133,12 @@
             <div class="chat-time">{{ chat.lastMessageTime | date:'dd.MM HH:mm' }}</div>
 
             <!-- Quick Action Buttons in der Chat-Liste -->
-            <div class="quick-action" *ngIf="chat.status === 'human' && !chat.assigned_to">
+            <div class="quick-action" *ngIf="canAssignChat(chat)">
               <button
-                *ngIf="selectedChat && canAssignChat(selectedChat)"
                 mat-raised-button
                 color="primary"
                 class="action-btn assign-btn"
-                (click)="handleChatAssignment(selectedChat)"
+                (click)="assignChat(chat); $event.stopPropagation()"
                 matTooltip="Chat übernehmen">
                 <mat-icon>person_add</mat-icon>
                 Übernehmen
@@ -156,8 +178,8 @@
              [class.needs-assignment]="chat.status === 'human' && !chat.assigned_to"
              (click)="selectAdminChat(chat)">
 
-          <div class="avatar-container">
-            <img [src]="chat.customer_avatar || 'assets/default-avatar.png'" [class.online]="chat.is_online">
+          <div class="avatar-container" [ngClass]="{'whatsapp-avatar': chat.channel === 'whatsapp'}">
+            <img [src]="chat.customer_avatar || 'assets/default-avatar.svg'" [class.online]="chat.is_online">
 
             <!-- Escalation Indicator für Admin-Chats -->
             <div class="escalation-indicator" *ngIf="chat.status === 'human' && !chat.assigned_to">
@@ -196,7 +218,7 @@
             <div class="chat-time">{{chat.last_message_time | date:'dd.MM HH:mm'}}</div>
 
             <!-- Quick Action für Admin-Chats -->
-            <div class="quick-action" *ngIf="chat.status === 'human' && !chat.assigned_to">
+            <div class="quick-action" *ngIf="canAssignChat(chat)">
               <button mat-mini-fab
                       color="primary"
                       (click)="assignAdminChat(chat); $event.stopPropagation()"
@@ -222,7 +244,7 @@
 
     <!-- User Profile Footer -->
     <div class="user-profile">
-      <img [src]="getFullProfileImageUrl(currentAgent.profile_image_url) || currentAgent.avatar || 'assets/default-avatar.png'" class="profile-avatar">
+      <img [src]="getFullProfileImageUrl(currentAgent.profile_image_url) || currentAgent.avatar || 'assets/default-avatar.svg'" class="profile-avatar">
       <div class="profile-info">
         <div class="profile-name">{{currentAgent.name}}</div>
         <div class="profile-status">
@@ -254,8 +276,15 @@
                 routerLink="/">
           <mat-icon>home</mat-icon>
         </button>
-        <button mat-icon-button class="profile-action-btn" matTooltip="Ausloggen"
-                (click)="logout()">
+        <button
+          mat-icon-button
+          type="button"
+          class="profile-action-btn"
+          [disabled]="isLoggingOut"
+          [ngClass]="{'is-logging-out': isLoggingOut}"
+          [matTooltip]="isLoggingOut ? 'Wird abgemeldet...' : 'Ausloggen'"
+          (click)="logout()"
+          [attr.aria-busy]="isLoggingOut ? 'true' : null">
           <mat-icon>logout</mat-icon>
         </button>
       </div>
@@ -271,8 +300,8 @@
       </button>
 
       <div class="chat-user">
-        <div class="avatar-container">
-          <img [src]="selectedChat.customerAvatar || 'assets/default-avatar.png'"
+        <div class="avatar-container" [ngClass]="{'whatsapp-avatar': isWhatsAppChat(selectedChat)}">
+          <img [src]="selectedChat.customerAvatar || 'assets/default-avatar.svg'"
                [class.online]="selectedChat.isOnline"
                class="user-avatar">
         </div>
@@ -296,7 +325,8 @@
               </div>
               <div *ngIf="!selectedChat.isOnline" class="user-status offline">
                 <mat-icon class="status-icon">circle</mat-icon>
-                <span>Zuletzt online {{selectedChat.lastOnline | date:'shortTime'}}</span>
+                <span *ngIf="selectedChat.lastOnline">Zuletzt online {{selectedChat.lastOnline | date:'HH:mm'}}</span>
+                <span *ngIf="!selectedChat.lastOnline">Zuletzt online unbekannt</span>
               </div>
             </div>
           </div>
@@ -328,18 +358,25 @@
         </div>
       </div>
 
-      <!-- Assignment Status Indicator -->
-      <div class="assignment-status" *ngIf="selectedChat">
-        <div class="status-badge" [ngClass]="getAssignmentStatusClass(selectedChat)">
-          {{ getAssignmentInfo(selectedChat) }}
+      <!-- Status & Assignment Indicators -->
+      <div class="chat-header-badges" *ngIf="selectedChat">
+        <div class="chat-status-badge" [ngClass]="'status-' + selectedChat.status">
+          {{ getStatusLabel(selectedChat.status) }}
+        </div>
+
+        <div class="assignment-status" *ngIf="shouldShowAssignmentStatus(selectedChat)">
+          <div class="status-badge" [ngClass]="getAssignmentStatusClass(selectedChat)">
+            <mat-icon class="assignment-status-icon">{{ getAssignmentStatusIcon(selectedChat) }}</mat-icon>
+            <span>{{ getAssignmentInfo(selectedChat) }}</span>
+          </div>
         </div>
       </div>
 
       <!-- Header Actions -->
-      <div class="header-actions">
+      <div class="header-actions" *ngIf="selectedChat && selectedChat.status !== 'closed' && selectedChat.status !== 'bot'">
         <!-- Assignment Button -->
         <button
-          *ngIf="selectedChat && selectedChat.status === 'human' && !selectedChat.assigned_to"
+          *ngIf="selectedChat && canAssignChat(selectedChat)"
           mat-raised-button
           color="primary"
           class="action-btn assign-btn"
@@ -389,7 +426,7 @@
           class="icon-btn"
           matTooltip="Chat beenden"
           (click)="openCloseChatDialog(selectedChat)"
-          *ngIf="selectedChat && selectedChat.status !== 'closed'">
+          *ngIf="canCloseChat(selectedChat)">
           <mat-icon>close</mat-icon>
         </button>
       </div>
@@ -531,22 +568,14 @@
           <mat-icon>smart_toy</mat-icon>
           <span>Dieser Chat läuft aktuell über den Bot</span>
 
-          <!-- Escalation Prompt Button -->
-          <button *ngIf="canSendEscalationPrompt(selectedChat)"
+          <button *ngIf="selectedChat && canAssignChat(selectedChat)"
                   mat-raised-button
-                  color="accent"
-                  (click)="sendEscalationPrompt(selectedChat)"
+                  color="primary"
+                  (click)="handleChatAssignment(selectedChat)"
                   class="escalation-btn">
-            <mat-icon>help_outline</mat-icon>
-            Nachfragen
+            <mat-icon>person_add</mat-icon>
+            Übernehmen
           </button>
-
-          <!-- Cooldown Counter -->
-          <div *ngIf="!canSendEscalationPrompt(selectedChat) && selectedChat.status === 'bot' && getEscalationCooldownText(selectedChat)"
-               class="escalation-cooldown">
-            <mat-icon>schedule</mat-icon>
-            <span>Bis zur nächsten Anfrage: {{ getEscalationCooldownText(selectedChat) }}</span>
-          </div>
         </div>
       </div>
 

@@ -375,16 +375,55 @@ class WhatsAppMessageController extends Controller
     {
         try {
             $chats = Chat::whatsApp()
-                ->with(['visitor', 'messages' => function($query) {
-                    $query->latest()->limit(1);
+                ->with([
+                    'visitor',
+                    'assignedTo:id,name',
+                    'messages' => function($query) {
+                    $query->with('attachments')->orderBy('created_at');
                 }])
-                ->whereIn('status', ['human', 'in_progress', 'bot'])
+                ->whereIn('status', ['human', 'in_progress', 'bot', 'closed'])
                 ->orderBy('updated_at', 'desc')
                 ->get();
 
             return response()->json([
                 'success' => true,
-                'chats' => $chats
+                'chats' => $chats->map(function ($chat) {
+                    return [
+                        'id' => $chat->id,
+                        'session_id' => $chat->session_id,
+                        'whatsapp_number' => $chat->whatsapp_number,
+                        'channel' => $chat->channel ?? 'whatsapp',
+                        'status' => $chat->status,
+                        'assigned_to' => $chat->assigned_to,
+                        'assigned_agent' => $chat->assignedTo?->name,
+                        'visitor' => $chat->visitor,
+                        'messages' => $chat->messages->map(function ($message) {
+                            $attachments = $message->attachments->map(function ($attachment) {
+                                return [
+                                    'id' => $attachment->id,
+                                    'file_name' => $attachment->file_name,
+                                    'file_type' => $attachment->file_type,
+                                    'file_size' => $attachment->file_size,
+                                    'mime_type' => $attachment->mime_type,
+                                    'download_url' => url('api/attachments/' . $attachment->id . '/download')
+                                ];
+                            });
+
+                            return [
+                                'id' => $message->id,
+                                'chat_id' => $message->chat_id,
+                                'from' => $message->from,
+                                'text' => $message->text,
+                                'message_type' => $message->message_type,
+                                'metadata' => $message->metadata,
+                                'attachments' => $attachments,
+                                'created_at' => $message->created_at
+                            ];
+                        }),
+                        'created_at' => $chat->created_at,
+                        'updated_at' => $chat->updated_at
+                    ];
+                })
             ]);
 
         } catch (\Exception $e) {

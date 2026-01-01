@@ -14,7 +14,7 @@
       <div *ngIf="!loading">
         <form [formGroup]="registrationForm" (ngSubmit)="register()">
           <div class="form-row">
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" class="foe">
               <mat-label>Vorname</mat-label>
               <input matInput formControlName="first_name" required>
               <mat-icon matSuffix>person</mat-icon>
@@ -23,7 +23,7 @@
               </mat-error>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" class="foe">
               <mat-label>Nachname</mat-label>
               <input matInput formControlName="last_name" required>
               <mat-icon matSuffix>person</mat-icon>
@@ -34,7 +34,7 @@
           </div>
 
           <div class="form-row">
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" class="foe">
               <mat-label>E-Mail-Adresse</mat-label>
               <input matInput type="email" formControlName="email" required>
               <mat-icon matSuffix>email</mat-icon>
@@ -46,7 +46,7 @@
               </mat-error>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" class="foe">
               <mat-label>Telefon (optional)</mat-label>
               <input matInput formControlName="phone">
               <mat-icon matSuffix>phone</mat-icon>
@@ -54,7 +54,7 @@
           </div>
 
           <div class="form-row">
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" class="foe">
               <mat-label>Passwort</mat-label>
               <input matInput type="password" formControlName="password" required>
               <mat-icon matSuffix>lock</mat-icon>
@@ -66,7 +66,7 @@
               </mat-error>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" class="foe">
               <mat-label>Passwort bestätigen</mat-label>
               <input matInput type="password" formControlName="password_confirmation" required>
               <mat-icon matSuffix>lock</mat-icon>

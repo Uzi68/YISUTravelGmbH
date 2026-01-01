@@ -1,0 +1,104 @@
+ <form action="fluege.php" method="post" class="flight-search-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="from">Von:</label>
+                <input type="text" id="from" name="from" required>
+            </div>
+            <div class="form-group">
+                <label for="to">Nach:</label>
+                <input type="text" id="to" name="to" required>
+            </div>
+            <div class="form-group">
+                <label for="start-date">Startdatum:</label>
+                <input type="date" id="start-date" name="start-date" required>
+            </div>
+            <div class="form-group">
+                <label for="end-date">Enddatum:</label>
+                <input type="date" id="end-date" name="end-date" required>
+            </div>
+            <div class="form-group">
+                <label for="adults">Erwachsene:</label>
+                <input type="number" id="adults" name="adults" min="1" required>
+            </div>
+            <div class="form-group">
+                <label for="children">Kinder:</label>
+                <input type="number" id="children" name="children" min="0">
+            </div>
+        </div>
+        <button type="submit" class="submit-button">Flüge suchen</button>
+    </form>
+    <style>
+        .flight-search-form {
+            display: flex;
+            flex-direction: column;
+            margin: -50px;
+            padding: 40px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: nowrap; /* Alle Elemente in einer Zeile */
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            flex: 1;
+            margin-right: 10px;
+            min-width: 120px; /* Minimalbreite für die Felder */
+        }
+        .form-group:last-child {
+            margin-right: 0; /* Kein rechter Rand für das letzte Feld */
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+        input[type="text"],
+        input[type="date"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .submit-button {
+            padding: 10px;
+            background-color: #1750AA;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .submit-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 1024px) {
+            .form-row {
+                flex-direction: column; /* Auf Tablets untereinander anordnen */
+            }
+            .form-group {
+                margin-right: 0; /* Kein rechter Rand mehr */
+                margin-bottom: 10px; /* Abstand zwischen den Feldern */
+            }
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                flex-direction: column; /* Auf mobilen Geräten untereinander anordnen */
+            }
+            .form-group {
+                margin-bottom: 10px; /* Abstand zwischen den Feldern */
+            }
+        }
+    </style>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('flight_search', 'flight_search_form');

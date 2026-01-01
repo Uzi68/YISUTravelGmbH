@@ -1,6 +1,41 @@
 .gradient-custom {
+  background: var(--customer-ratings-gradient);
   background-blend-mode: screen, color-dodge, overlay, difference, normal;
+  color: var(--yisu-white);
   height: 660px;
+  position: relative;
+  isolation: isolate;
+}
+
+.gradient-custom::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 100%;
+  height: clamp(80px, 12vw, 160px);
+  background: var(--homepage-divider-color);
+  clip-path: ellipse(82% 100% at 50% 0%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gradient-custom::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 100%;
+  height: clamp(80px, 12vw, 160px);
+  background: var(--customer-ratings-fade);
+  clip-path: ellipse(82% 100% at 50% 0%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gradient-custom > * {
+  position: relative;
+  z-index: 1;
 }
 .carousel-indicators {
   border-radius: 50%;
@@ -38,11 +73,6 @@ h4 {
 }
 
 
-.gradient-custom {
-  background: var(--yisu-primary);
-  color: white;
-}
-
 .card {
   border: none; /* Keine Rahmen */
   border-radius: 15px; /* Abgerundete Ecken */
@@ -75,7 +105,7 @@ h4 {
 }
 
 /* Gänsefüßchen sichtbar machen */
-.fa-quote-left {
+.icon-quote-left {
   color: var(--yisu-white) !important;
 }
 

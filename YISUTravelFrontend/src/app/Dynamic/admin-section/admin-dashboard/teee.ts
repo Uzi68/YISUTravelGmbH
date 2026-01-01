@@ -89,11 +89,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   user!: User;
   visitor!: Visitor;
   selectedChat: Chat | null = null;
-  currentAgent = {
-    id: '1',
-    name: 'Thomas Müller',
+  currentAgent: Agent = {
+    id: '',
+    name: '',
     avatar: '',
-    status: 'online'
+    status: 'offline'
   };
 
   loadingAdminChats = false;
@@ -360,7 +360,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       if ('Notification' in window && Notification.permission === 'granted') {
         const notification = new Notification('Neuer Chat', {
           body: `Neue Nachricht von ${data.customer_name || 'einem Kunden'}`,
-          icon: data.customer_avatar || '/assets/default-avatar.png'
+          icon: data.customer_avatar || '/assets/default-avatar.svg'
         });
 
 
@@ -570,6 +570,27 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
 
+  private getVisitorDisplayName(visitor: Visitor | null, fallbackName: string): string {
+    if (!visitor) {
+      return fallbackName;
+    }
+
+    const nameParts = [visitor.first_name, visitor.last_name]
+      .map(part => part?.trim())
+      .filter(part => !!part) as string[];
+
+    if (nameParts.length) {
+      return nameParts.join(' ');
+    }
+
+    if (visitor.email) {
+      return visitor.email;
+    }
+
+    return fallbackName;
+  }
+
+
   async loadActiveChats(): Promise<void> {
     try {
       const response: any = await firstValueFrom(this.chatbotService.getActiveChats());
@@ -592,7 +613,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
               )
             );
             if (visitor) {
-              customerName = visitor.name || customerName;
+              customerName = this.getVisitorDisplayName(visitor, customerName);
             }
           } catch (error) {
             console.error('Error loading visitor name:', error);
@@ -604,7 +625,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         return {
           id: chat.session_id || '',
           chatId: chat.chat_id || '',
-          customerName: chat.customer_name || 'Anonymer Benutzer',
+          customerName,
           customerAvatar: chat.customer_avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
           lastMessage: chat.last_message || '',
           lastMessageTime: new Date(chat.last_message_time || Date.now()),
@@ -673,21 +694,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const adminSub = this.pusherService.listenToPrivate(
       'admin.dashboard',
       'message.received',
-      (data) => this.handleAdminMessage(data)
+      (data: any) => this.handleAdminMessage(data)
     );
 
     // 2. Channel für alle Chats
     const allChatsSub = this.pusherService.listenToPrivate(
       'presence-all.chats',
       'chat.update',
-      (data) => this.handleGlobalChatUpdate(data)
+      (data: any) => this.handleGlobalChatUpdate(data)
     );
 
     // Channel für ALLE AKTIVEN CHATS
     const allActiveChatsSub = this.pusherService.listenToPrivate(
       'all.active.chats',
       'message.received',
-      (data) => this.handleAllChatsMessage(data)
+      (data: any) => this.handleAllChatsMessage(data)
     );
 
     // 3. Spezifischer Chat-Channel (nur einmal)
@@ -879,7 +900,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     console.log('Starte Chat-Zuweisung für Chat ID:', currentChat.chatId);
 
-    this.chatbotService.assignChat(currentChat.chatId).subscribe({
+    const agentId = Number(this.currentAgent.id);
+    if (!agentId) {
+      console.warn('Kein gültiger Agent für die Zuweisung gefunden');
+      return;
+    }
+
+    this.chatbotService.assignChat(currentChat.chatId, agentId).subscribe({
       next: (response) => {
         console.log('Chat erfolgreich zugewiesen:', response);
 

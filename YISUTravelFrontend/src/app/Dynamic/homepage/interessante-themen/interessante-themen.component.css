@@ -1,8 +1,47 @@
 section {
-  margin-top: 50px;
+  margin-top: 15px;
   position: relative;
   overflow: hidden;
-  background-color: var(--amt-section-color)!important;
+  isolation: isolate;
+  background: var(--amt-section-gradient) !important;
+  color: var(--yisu-white);
+}
+
+section::before {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: clamp(80px, 12vw, 160px);
+  background: var(--homepage-divider-color);
+  clip-path: ellipse(78% 100% at 50% 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+section::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: clamp(80px, 12vw, 160px);
+  background: var(--amt-section-fade);
+  clip-path: ellipse(78% 100% at 50% 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+section > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  section {
+    margin-top: 10px;
+  }
 }
 
 img {
@@ -27,10 +66,8 @@ lead {
   opacity: 0.1;
 }
 
-.btn-primary {
-  background-color: #ffffff; /* Button primary color */
-  border-color: #ffffff; /* Button border color */
-}
+/* Button styles werden jetzt global in styles.css verwaltet */
+/* Für Konsistenz mit dem Rest der Seite */
 
 .mat-mdc-unelevated-button {
   border-radius: 6px; /* Example: new border radius */
@@ -41,7 +78,7 @@ lead {
   font-size: 20px; /* Larger text */
   padding: 30px 0px; /* Adjust padding for better appearance */
   border-radius: 6px; /* Optional: rounded corners */
-  color: #000000;
+  color: var(--yisu-white);
 }
 
 @media (max-width: 768px) { /* Targeting mobile devices */

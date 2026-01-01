@@ -171,7 +171,43 @@
 
 .attach-button {
   flex-shrink: 0;
-  color: var(--yisu-primary);
+  color: var(--yisu-secondary) !important;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.attach-button:hover {
+  background: rgba(25, 118, 210, 0.1);
+  color: var(--yisu-nav-items) !important;
+  transform: scale(1.1);
+}
+
+.attach-button mat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+}
+
+/* Dark Mode Attach Button */
+body.dark-mode .attach-button {
+  color: var(--yisu-secondary) !important;
+}
+
+body.dark-mode .attach-button:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--yisu-nav-items) !important;
 }
 
 /* Image Preview Styles - WhatsApp Style */
@@ -296,16 +332,22 @@
 
 /* Header - YISU Travel Farben */
 .chatbot-header {
-  background: var(--yisu-primary);
-  color: var(--yisu-white);
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-white) !important;
   padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: var(--yisu-shadow-sm);
-  border-bottom: 1px solid var(--yisu-border-light);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
   z-index: 10;
+}
+
+/* Dark Mode Header */
+body.dark-mode .chatbot-header {
+  background: var(--yisu-secondary) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 /* ✅ Schatten unter dem Header für bessere Trennung */
@@ -338,6 +380,7 @@ textarea {
   align-items: center;
   gap: 12px;
   padding-right: 20px;
+  color: var(--yisu-white) !important;
 }
 
 .avatar {
@@ -358,12 +401,15 @@ textarea {
 .header-text h3 {
   margin: 0;
   font-size: 16px;
+  color: var(--yisu-white) !important;
+  font-weight: 600;
 }
 
 .header-text p {
   margin: 0;
   font-size: 12px;
-  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 400;
 }
 
 /* Messages */
@@ -379,6 +425,11 @@ textarea {
   /* ✅ Scrollbar-Styling für bessere Sichtbarkeit */
   scrollbar-width: thin;
   scrollbar-color: var(--yisu-border-light) transparent;
+}
+
+/* ✅ Deaktiviere Scrolling wenn Registrierungsformular angezeigt wird */
+.chatbot-messages:has(.registration-form) {
+  overflow-y: auto;
 }
 
 /* ✅ Webkit Scrollbar Styling */
@@ -419,23 +470,81 @@ textarea {
 }
 
 .user-message .message-bubble {
-  background: var(--yisu-primary);
-  color: var(--yisu-white);
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-white) !important;
   border-radius: 18px 18px 0 18px;
-  box-shadow: var(--yisu-shadow-sm);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.user-message .message-bubble span {
+  color: var(--yisu-white) !important;
 }
 
 .user-message .message-time {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9) !important;
   font-weight: 500;
+  font-size: 0.75rem;
+}
+
+/* Dark Mode User Message */
+body.dark-mode .user-message .message-bubble {
+  background: #2563eb !important; /* Dunkleres Blau für bessere Lesbarkeit */
+  color: var(--yisu-white) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .user-message .message-bubble span {
+  color: var(--yisu-white) !important;
 }
 
 .bot-message .message-bubble {
-  background: var(--yisu-bg-card);
+  background: var(--yisu-bg-section);
   color: var(--yisu-text-dark);
+  box-shadow: 0 2px 8px rgba(21, 101, 192, 0.2);
+}
+
+/* Agent Messages - besser sichtbar (auch für Mitarbeiter-Nachrichten) */
+.message.agent-message .message-bubble,
+.message[class*="bot-message"]:has(.message-badge.agent) .message-bubble,
+.bot-message:has(.message-badge.agent) .message-bubble {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-white) !important;
   border-radius: 18px 18px 18px 0;
-  box-shadow: var(--yisu-shadow-sm);
-  border: 1px solid var(--yisu-border-light);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Agent Message Text Styles */
+.message.agent-message .message-bubble span,
+.message[class*="bot-message"]:has(.message-badge.agent) .message-bubble span,
+.bot-message:has(.message-badge.agent) .message-bubble span {
+  color: var(--yisu-white) !important;
+}
+
+.message.agent-message .message-time,
+.message[class*="bot-message"]:has(.message-badge.agent) .message-time,
+.bot-message:has(.message-badge.agent) .message-time {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.dark-mode .message.agent-message .message-bubble,
+body.dark-mode .message[class*="bot-message"]:has(.message-badge.agent) .message-bubble,
+body.dark-mode .bot-message:has(.message-badge.agent) .message-bubble {
+  background: #2563eb !important; /* Dunkleres Blau für bessere Lesbarkeit */
+  color: var(--yisu-white) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+body.dark-mode .bot-message .message-bubble {
+  background: var(--yisu-bg-section);
+  color: var(--yisu-text-dark);
+  border: 1.5px solid var(--yisu-border-medium) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .bot-message .message-time {
@@ -443,15 +552,7 @@ textarea {
   font-weight: 500;
 }
 
-.message-time {
-  font-size: 10px;
-  opacity: 0.9;
-  display: block;
-  text-align: right;
-  margin-top: 4px;
-  color: var(--yisu-text-light);
-  font-weight: 500;
-}
+/* .message-time styles are defined below in message-meta section */
 
 /* Typing Indicator */
 .typing-indicator {
@@ -487,34 +588,98 @@ textarea {
   border-top: 1px solid var(--yisu-border-light);
 }
 
-/* Input Form Styling */
+/* Input Form Styling - Clean and Professional */
 .input-form {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--yisu-bg-section);
+  background: var(--yisu-bg-card);
   border-radius: 25px;
   padding: 8px 12px;
-  border: 1px solid var(--yisu-border-light);
+  border: 2px solid var(--yisu-border-medium);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.input-field {
+.input-form:focus-within {
+  border-color: var(--yisu-secondary);
+  box-shadow: 0 2px 12px rgba(25, 118, 210, 0.15);
+}
+
+/* Remove any hover effects that cause gray areas */
+.input-form:hover {
+  border-color: var(--yisu-border-medium);
+}
+
+.input-form:focus-within:hover {
+  border-color: var(--yisu-secondary);
+}
+
+/* Professional Chatbot Textarea - Clean and Simple */
+.chatbot-textarea {
   flex: 1;
+  margin: 0;
   border: none;
   outline: none;
   background: transparent;
-  font-size: 14px;
   color: var(--yisu-text-dark);
+  font-size: 15px;
+  font-weight: 400;
   font-family: inherit;
+  line-height: 1.5;
+  min-height: 24px;
+  max-height: 120px;
+  resize: none;
+  overflow-y: auto;
+  padding: 0;
+  width: 100%;
+  transition: none;
 }
 
-.input-field::placeholder {
+/* Placeholder Styling */
+.chatbot-textarea::placeholder {
   color: var(--yisu-text-light);
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+body.dark-mode .chatbot-textarea::placeholder {
+  color: #e2e8f0;
+  opacity: 0.9;
+}
+
+.chatbot-textarea:focus {
+  outline: none;
+  border: none;
+}
+
+.chatbot-textarea:focus::placeholder {
+  opacity: 0.6;
+}
+
+body.dark-mode .chatbot-textarea:focus::placeholder {
+  opacity: 0.7;
+}
+
+/* Dark Mode Input Form */
+body.dark-mode .input-form {
+  background: var(--yisu-bg-card);
+  border-color: var(--yisu-border-light);
+}
+
+body.dark-mode .input-form:focus-within {
+  border-color: var(--yisu-secondary);
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.2);
+}
+
+/* Dark mode textarea */
+body.dark-mode .chatbot-textarea {
+  color: var(--yisu-text-dark);
 }
 
 .send-button {
-  background: var(--yisu-primary);
-  color: white;
+  background: var(--yisu-secondary) !important;
+  color: white !important;
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -525,13 +690,24 @@ textarea {
   justify-content: center;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(25, 118, 210, 0.25);
+  border: none;
 }
 
-.send-button:hover {
-  background: var(--yisu-accent);
+.send-button:hover:not(:disabled) {
+  background: var(--yisu-nav-items) !important;
+  color: white !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(25, 118, 210, 0.35);
 }
+
+.send-button:disabled {
+  background: var(--yisu-text-light) !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dark Mode Input */
+/* Dark Mode Input Form - Already covered above */
 
 /* Welcome Message */
 .welcome-message {
@@ -546,29 +722,126 @@ textarea {
   border: 1px solid var(--yisu-border-light);
 }
 
+/* Dark Mode Welcome Bubble - Verbessert */
+body.dark-mode .welcome-bubble {
+  background: var(--yisu-bg-section);
+  border: 1px solid var(--yisu-border-medium);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .welcome-bubble p {
+  color: var(--yisu-text-dark);
+  font-weight: 400;
+}
+
 .quick-questions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 14px;
+  margin-top: 20px;
 }
 
 .quick-questions button {
   text-align: left;
   white-space: normal;
-  line-height: 1.4;
-  background: var(--yisu-secondary) !important;
-  color: var(--yisu-text-black) !important;
-  border: none !important;
+  line-height: 1.6;
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
   font-weight: 500;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
+  font-size: 15px;
+  letter-spacing: 0.3px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 3px 10px rgba(25, 118, 210, 0.25), 
+              0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 16px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-questions button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.quick-questions button:hover::before {
+  left: 100%;
 }
 
 .quick-questions button:hover {
-  background: var(--yisu-button-primary-hover) !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%) !important; /* Dunkler beim Hover */
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(13, 71, 161, 0.35),
+              0 2px 6px rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+}
+
+.quick-questions button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(13, 71, 161, 0.3);
+}
+
+/* Dark Mode Quick Questions - Elegant und professionell (Reisebüro-Stil) */
+body.dark-mode .quick-questions button {
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(59, 130, 246, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.4),
+              0 1px 3px rgba(0, 0, 0, 0.2);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.6;
+  letter-spacing: 0.3px;
+}
+
+body.dark-mode .quick-questions button::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+}
+
+body.dark-mode .quick-questions button:hover {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%) !important; /* Dunkler beim Hover */
+  color: #ffffff !important;
+  border: 1.5px solid rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 6px 22px rgba(30, 58, 138, 0.5),
+              0 2px 6px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+  font-weight: 500;
+}
+
+body.dark-mode .quick-questions button:active {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(30, 58, 138, 0.4);
+}
+
+/* Sicherstellen dass Text immer sichtbar ist */
+body.dark-mode .quick-questions button,
+body.dark-mode .quick-questions button:hover,
+body.dark-mode .quick-questions button:focus,
+body.dark-mode .quick-questions button:active {
+  color: #ffffff !important;
+}
+
+body.dark-mode .quick-questions button span,
+body.dark-mode .quick-questions button * {
+  color: #ffffff !important;
+}
+
+/* Light Mode: Sicherstellen dass Text beim Hover sichtbar bleibt */
+.quick-questions button:hover,
+.quick-questions button:hover span,
+.quick-questions button:hover * {
+  color: #ffffff !important;
 }
 
 /* Scroll to bottom button */
@@ -617,6 +890,17 @@ textarea {
 }
 /* ✅ Mobile Responsive Chatbot - VOLLBILD (WhatsApp-Style) */
 @media (max-width: 767px) {
+  /* ✅ Verhindere Body-Scrolling wenn Chat offen ist (nur auf Mobile) */
+  /* Verwendet :has() um zu prüfen ob chatbot-window existiert wenn container.open aktiv ist */
+  body:has(.chatbot-container.open .chatbot-window),
+  html:has(.chatbot-container.open .chatbot-window) {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+    touch-action: none;
+  }
+
   .chatbot-window {
     /* ✅ Vollbild auf Mobile */
     width: 100vw;
@@ -648,11 +932,11 @@ textarea {
     height: 60px;
   }
 
-  /* ✅ WhatsApp-Style: Normale Flex-Direction, Messages scrollen von unten nach oben */
+  /* ✅ Mobile: Nachrichten von oben nach unten, neue Nachrichten kommen von unten */
   .chatbot-messages {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* ✅ Normale Reihenfolge: Älteste oben, neueste unten */
     padding: 16px;
     padding-bottom: 20px;
     overflow-y: auto;
@@ -663,6 +947,11 @@ textarea {
     /* ✅ Scrollbar immer sichtbar für Desktop-Simulation */
     scrollbar-width: thin;
     scrollbar-color: var(--yisu-border-light) transparent;
+  }
+
+  /* ✅ Deaktiviere Scrolling auf Mobile wenn Registrierungsformular angezeigt wird */
+  .chatbot-messages:has(.registration-form) {
+    overflow-y: auto;
   }
 
   .message {
@@ -682,12 +971,57 @@ textarea {
     gap: 8px;
   }
 
-  /* ✅ Textarea Auto-Resize für Mobile */
-  .input-field {
+  /* Mobile Textarea */
+  .chatbot-textarea {
     max-height: 120px;
-    overflow-y: auto;
-    resize: none;
+    font-size: 15px;
     line-height: 1.4;
+  }
+
+  /* Mobile Registration Form */
+  .registration-form-fields {
+    gap: 0px;
+  }
+  
+  .registration-form-fields mat-form-field {
+    margin-bottom: 0;
+  }
+  
+  .registration-form .welcome-bubble {
+    padding: 16px;
+  }
+  
+  .registration-form .welcome-bubble h3 {
+    font-size: 17px;
+    margin-bottom: 8px;
+  }
+  
+  .registration-form .welcome-bubble p {
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  
+  .registration-form ::ng-deep .mat-mdc-form-field-flex {
+    min-height: 52px;
+  }
+  
+  .registration-form ::ng-deep .mdc-text-field {
+    height: 52px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .registration-form ::ng-deep .mdc-text-field__input {
+    font-size: 14px;
+    padding: 0;
+    height: 100%;
+    align-self: center;
+    margin: 0;
+  }
+  
+  .terms-checkbox {
+    margin: 6px 0 18px 0;
   }
 
   .attach-button,
@@ -737,71 +1071,315 @@ textarea {
 }
 
 
-.escalation-options {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  justify-content: flex-end;
+.message-bubble.escalation-bubble {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 28px;
 }
 
-.escalation-options.manual-escalation {
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  margin-top: 8px;
-}
-
-.escalation-options button {
-  min-width: 100px;
-  font-size: 14px;
-}
-
-.accept-btn {
-  background: var(--yisu-secondary) !important;
-  color: var(--yisu-text-black) !important;
-  border: none !important;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
-}
-
-.accept-btn:hover {
-  background: var(--yisu-button-primary-hover) !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
-}
-
-.decline-btn {
-  border-color: #9ca3af;
-  color: #6b7280;
-  background: #f3f4f6;
-  transition: all 0.2s ease;
-}
-
-.decline-btn:hover {
-  background: #e5e7eb;
-  border-color: #6b7280;
-  color: #374151;
-}
-
-.escalation-options {
+.escalation-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 18px;
+  padding: 24px 26px 22px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.14);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+}
+
+.escalation-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.85);
+}
+
+.escalation-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: none;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.escalation-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(30, 64, 175, 0.12);
+  color: rgba(30, 64, 175, 0.9);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 1;
+}
+
+.escalation-chip mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.escalation-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  position: relative;
+  z-index: 1;
+  padding-bottom: 4px;
+}
+
+.escalation-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: rgba(37, 99, 235, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d4ed8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 18px 34px rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  flex-shrink: 0;
+}
+
+.escalation-icon mat-icon {
+  font-size: 26px;
+  width: 26px;
+  height: 26px;
+  color: currentColor;
+}
+
+.escalation-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.escalation-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--yisu-text-dark);
+  line-height: 1.35;
+}
+
+.escalation-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(71, 85, 105, 0.95);
+  line-height: 1.55;
+}
+
+.escalation-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  position: relative;
+  z-index: 1;
 }
 
 .escalation-options button {
-  text-align: left;
-  white-space: normal;
-  line-height: 1.4;
-  justify-content: flex-start;
-  padding: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: 16px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-height: 48px;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, background-color 0.2s ease, border-color 0.2s ease;
+  line-height: 1;
 }
 
-.escalation-options button[color="primary"] {
-  background-color: #0077b6;
-  color: white;
+.escalation-options button mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.escalation-options .decline-btn {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: rgba(71, 85, 105, 0.95);
+}
+
+.escalation-options .decline-btn:hover {
+  background: rgba(248, 250, 252, 0.98);
+  border-color: rgba(59, 130, 246, 0.32);
+  color: rgba(30, 64, 175, 0.92);
+  transform: translateY(-1.5px);
+  box-shadow: 0 16px 22px rgba(15, 23, 42, 0.09);
+}
+
+.escalation-options .accept-btn {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 16px 26px rgba(37, 99, 235, 0.35);
+}
+
+.escalation-options .accept-btn:hover {
+  background-color: #1d4ed8 !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 20px 32px rgba(30, 64, 175, 0.42);
+}
+
+.escalation-options button:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.6);
+  outline-offset: 2px;
+}
+
+.escalation-footer {
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.escalation-footer .message-meta {
+  margin-top: 0;
+  width: 100%;
+  gap: 10px;
+}
+
+.escalation-footer .message-time {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(100, 116, 139, 0.9);
+}
+
+@media (max-width: 520px) {
+  .escalation-card {
+    padding: 20px 18px 18px;
+  }
+
+  .escalation-card::before {
+    left: 18px;
+    right: 18px;
+  }
+
+  .escalation-header {
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .escalation-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+:host-context(.dark-mode) .message-bubble.escalation-bubble,
+body.dark-mode .message-bubble.escalation-bubble {
+  background: transparent;
+  border-radius: 28px;
+}
+
+:host-context(.dark-mode) .escalation-card,
+body.dark-mode .escalation-card {
+  background: #1e293b;
+  border: 1px solid rgba(203, 213, 225, 0.38);
+  box-shadow: 0 28px 48px rgba(2, 6, 23, 0.75);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: #f8fafc;
+}
+
+:host-context(.dark-mode) .escalation-card::before,
+body.dark-mode .escalation-card::before {
+  background: rgba(96, 165, 250, 0.75);
+}
+
+:host-context(.dark-mode) .escalation-card::after,
+body.dark-mode .escalation-card::after {
+  background: none;
+}
+
+:host-context(.dark-mode) .escalation-chip,
+body.dark-mode .escalation-chip {
+  background: rgba(96, 165, 250, 0.25);
+  color: rgba(240, 249, 255, 0.96);
+}
+
+:host-context(.dark-mode) .escalation-icon,
+body.dark-mode .escalation-icon {
+  background: rgba(96, 165, 250, 0.28);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 16px 34px rgba(37, 99, 235, 0.35);
+}
+
+:host-context(.dark-mode) .escalation-title,
+body.dark-mode .escalation-title {
+  color: #e2e8f0;
+}
+
+:host-context(.dark-mode) .escalation-subtitle,
+body.dark-mode .escalation-subtitle {
+  color: rgba(226, 232, 240, 0.9);
+}
+
+:host-context(.dark-mode) .escalation-options .decline-btn,
+body.dark-mode .escalation-options .decline-btn {
+  background: rgba(148, 163, 184, 0.15);
+  border-color: rgba(203, 213, 225, 0.55);
+  color: rgba(241, 245, 249, 0.92);
+}
+
+:host-context(.dark-mode) .escalation-options .decline-btn:hover,
+body.dark-mode .escalation-options .decline-btn:hover {
+  background: rgba(148, 163, 184, 0.32);
+  color: #e0f2fe;
+  box-shadow: 0 18px 28px rgba(15, 23, 42, 0.58);
+}
+
+:host-context(.dark-mode) .escalation-options .accept-btn,
+body.dark-mode .escalation-options .accept-btn {
+  background-color: #3b82f6 !important;
+  box-shadow: 0 18px 34px rgba(59, 130, 246, 0.55);
+}
+
+:host-context(.dark-mode) .escalation-options .accept-btn:hover,
+body.dark-mode .escalation-options .accept-btn:hover {
+  background-color: #1e40af !important;
+  box-shadow: 0 22px 42px rgba(59, 130, 246, 0.62);
+}
+
+:host-context(.dark-mode) .escalation-footer,
+body.dark-mode .escalation-footer {
+  border-top-color: rgba(148, 163, 184, 0.45);
+}
+
+:host-context(.dark-mode) .escalation-footer .message-time,
+body.dark-mode .escalation-footer .message-time {
+  color: rgba(191, 219, 254, 0.85);
 }
 
 
@@ -832,93 +1410,598 @@ textarea {
 
 
 
-/* In chatbot-ui.component.css */
+/* Registration Form - Kompakt und Schön mit YISU Travel Design */
 .registration-form {
-  padding: 15px;
+  padding: 0;
+  margin: 0;
+}
+
+.registration-form .welcome-bubble {
+  padding: 20px;
+  margin: 0;
+  background: var(--yisu-bg-card);
+  border-radius: 12px;
+  box-shadow: var(--yisu-shadow-sm);
+  border: 1px solid var(--yisu-border-light);
+}
+
+.registration-form .welcome-bubble h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--yisu-text-dark);
+  line-height: 1.4;
+}
+
+.registration-form .welcome-bubble p {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: var(--yisu-text-medium);
+  line-height: 1.5;
 }
 
 .registration-form-fields {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 15px;
+  gap: 0px;
+  margin-top: 0;
+  width: 100%;
 }
 
 .form-row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .form-row input {
   flex: 1;
 }
 
-.registration-form input {
-  padding: 12px;
-  border: 1px solid var(--yisu-border-light);
-  border-radius: 8px;
-  font-size: 14px;
-  background: var(--yisu-bg-card);
-  color: var(--yisu-text-dark);
-  font-family: inherit;
+/* Angular Material Form Fields - Verbessertes Styling */
+.registration-form mat-form-field {
+  width: 100%;
+  margin-bottom: 0;
+  display: block;
 }
 
-.registration-form input:disabled {
-  background: var(--yisu-bg-section);
+.registration-form-fields mat-form-field {
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+.registration-form-fields mat-form-field:last-of-type {
+  margin-bottom: 0;
+}
+
+/* Material Input Styles - Verbesserte Größen und Abstände */
+.registration-form ::ng-deep .mat-mdc-form-field {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 0;
+  display: block;
+}
+
+.registration-form ::ng-deep .mat-mdc-form-field-wrapper {
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.registration-form ::ng-deep .mat-mdc-form-field-flex {
+  min-height: 56px;
+  align-items: center;
+  padding: 0;
+  display: flex;
+}
+
+.registration-form ::ng-deep .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
+  height: 56px;
+}
+
+.registration-form ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: var(--yisu-bg-card);
+  border-radius: 8px;
+  padding: 0;
+}
+
+.registration-form ::ng-deep .mat-mdc-form-field-focus-overlay {
+  background-color: transparent;
+}
+
+/* Input Container - Verbesserte Höhe und Padding */
+.registration-form ::ng-deep .mdc-text-field {
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+}
+
+.registration-form ::ng-deep .mdc-text-field__input {
+  padding: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--yisu-text-dark);
+  caret-color: var(--yisu-secondary);
+  height: 100%;
+  align-self: center;
+  margin: 0;
+}
+
+/* Input Padding für bessere Platzierung */
+.registration-form ::ng-deep .mdc-text-field--outlined .mdc-notched-outline {
+  top: 0;
+}
+
+.registration-form ::ng-deep .mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__leading,
+.registration-form ::ng-deep .mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__notch,
+.registration-form ::ng-deep .mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__trailing {
+  top: 0;
+}
+
+/* Input Alignment - Cursor richtig positionieren */
+.registration-form ::ng-deep .mdc-text-field__input::placeholder {
+  opacity: 0;
+}
+
+.registration-form ::ng-deep .mat-mdc-form-field-input-control {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-height: 56px;
+}
+
+.registration-form ::ng-deep .mat-mdc-form-field-input-control .mdc-text-field__input {
+  align-self: center;
+  vertical-align: middle;
+  line-height: 1.5;
+}
+
+/* Sicherstellen dass der Input-Container richtig ausgerichtet ist */
+.registration-form ::ng-deep .mdc-text-field__ripple {
+  display: none;
+}
+
+.registration-form ::ng-deep .mat-mdc-text-field-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+/* Outline Border - YISU Travel Colors - Light Mode */
+.registration-form ::ng-deep .mdc-text-field--outlined .mdc-notched-outline__leading,
+.registration-form ::ng-deep .mdc-text-field--outlined .mdc-notched-outline__notch,
+.registration-form ::ng-deep .mdc-text-field--outlined .mdc-notched-outline__trailing {
+  border-color: var(--yisu-border-light);
+  border-width: 1.5px;
+}
+
+.registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__leading,
+.registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__notch,
+.registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__trailing {
+  border-color: var(--yisu-border-medium);
+  transition: border-color 0.2s ease;
+}
+
+.registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled):hover .mdc-notched-outline__leading,
+.registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled):hover .mdc-notched-outline__notch,
+.registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled):hover .mdc-notched-outline__trailing {
+  border-color: var(--yisu-secondary);
+  border-width: 1.5px;
+}
+
+.registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-notched-outline__leading,
+.registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-notched-outline__notch,
+.registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-notched-outline__trailing {
+  border-color: var(--yisu-secondary) !important;
+  border-width: 2px;
+}
+
+/* Label Styles - Verbessert - Light Mode */
+.registration-form ::ng-deep .mat-mdc-form-field-label {
+  color: var(--yisu-text-medium) !important;
+  font-size: 15px;
+  font-weight: 400;
+  margin-left: 0;
+}
+
+.registration-form ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-form-field-label,
+.registration-form ::ng-deep .mat-mdc-form-field-label.mat-mdc-floating-label--float-above {
+  color: var(--yisu-secondary) !important;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* Notched Outline Label Container */
+.registration-form ::ng-deep .mdc-notched-outline__notch {
+  padding: 0 0px;
+}
+
+/* Input Text and Caret Color - Light Mode */
+.registration-form ::ng-deep .mdc-text-field__input {
+  color: var(--yisu-text-dark) !important;
+  caret-color: var(--yisu-secondary) !important;
+}
+
+/* Notched Outline Label */
+.registration-form ::ng-deep .mdc-notched-outline .mdc-notched-outline__leading,
+.registration-form ::ng-deep .mdc-notched-outline .mdc-notched-outline__notch,
+.registration-form ::ng-deep .mdc-notched-outline .mdc-notched-outline__trailing {
+  border-color: var(--yisu-border-medium);
+}
+
+/* Hint and Error Messages - Verbessert */
+.registration-form ::ng-deep .mat-mdc-form-field-hint-wrapper,
+.registration-form ::ng-deep .mat-mdc-form-field-error-wrapper {
+  padding: 0;
+  margin-top: 6px;
+  font-size: 12px;
+  min-height: 18px;
+  padding-left: 0;
+}
+
+.registration-form ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  margin-top: 6px;
+  padding: 0;
+  height: auto;
+}
+
+.registration-form ::ng-deep .mat-mdc-form-field-error {
+  font-size: 12px;
+  color: var(--yisu-form-error);
+  line-height: 1.4;
+}
+
+/* Disabled State */
+.registration-form ::ng-deep .mdc-text-field--disabled .mdc-text-field__input {
   cursor: not-allowed;
+  opacity: 0.6;
+  background-color: var(--yisu-bg-section);
+  color: var(--yisu-text-light);
+}
+
+.registration-form ::ng-deep .mdc-text-field--disabled .mdc-notched-outline__leading,
+.registration-form ::ng-deep .mdc-text-field--disabled .mdc-notched-outline__notch,
+.registration-form ::ng-deep .mdc-text-field--disabled .mdc-notched-outline__trailing {
+  border-color: var(--yisu-border-light);
+  opacity: 0.5;
+}
+
+/* Dark Mode Registration Form - Verbessert */
+body.dark-mode .registration-form .welcome-bubble {
+  background: var(--yisu-bg-card);
+  border-color: var(--yisu-border-light);
+  box-shadow: var(--yisu-shadow-md);
+}
+
+body.dark-mode .registration-form .welcome-bubble h3 {
+  color: #ffffff;
+}
+
+body.dark-mode .registration-form .welcome-bubble p {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+body.dark-mode .registration-form ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: var(--yisu-bg-card) !important;
+}
+
+/* Dark Mode Label and Input Text */
+body.dark-mode .registration-form ::ng-deep .mat-mdc-form-field-label {
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+body.dark-mode .registration-form ::ng-deep .mdc-text-field__input {
+  color: #ffffff !important;
+  caret-color: #7ab8ff !important;
+}
+
+body.dark-mode .registration-form ::ng-deep .mdc-text-field__input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+body.dark-mode .registration-form ::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-form-field-label,
+body.dark-mode .registration-form ::ng-deep .mat-mdc-form-field-label.mat-mdc-floating-label--float-above {
+  color: #b9d8ff !important;
+}
+
+/* Dark Mode Input Borders - Standard */
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--outlined .mdc-notched-outline__leading,
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--outlined .mdc-notched-outline__notch,
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--outlined .mdc-notched-outline__trailing {
+  border-color: rgba(118, 177, 255, 0.75) !important;
+  border-width: 1.5px;
+}
+
+/* Dark Mode Input Borders - Hover */
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled):hover .mdc-notched-outline__leading,
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled):hover .mdc-notched-outline__notch,
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled):hover .mdc-notched-outline__trailing {
+  border-color: rgba(143, 197, 255, 0.9) !important;
+}
+
+/* Dark Mode Input Borders - Focused */
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-notched-outline__leading,
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-notched-outline__notch,
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-notched-outline__trailing {
+  border-color: #6baeff !important;
+  border-width: 2px;
+}
+
+/* Dark Mode Disabled State */
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--disabled .mdc-text-field__input {
+  color: var(--yisu-text-light) !important;
   opacity: 0.6;
 }
 
-.terms-checkbox {
-  margin: 10px 0;
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--disabled .mdc-notched-outline__leading,
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--disabled .mdc-notched-outline__notch,
+body.dark-mode .registration-form ::ng-deep .mdc-text-field--disabled .mdc-notched-outline__trailing {
+  border-color: var(--yisu-border-light) !important;
+  opacity: 0.4;
 }
 
-.terms-checkbox label {
-  display: flex;
+/* Terms Checkbox - Verbesserte Abstände */
+.terms-checkbox {
+  margin: 8px 0 20px 0;
+  padding: 0;
+  width: 100%;
+}
+
+.registration-form ::ng-deep .terms-checkbox mat-checkbox {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0;
+  width: 100%;
+}
+
+.registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox {
+  margin: 0;
+}
+
+.registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-checkbox {
+  margin: 0;
+}
+
+.registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-checkbox .mdc-checkbox__ripple {
+  width: 36px;
+  height: 36px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-checkbox .mdc-checkbox__ripple::before,
+.registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-checkbox .mdc-checkbox__ripple::after {
+  width: 36px;
+  height: 36px;
+}
+
+.registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-form-field {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 4px;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-form-field label,
+.registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-form-field .mdc-checkbox__label {
+  display: inline-flex !important;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--yisu-text-medium);
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 400;
+  color: var(--yisu-text-dark);
+  width: auto;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-checkbox {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.registration-form ::ng-deep .terms-checkbox .terms-checkbox-text,
+.registration-form ::ng-deep .terms-checkbox .terms-link {
+  display: inline;
+}
+
+/* Checkbox Text für Dark Mode - Weiß für bessere Lesbarkeit - ERZWUNGEN */
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox-label {
+  color: #ffffff !important;
+}
+
+/* FORCE WHITE - Überschreibt alles */
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox-label *:not(a):not(.terms-link) {
+  color: #ffffff !important;
+}
+
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox-label,
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox-label span,
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox-label *:not(a) {
+  color: #ffffff !important;
+}
+
+/* Zusätzliche Regel für alle Text-Elemente außer Links */
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox-label > *:not(a),
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mdc-checkbox__label,
+body.dark-mode .registration-form ::ng-deep .terms-checkbox label {
+  color: #ffffff !important;
+}
+
+/* Direkter Selektor für die Text-Spans - ERZWUNGEN - ALLE MÖGLICHEN KOMBINATIONEN */
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .terms-checkbox-text,
+body.dark-mode .registration-form ::ng-deep .terms-checkbox span.terms-checkbox-text,
+body.dark-mode .registration-form ::ng-deep .mat-mdc-checkbox-label .terms-checkbox-text,
+body.dark-mode .registration-form ::ng-deep .terms-checkbox-text,
+body.dark-mode ::ng-deep .terms-checkbox-text,
+body.dark-mode .terms-checkbox-text,
+body.dark-mode span.terms-checkbox-text,
+body.dark-mode .chatbot-window .terms-checkbox-text,
+body.dark-mode .chatbot-window span.terms-checkbox-text,
+body.dark-mode .registration-form .terms-checkbox-text,
+body.dark-mode .registration-form span.terms-checkbox-text {
+  color: #ffffff !important;
+  color: white !important;
+}
+
+/* Links im Dark Mode behalten ihre YISU Travel Farbe */
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox-label a.terms-link,
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox-label a,
+body.dark-mode .registration-form .terms-checkbox .terms-link,
+body.dark-mode .registration-form .terms-checkbox .terms-link:visited {
+  color: #95c0ff !important;
+}
+
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox-label a.terms-link:hover,
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox-label a:hover,
+body.dark-mode .registration-form .terms-checkbox .terms-link:hover {
+  color: #c4dbff !important;
+}
+
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-form-field label {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-form-field label span {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-form-field label a,
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-form-field label a.terms-link,
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-form-field label a:visited {
+  color: #95c0ff !important;
+}
+
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mat-mdc-checkbox .mdc-form-field label a:hover {
+  color: #c4dbff !important;
+}
+
+/* Checkbox selbst - Light Mode */
+.registration-form ::ng-deep .terms-checkbox .mdc-checkbox {
+  --mdc-checkbox-unselected-icon-color: var(--yisu-border-medium);
+  --mdc-checkbox-selected-checkmark-color: var(--yisu-white);
+  --mdc-checkbox-selected-focus-icon-color: var(--yisu-secondary);
+  --mdc-checkbox-selected-hover-icon-color: var(--yisu-secondary);
+  --mdc-checkbox-selected-icon-color: var(--yisu-secondary);
+  --mdc-checkbox-selected-pressed-icon-color: var(--yisu-secondary);
+}
+
+/* Checkbox selbst - Dark Mode */
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mdc-checkbox {
+  --mdc-checkbox-unselected-icon-color: var(--yisu-border-light);
+  --mdc-checkbox-selected-checkmark-color: var(--yisu-white);
+  --mdc-checkbox-selected-focus-icon-color: var(--yisu-secondary);
+  --mdc-checkbox-selected-hover-icon-color: var(--yisu-secondary);
+  --mdc-checkbox-selected-icon-color: var(--yisu-secondary);
+  --mdc-checkbox-selected-pressed-icon-color: var(--yisu-secondary);
 }
 
 .terms-link {
-  color: var(--yisu-primary);
+  color: var(--yisu-secondary);
   text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
 }
 
 .terms-link:hover {
+  color: var(--yisu-nav-items);
   text-decoration: underline;
 }
 
+/* Dark Mode Terms Link */
+:host-context(.dark-mode) .terms-link,
+body.dark-mode .terms-link,
+.dark-mode .terms-link {
+  color: #95c0ff !important;
+}
+
+:host-context(.dark-mode) .terms-link:visited,
+body.dark-mode .terms-link:visited,
+.dark-mode .terms-link:visited {
+  color: #95c0ff !important;
+}
+
+:host-context(.dark-mode) .terms-link:hover,
+body.dark-mode .terms-link:hover,
+.dark-mode .terms-link:hover {
+  color: #c4dbff !important;
+}
+
+/* Submit Button - YISU Travel Style mit Dark Mode Support */
 .submit-btn {
-  background: var(--yisu-primary);
-  color: var(--yisu-white);
+  width: 100%;
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-white) !important;
   border: none;
   padding: 12px 20px;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
-  transition: all 0.3s ease;
-  box-shadow: var(--yisu-shadow-sm);
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(21, 101, 192, 0.25);
+  margin-top: 8px;
 }
 
-.submit-btn:hover {
-  background: var(--yisu-accent);
+.submit-btn:hover:not(:disabled) {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-white) !important;
   transform: translateY(-1px);
-  box-shadow: var(--yisu-shadow-md);
+  box-shadow: 0 4px 12px rgba(21, 101, 192, 0.35);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .submit-btn:disabled {
-  background: var(--yisu-text-light);
+  background: var(--yisu-text-light) !important;
+  color: var(--yisu-text-dark) !important;
   cursor: not-allowed;
+  opacity: 0.6;
   transform: none;
   box-shadow: none;
 }
 
-.error-message {
+/* Dark Mode Submit Button */
+body.dark-mode .submit-btn {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-white) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+body.dark-mode .submit-btn:hover:not(:disabled) {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-white) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+body.dark-mode .submit-btn:disabled {
+  background: var(--yisu-text-light) !important;
+  color: var(--yisu-text-dark) !important;
+  opacity: 0.5;
+}
+
+/* Error Message - Kompakt */
+.registration-form .error-message {
   color: var(--yisu-form-error);
-  font-size: 13px;
-  margin-top: 5px;
+  font-size: 12px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(220, 38, 38, 0.1);
+  border-left: 3px solid var(--yisu-form-error);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+body.dark-mode .registration-form .error-message {
+  background: rgba(220, 38, 38, 0.15);
 }
 
 
@@ -976,13 +2059,14 @@ input.error {
 
 /* Chat Status Indicator */
 .chat-status-indicator {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 10;
-  background: var(--yisu-bg-section);
-  border-bottom: 1px solid var(--yisu-border-light);
-  margin: -8px -16px 16px -16px;
+  margin: 0;
   animation: slideInFromTop 0.3s ease-out;
+  flex-shrink: 0;
+  /* Light Mode: Banner besser sichtbar machen */
+  background: rgba(21, 101, 192, 0.08);
+  border-bottom: 2px solid var(--yisu-secondary);
 }
 
 .status-message {
@@ -991,20 +2075,40 @@ input.error {
   gap: 8px;
   padding: 12px 16px;
   font-size: 0.875rem;
-  color: var(--yisu-primary);
-  background: var(--yisu-bg-section);
-  font-weight: 500;
+  /* Light Mode: Banner besser sichtbar machen */
+  background: rgba(21, 101, 192, 0.08);
+  color: var(--yisu-secondary);
+  font-weight: 600;
 }
 
 .status-message.waiting {
+  background: rgba(21, 101, 192, 0.08);
   color: var(--yisu-secondary);
-  background: var(--yisu-bg-section);
+  font-weight: 600;
 }
 
 .status-message mat-icon {
   font-size: 18px;
   width: 18px;
   height: 18px;
+}
+
+/* Dark Mode: Original-Styles beibehalten mit besserer Lesbarkeit */
+body.dark-mode .chat-status-indicator {
+  background: var(--yisu-bg-section);
+  border-bottom: 1px solid var(--yisu-border-light);
+}
+
+body.dark-mode .status-message {
+  background: var(--yisu-bg-section);
+  color: #e0e7ff!important; /* Sehr helles Blau/Weiß für bessere Lesbarkeit im Dark Mode */
+  font-weight: 500;
+}
+
+body.dark-mode .status-message.waiting {
+  background: var(--yisu-bg-section);
+  color: #93c5fd; /* Helles Blau für bessere Lesbarkeit im Dark Mode */
+  font-weight: 500;
 }
 
 /* Escalation Prompt Styling */
@@ -1015,16 +2119,6 @@ input.error {
   box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
 }
 
-.escalation-options {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* Escalation Prompt Buttons - bereits oben definiert, hier entfernt um Duplikate zu vermeiden */
-
 /* System Messages */
 .system-message {
   display: flex;
@@ -1033,18 +2127,17 @@ input.error {
 }
 
 .system-bubble {
-  background: var(--yisu-bg-section) !important;
-  color: var(--yisu-primary) !important;
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-white) !important;
   font-size: 0.875rem;
   font-style: normal;
   font-weight: 500;
   max-width: 85%;
   text-align: center;
-  border-radius: 8px !important;
+  border-radius: 12px !important;
   padding: 12px 20px;
-  border: 1px solid var(--yisu-border-light);
-  border-left: 4px solid var(--yisu-primary);
-  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.25);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1052,26 +2145,41 @@ input.error {
   margin: 16px auto;
   position: relative;
   overflow: hidden;
+  line-height: 1.5;
 }
 
 .system-bubble::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--yisu-primary);
+  display: none;
+}
+
+.system-bubble span {
+  color: var(--yisu-white) !important;
 }
 
 .system-bubble .system-icon {
   font-size: 20px;
   width: 20px;
   height: 20px;
-  color: var(--yisu-primary);
+  color: var(--yisu-white) !important;
   flex-shrink: 0;
   opacity: 1;
   animation: pulse-icon 2s ease-in-out infinite;
+}
+
+/* Dark Mode System Message */
+body.dark-mode .system-bubble {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-white) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+body.dark-mode .system-bubble span {
+  color: var(--yisu-white) !important;
+}
+
+body.dark-mode .system-bubble .system-icon {
+  color: var(--yisu-white) !important;
 }
 
 @keyframes pulse-icon {
@@ -1092,35 +2200,81 @@ input.error {
   justify-content: space-between;
   margin-top: 8px;
   font-size: 0.75rem;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .message-badge {
   font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: inline-block;
 }
 
 .message-badge.system {
-  background: var(--yisu-bg-section);
-  color: var(--yisu-primary);
+  background: var(--yisu-secondary);
+  color: var(--yisu-white);
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
 }
 
 .message-badge.agent {
-  background: var(--yisu-bg-section);
-  color: var(--yisu-primary);
+  background: var(--yisu-secondary);
+  color: var(--yisu-white);
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+.message-badge.agent::before {
+  content: '👨‍💼 ';
+  margin-right: 2px;
 }
 
 .message-badge.bot {
-  background: var(--yisu-bg-section);
-  color: var(--yisu-primary);
+  background: var(--yisu-secondary);
+  color: var(--yisu-white);
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+.message-badge.bot::before {
+  content: '🤖 ';
+  margin-right: 2px;
+}
+
+
+/* Dark Mode Badges */
+body.dark-mode .message-badge.system,
+body.dark-mode .message-badge.agent,
+body.dark-mode .message-badge.bot {
+  background: var(--yisu-secondary);
+  color: var(--yisu-white);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 .message-time {
-  color: #8e8e93;
+  color: var(--yisu-text-light);
   font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.bot-message .message-bubble span {
+  font-weight: 500;
+}
+
+.bot-message .message-time {
+  color: var(--yisu-text-medium);
+  font-weight: 500;
+}
+
+body.dark-mode .bot-message .message-time {
+  color: var(--yisu-text-medium);
+  font-weight: 500;
+}
+
+.user-message .message-time {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 /* Assignment Info */
@@ -1145,24 +2299,7 @@ input.error {
   color: var(--yisu-primary);
 }
 
-/* Enhanced Input Field */
-.input-field {
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.input-field:focus {
-  border-color: var(--yisu-primary) !important;
-}
-
-.input-field::placeholder {
-  color: #999;
-  font-style: italic;
-  transition: opacity 0.3s ease;
-}
-
-.input-field:focus::placeholder {
-  opacity: 0.7;
-}
+/* Enhanced Input Field - Already defined above with better styles */
 
 /* Confirm Buttons */
 .confirm-buttons {
@@ -1202,3 +2339,304 @@ input.error {
 
 /* Die Dark Mode Styles werden automatisch durch die CSS Variables gehandhabt */
 /* Alle Elemente verwenden jetzt var(--yisu-*) Variablen die sich automatisch anpassen */
+
+/* ===============================================
+   FINALE REGEL FÜR TERMS CHECKBOX TEXT - MAXIMALE SPEZIFITÄT
+   =============================================== */
+/* ✅ Toast/Snackbar Styling */
+::ng-deep .custom-snackbar {
+  font-family: 'Roboto', sans-serif;
+}
+
+::ng-deep .toast-success {
+  --mdc-snackbar-container-color: #4caf50 !important;
+  --mdc-snackbar-supporting-text-color: white !important;
+}
+
+::ng-deep .toast-success .mat-mdc-button:not(:disabled) {
+  color: white !important;
+}
+
+::ng-deep .toast-error {
+  --mdc-snackbar-container-color: #f44336 !important;
+  --mdc-snackbar-supporting-text-color: white !important;
+}
+
+::ng-deep .toast-error .mat-mdc-button:not(:disabled) {
+  color: white !important;
+}
+
+::ng-deep .toast-warning {
+  --mdc-snackbar-container-color: #ff9800 !important;
+  --mdc-snackbar-supporting-text-color: white !important;
+}
+
+::ng-deep .toast-warning .mat-mdc-button:not(:disabled) {
+  color: white !important;
+}
+
+::ng-deep .toast-info {
+  --mdc-snackbar-container-color: #2196f3 !important;
+  --mdc-snackbar-supporting-text-color: white !important;
+}
+
+::ng-deep .toast-info .mat-mdc-button:not(:disabled) {
+  color: white !important;
+}
+
+::ng-deep .custom-snackbar .mat-mdc-snack-bar-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+::ng-deep .custom-snackbar .mat-mdc-snack-bar-action {
+  color: white !important;
+}
+
+body.dark-mode .chatbot-window .chatbot-messages .registration-form .welcome-bubble .terms-checkbox .mat-mdc-checkbox .mat-mdc-checkbox-label .terms-checkbox-text,
+body.dark-mode .chatbot-window .chatbot-messages .registration-form .welcome-bubble .terms-checkbox mat-checkbox .terms-checkbox-text,
+body.dark-mode .chatbot-window .chatbot-messages .registration-form .terms-checkbox .terms-checkbox-text,
+body.dark-mode .chatbot-window .chatbot-messages .registration-form .terms-checkbox span.terms-checkbox-text,
+body.dark-mode .registration-form .terms-checkbox .mat-mdc-checkbox-label .terms-checkbox-text,
+body.dark-mode .registration-form .terms-checkbox mat-checkbox .terms-checkbox-text,
+body.dark-mode .terms-checkbox .terms-checkbox-text {
+  color: white !important;
+  color: #ffffff !important;
+}
+
+/* ABSOLUT FINALE REGEL - ÜBERSCHREIBT ALLES */
+body.dark-mode .terms-checkbox-text,
+body.dark-mode span.terms-checkbox-text,
+body.dark-mode *[class*="terms-checkbox-text"] {
+  color: #ffffff !important;
+}
+
+/* ÜBERSCHREIBE ALLES - NOCH STÄRKER */
+body.dark-mode .registration-form ::ng-deep .terms-checkbox mat-checkbox label .terms-checkbox-text,
+body.dark-mode .registration-form ::ng-deep .terms-checkbox .mdc-checkbox label .terms-checkbox-text {
+  color: #ffffff !important;
+}
+
+/* ===============================================
+   Modern Chat End Modal - Overlay mit Blur-Effekt
+   =============================================== */
+
+/* Overlay mit verschwommenem Hintergrund */
+.chat-end-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeInOverlay 0.2s ease-out;
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Container */
+.chat-end-modal {
+  background: var(--yisu-bg-card);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+              0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: 0;
+  max-width: 90%;
+  width: 400px;
+  overflow: hidden;
+  animation: slideInModal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--yisu-border-light);
+  position: relative;
+}
+
+@keyframes slideInModal {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid var(--yisu-border-light);
+  background: var(--yisu-bg-section);
+}
+
+.modal-icon {
+  font-size: 32px !important;
+  width: 32px !important;
+  height: 32px !important;
+  color: var(--yisu-secondary) !important;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--yisu-text-dark);
+  flex: 1;
+}
+
+/* Modal Content */
+.modal-content {
+  padding: 20px 24px;
+  background: var(--yisu-bg-card);
+}
+
+.modal-content p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--yisu-text-medium);
+  text-align: center;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px 24px 24px;
+  background: var(--yisu-bg-card);
+  border-top: 1px solid var(--yisu-border-light);
+  justify-content: flex-end;
+}
+
+.modal-actions .cancel-btn {
+  min-width: 120px;
+  border-color: var(--yisu-border-medium);
+  color: var(--yisu-text-dark);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.modal-actions .cancel-btn:hover {
+  background: var(--yisu-bg-section);
+  border-color: var(--yisu-border-medium);
+}
+
+.modal-actions .confirm-btn {
+  min-width: 140px;
+  background: #dc2626 !important;
+  color: white !important;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  transition: all 0.2s ease;
+}
+
+.modal-actions .confirm-btn:hover {
+  background: #b91c1c !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+  transform: translateY(-1px);
+}
+
+.modal-actions .confirm-btn:active {
+  transform: translateY(0);
+}
+
+/* Dark Mode Modal */
+body.dark-mode .chat-end-modal-overlay {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+body.dark-mode .chat-end-modal {
+  background: var(--yisu-bg-card);
+  border-color: var(--yisu-border-medium);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+              0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .modal-header {
+  background: var(--yisu-bg-section);
+  border-bottom-color: var(--yisu-border-medium);
+}
+
+body.dark-mode .modal-header h3 {
+  color: var(--yisu-text-dark);
+}
+
+body.dark-mode .modal-content {
+  background: var(--yisu-bg-card);
+}
+
+body.dark-mode .modal-content p {
+  color: var(--yisu-text-medium);
+}
+
+body.dark-mode .modal-actions {
+  background: var(--yisu-bg-card);
+  border-top-color: var(--yisu-border-medium);
+}
+
+body.dark-mode .modal-actions .cancel-btn {
+  border-color: var(--yisu-border-medium);
+  color: var(--yisu-text-dark);
+}
+
+body.dark-mode .modal-actions .cancel-btn:hover {
+  background: var(--yisu-bg-section);
+}
+
+/* Mobile Responsive */
+@media (max-width: 767px) {
+  .chat-end-modal {
+    width: 90%;
+    max-width: 360px;
+    margin: 20px;
+  }
+
+  .modal-header {
+    padding: 20px 20px 14px 20px;
+  }
+
+  .modal-header h3 {
+    font-size: 18px;
+  }
+
+  .modal-icon {
+    font-size: 28px !important;
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .modal-content {
+    padding: 16px 20px;
+  }
+
+  .modal-content p {
+    font-size: 14px;
+  }
+
+  .modal-actions {
+    padding: 14px 20px 20px 20px;
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .modal-actions .cancel-btn,
+  .modal-actions .confirm-btn {
+    width: 100%;
+    min-width: unset;
+  }
+}
+

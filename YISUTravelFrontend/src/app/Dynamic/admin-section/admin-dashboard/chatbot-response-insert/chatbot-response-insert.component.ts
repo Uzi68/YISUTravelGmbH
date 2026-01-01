@@ -175,7 +175,7 @@ clearForm(): void {
     this.errorMessage = '';
 
     if (!this.newResponse.input || !this.newResponse.response) {
-      this.errorMessage = 'Nutzer-Eingabe und Bot-Antwort sind erforderlich!';
+      this.errorMessage = 'Titel/Thema und Wissensinhalt sind erforderlich!';
       return;
     }
 

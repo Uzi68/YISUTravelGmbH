@@ -55,10 +55,10 @@
   padding: 3rem 4rem;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 20px;
-  border: 2px solid rgba(251, 191, 36, 0.3);
+  border: none;
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px rgba(30, 58, 138, 0.2);
+  box-shadow: 0 8px 32px rgba(30, 58, 138, 0.2), 0 0 15px rgba(25, 118, 210, 0.15);
   animation: fadeInUp 1.5s ease-out forwards;
 }
 
@@ -99,8 +99,8 @@
   font-size: 2.4rem;
   font-weight: 600;
   margin-bottom: 1.2rem;
-  color: var(--yisu-secondary);
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+  color: #1976d2;
+  text-shadow: 2px 2px 8px rgba(255, 255, 255, 0.3);
   animation: slideInDown 1s ease-out 0.6s both;
 }
 
@@ -126,6 +126,7 @@
 .hero-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
   padding: 1rem 2rem;
   border: none;
@@ -156,17 +157,33 @@
 }
 
 .hero-btn-primary {
-  background: var(--yisu-navbar-top);
-  color: #2c3e50;
-  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
-  font-weight: 500;
-  
-  &:hover {
-    background: #f59e0b;
-    color: #2c3e50;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
-  }
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-text-white) !important;
+  font-weight: 600;
+  padding: 1rem 2rem !important; /* Größeres Padding für Hero-Buttons */
+  font-size: 1.1rem !important;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35) !important;
+  border: none !important;
+}
+
+.hero-btn-primary:hover {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.45) !important;
+}
+
+/* Dark Mode Hero Button Primary */
+body.dark-mode .hero-btn-primary {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-text-white) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35) !important;
+}
+
+body.dark-mode .hero-btn-primary:hover {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45) !important;
 }
 
 .hero-btn-secondary {
@@ -213,9 +230,9 @@
 .unique-title {
   font-size: 3.5rem;
   font-weight: 700;
-  color: var(--yisu-secondary);
+  color: #1976d2;
   margin-bottom: 0.75rem;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+  text-shadow: 2px 2px 8px rgba(255, 255, 255, 0.3);
   animation: fadeInUp 1s ease-out 0.3s both;
 }
 
@@ -278,7 +295,8 @@
 
 /* Bootstrap Carousel Indicators */
 .carousel-indicators {
-  bottom: 20px;
+  bottom: 40px;
+  z-index: 10;
 }
 
 .carousel-indicators [data-bs-target] {
@@ -289,12 +307,14 @@
   border: none;
   margin: 0 5px;
   transition: all 0.3s ease;
+  z-index: 10;
 }
 
 .carousel-indicators .active {
-  background-color: #fbbf24;
+  background-color: #1976d2;
   width: 30px;
   border-radius: 6px;
+  z-index: 10;
 }
 
 @keyframes slideInDown {
@@ -434,15 +454,31 @@
     width: 100%;
     
     .hero-btn {
-      width: 90%;
-      max-width: 200px;
-      font-size: 13px;
-      padding: 0.7rem 1rem;
+      width: 85%;
+      max-width: 280px;
+      min-width: 240px;
+      font-size: 0.95rem;
+      padding: 0.9rem 1.8rem;
       text-align: center;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      line-height: 1.5;
+      border-radius: 10px;
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
     }
+
+    .hero-btn i {
+      font-size: 1.1rem;
+      margin-right: 0;
+      flex-shrink: 0;
+    }
+  }
+
+  .carousel-indicators {
+    bottom: 10px !important;
   }
 }
 
@@ -473,10 +509,25 @@
   
   .hero-buttons {
     .hero-btn {
-      font-size: 12px;
-      padding: 0.6rem 0.8rem;
-      max-width: 180px;
+      font-size: 0.9rem;
+      padding: 0.85rem 1.6rem;
+      max-width: 260px;
+      min-width: 220px;
+      white-space: nowrap;
+      line-height: 1.5;
+      min-height: 46px;
+      gap: 0.7rem;
     }
+
+    .hero-btn i {
+      font-size: 1rem;
+      margin-right: 0;
+      flex-shrink: 0;
+    }
+  }
+
+  .carousel-indicators {
+    bottom: 10px !important;
   }
 }
 
@@ -501,4 +552,3 @@
     }
   }
 }
-

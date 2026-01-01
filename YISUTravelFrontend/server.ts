@@ -19,13 +19,17 @@ export function app(): express.Express {
 
   // Example Express Rest API endpoints
   // server.get('/api/**', (req, res) => { });
-  // Serve static files from /browser
-  server.get('**', express.static(browserDistFolder, {
+  
+  // Serve static assets (JS, CSS, images, etc.) first - these should not go through Angular engine
+  server.use(express.static(browserDistFolder, {
     maxAge: '1y',
-    index: 'index.html',
+    // Don't set index here - we want Angular to handle routing
+    // index: false will prevent express.static from serving index.html for routes
+    index: false,
   }));
 
-  // All regular routes use the Angular engine
+  // All regular routes use the Angular engine for SSR
+  // This will handle all routes that don't match static files
   server.get('**', (req, res, next) => {
     const { protocol, originalUrl, baseUrl, headers } = req;
 

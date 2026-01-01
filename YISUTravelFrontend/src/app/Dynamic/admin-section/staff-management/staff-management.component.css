@@ -362,30 +362,12 @@ body.dark-mode .staff-container .cancel-button {
   box-shadow: var(--yisu-shadow-md) !important;
 }
 
+/* Button styles werden jetzt global in styles.css verwaltet */
+/* Spezifische Anpassungen können hier hinzugefügt werden wenn nötig */
 .submit-button {
-  background: var(--yisu-primary) !important;
-  color: white !important;
-  border: none !important;
-  padding: 0.75rem 2rem !important;
-  border-radius: 12px !important;
-  font-weight: 600 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3) !important;
-  outline: none !important;
-}
-
-.submit-button:hover:not(:disabled) {
-  transform: translateY(-2px) !important;
-  box-shadow: var(--yisu-shadow-lg) !important;
-}
-
-.submit-button:disabled {
-  background: var(--yisu-text-light) !important;
-  transform: none !important;
-  box-shadow: none !important;
-  cursor: not-allowed !important;
+  /* Text-transform entfernt für bessere Lesbarkeit */
+  text-transform: none !important;
+  letter-spacing: normal !important;
 }
 
 /* Table Section */
@@ -477,6 +459,20 @@ body.dark-mode .staff-container .cancel-button {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.push-status {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.push-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.75rem;
+  color: var(--yisu-text-medium);
 }
 
 .email-cell mat-icon, .phone-cell mat-icon, .date-cell mat-icon {

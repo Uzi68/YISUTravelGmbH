@@ -9,6 +9,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatRequestController;
 use App\Http\Controllers\MessagePusherController;
 use App\Http\Controllers\MessageAttachmentController;
+use App\Http\Controllers\HomepageStatisticsController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Controllers\WhatsAppMessageController;
 use App\Http\Controllers\OfferController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\PushSubscriptionController;
 use Pusher\Pusher;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
@@ -40,6 +42,8 @@ Route::get('/check-auth', function (Request $request) {
 })->middleware('auth');
 
 Route::get('/active-chats', [ChatbotController::class, 'getActiveChats'])->middleware('auth');
+Route::get('/chats/lookup', [ChatbotController::class, 'getChatByIdentifier'])
+    ->middleware(['auth', 'role:Admin|Agent']);
 
 //Gibt User Details des aktuell eingeloogten Benutzers
 Route::get('/user', function (Request $request) {
@@ -100,6 +104,13 @@ Route::post('messages', [MessagePusherController::class, 'message']);
 Route::post('/chatbot/end-by-user', [ChatbotController::class, 'endChatByUser']);
 
 Route::post('/human', [ChatbotController::class, 'requestHuman']);
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store']);
+    Route::delete('/push-subscriptions/{token}', [PushSubscriptionController::class, 'destroy'])
+        ->where('token', '.*');
+    Route::delete('/push-subscriptions/device/{deviceId}', [PushSubscriptionController::class, 'destroyByDevice']);
+});
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/chat-history', [ChatbotController::class, 'getChatHistory']);
@@ -186,7 +197,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/chats/{chatId}/unassign', [ChatAssignmentController::class, 'unassignChat']);
 
     // Escalation Prompts (nur für Agents)
-    Route::post('/chats/{chatId}/escalation-prompt', [ChatAssignmentController::class, 'sendEscalationPrompt']);
     Route::post('/escalation-response', [ChatAssignmentController::class, 'respondToEscalationPrompt']);
 
     // Transfer History & Permissions (nur für authentifizierte Benutzer)
@@ -287,6 +297,9 @@ Route::get('/offers', [OfferController::class, 'index']);
 Route::get('/offers/featured', [OfferController::class, 'featured']);
 Route::get('/offers/active', [OfferController::class, 'active']);
 Route::get('/offers/{id}', [OfferController::class, 'show']);
+
+// Homepage statistics
+Route::get('/homepage/statistics', [HomepageStatisticsController::class, 'show']);
 
 // Admin routes (nur für authentifizierte Admins)
 Route::middleware(['auth', 'role:Admin'])->prefix('admin/offers')->group(function () {

@@ -2,11 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AllChatsUpdate;
+use App\Events\ChatEscalated;
+use App\Events\ChatStatusChanged;
 use App\Events\MessagePusher;
 use App\Models\Chat;
+use App\Models\ChatRequest;
 use App\Models\Message;
 use App\Models\MessageAttachment;
 use App\Models\Visitor;
+use App\Services\EscalationNotifier;
+use App\Services\OpenAiChatService;
+use App\Services\PushNotificationService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,12 +23,12 @@ use Illuminate\Support\Facades\Storage;
 
 class WhatsAppWebhookController extends Controller
 {
-    private WhatsAppService $whatsappService;
-
-    public function __construct(WhatsAppService $whatsappService)
-    {
-        $this->whatsappService = $whatsappService;
-    }
+    public function __construct(
+        private readonly WhatsAppService $whatsappService,
+        private readonly PushNotificationService $pushNotifications,
+        private readonly OpenAiChatService $aiChatService,
+        private readonly EscalationNotifier $escalationNotifier
+    ) {}
 
     /**
      * Webhook-Verifizierung für WhatsApp (GET Request)
@@ -166,6 +173,12 @@ class WhatsAppWebhookController extends Controller
      */
     private function handleIncomingMessage(array $messageData, array $contacts, array $metadata): void
     {
+        $chat = null;
+        $messageText = '';
+        $messageType = '';
+        $hasCaption = false;
+        $message = null;
+
         DB::beginTransaction();
 
         try {
@@ -185,6 +198,8 @@ class WhatsAppWebhookController extends Controller
 
             // Extrahiere Nachrichteninhalt basierend auf Typ
             $messageContent = $this->extractMessageContent($messageData, $messageType);
+            $messageText = $messageContent['text'];
+            $hasCaption = (bool) ($messageContent['has_caption'] ?? false);
 
             // Erstelle Message-Eintrag
             $message = Message::create([
@@ -209,12 +224,6 @@ class WhatsAppWebhookController extends Controller
             // Markiere WhatsApp-Nachricht als gelesen
             $this->whatsappService->markAsRead($messageId);
 
-            // ✅ WICHTIG: Lade Message mit Chat und Visitor-Relationen für Broadcasting
-            $message->load(['chat.visitor', 'attachments']);
-
-            // Broadcast über Pusher an Admin Dashboard
-            broadcast(new MessagePusher($message, $chat->session_id))->toOthers();
-
             DB::commit();
 
             Log::info('WhatsApp message processed successfully', [
@@ -229,6 +238,27 @@ class WhatsAppWebhookController extends Controller
                 'error' => $e->getMessage(),
                 'message_data' => $messageData
             ]);
+            return;
+        }
+
+        if ($chat instanceof Chat && $message instanceof Message) {
+            $message->load(['chat.visitor', 'attachments']);
+            broadcast(new MessagePusher($message, $chat->session_id))->toOthers();
+
+            try {
+                $chat->loadMissing('visitor');
+                $this->pushNotifications->notifyStaffAboutChatMessage($chat, $message);
+            } catch (\Throwable $exception) {
+                Log::warning('Failed to dispatch push for WhatsApp message', [
+                    'chat_id' => $chat->id,
+                    'message_id' => $message->id ?? null,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        if ($chat instanceof Chat) {
+            $this->maybeAutoRespondToWhatsApp($chat, $messageText, $messageType, $hasCaption);
         }
     }
 
@@ -240,28 +270,33 @@ class WhatsAppWebhookController extends Controller
         $content = [
             'text' => '',
             'media' => null,
-            'contact_name' => null
+            'contact_name' => null,
+            'has_caption' => false
         ];
 
         switch ($type) {
             case 'text':
                 $content['text'] = $messageData['text']['body'] ?? '';
+                $content['has_caption'] = trim($content['text']) !== '';
                 break;
 
             case 'image':
                 $content['text'] = $messageData['image']['caption'] ?? '[Bild]';
                 $content['media'] = $messageData['image'];
+                $content['has_caption'] = isset($messageData['image']['caption']) && trim($messageData['image']['caption']) !== '';
                 break;
 
             case 'document':
                 $filename = $messageData['document']['filename'] ?? 'Dokument';
                 $content['text'] = $messageData['document']['caption'] ?? "📄 {$filename}";
                 $content['media'] = $messageData['document'];
+                $content['has_caption'] = isset($messageData['document']['caption']) && trim($messageData['document']['caption']) !== '';
                 break;
 
             case 'video':
                 $content['text'] = $messageData['video']['caption'] ?? '[Video]';
                 $content['media'] = $messageData['video'];
+                $content['has_caption'] = isset($messageData['video']['caption']) && trim($messageData['video']['caption']) !== '';
                 break;
 
             case 'audio':
@@ -294,13 +329,18 @@ class WhatsAppWebhookController extends Controller
 
             case 'button':
                 $content['text'] = $messageData['button']['text'] ?? '[Button geklickt]';
+                $content['has_caption'] = isset($messageData['button']['text']) && trim($messageData['button']['text']) !== '';
                 break;
 
             case 'interactive':
                 if (isset($messageData['interactive']['button_reply'])) {
                     $content['text'] = $messageData['interactive']['button_reply']['title'] ?? '[Button-Antwort]';
+                    $content['has_caption'] = isset($messageData['interactive']['button_reply']['title'])
+                        && trim($messageData['interactive']['button_reply']['title']) !== '';
                 } elseif (isset($messageData['interactive']['list_reply'])) {
                     $content['text'] = $messageData['interactive']['list_reply']['title'] ?? '[Listen-Auswahl]';
+                    $content['has_caption'] = isset($messageData['interactive']['list_reply']['title'])
+                        && trim($messageData['interactive']['list_reply']['title']) !== '';
                 }
                 break;
 
@@ -367,6 +407,139 @@ class WhatsAppWebhookController extends Controller
                 'message_id' => $message->id
             ]);
         }
+    }
+
+    private function maybeAutoRespondToWhatsApp(
+        Chat $chat,
+        string $messageText,
+        string $messageType,
+        bool $hasCaption = false
+    ): void
+    {
+        if ($messageType !== 'text' && !$hasCaption) {
+            return;
+        }
+
+        $trimmedText = trim($messageText);
+        if ($trimmedText === '') {
+            return;
+        }
+
+        $chat->refresh();
+        if ($chat->status !== 'bot' || $chat->assigned_to) {
+            return;
+        }
+
+        $aiResult = $this->aiChatService->generateReply($chat, $trimmedText);
+        $reply = (string) ($aiResult['reply'] ?? '');
+        $needsEscalation = (bool) ($aiResult['needs_escalation'] ?? false);
+        $reason = (string) ($aiResult['escalation_reason'] ?? 'none');
+        if ($needsEscalation && ($reason === '' || $reason === 'none')) {
+            $reason = 'missing_knowledge';
+        }
+
+        if ($needsEscalation) {
+            $this->escalationNotifier->notify($chat, $trimmedText, $reason);
+            $this->escalateWhatsAppChat($chat, $trimmedText);
+            return;
+        }
+
+        if ($reply === '') {
+            return;
+        }
+
+        $this->sendWhatsAppBotReply($chat, $reply, [
+            'ai_generated' => true
+        ]);
+    }
+
+    private function sendWhatsAppBotReply(Chat $chat, string $reply, array $metadata = []): void
+    {
+        if ($chat->channel !== 'whatsapp' || !$chat->whatsapp_number) {
+            return;
+        }
+
+        $sendResult = $this->whatsappService->sendTextMessage($chat->whatsapp_number, $reply);
+        if (empty($sendResult['success'])) {
+            Log::warning('Failed to send WhatsApp bot reply', [
+                'chat_id' => $chat->id,
+                'whatsapp_number' => $chat->whatsapp_number,
+                'error' => $sendResult['error'] ?? 'Unknown error'
+            ]);
+            return;
+        }
+
+        $message = Message::create([
+            'chat_id' => $chat->id,
+            'from' => 'bot',
+            'text' => $reply,
+            'metadata' => array_filter(array_merge($metadata, [
+                'whatsapp_message_id' => $sendResult['message_id'] ?? null,
+                'sent_via_whatsapp' => true
+            ])),
+            'message_type' => 'whatsapp_text'
+        ]);
+
+        $message->load(['chat.visitor', 'attachments']);
+        broadcast(new MessagePusher($message, $chat->session_id))->toOthers();
+        $chat->touch();
+    }
+
+    private function escalateWhatsAppChat(Chat $chat, string $messageText): void
+    {
+        $previousStatus = $chat->status;
+
+        if ($chat->status !== 'human') {
+            $chat->update([
+                'status' => 'human',
+                'assigned_to' => null,
+                'assigned_at' => null
+            ]);
+        }
+
+        $chat->loadMissing('visitor');
+
+        $chatRequest = ChatRequest::create([
+            'visitor_id' => $chat->visitor_id,
+            'chat_id' => $chat->id,
+            'initial_question' => $messageText,
+            'status' => 'pending'
+        ]);
+
+        event(new ChatEscalated($chat, $chatRequest));
+
+        if ($previousStatus !== 'human') {
+            broadcast(new ChatStatusChanged($chat, $previousStatus, 'human'))->toOthers();
+        }
+
+        event(new AllChatsUpdate([
+            'type' => 'chat_escalated',
+            'session_id' => $chat->session_id,
+            'chat' => [
+                'session_id' => $chat->session_id,
+                'chat_id' => $chat->id,
+                'status' => 'human',
+                'channel' => $chat->channel ?? 'whatsapp',
+                'whatsapp_number' => $chat->whatsapp_number ?? null,
+                'customer_first_name' => $chat->visitor?->first_name ?? 'WhatsApp',
+                'customer_last_name' => $chat->visitor?->last_name ?? 'Kunde',
+                'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
+                'last_message' => $messageText,
+                'last_message_time' => now(),
+                'unread_count' => 1,
+                'assigned_to' => null,
+                'assigned_agent' => null,
+                'isNew' => true,
+                'can_assign' => true,
+                'needs_assignment' => true
+            ]
+        ]));
+
+        $botReply = 'Vielen Dank! Ich verbinde Sie mit einem unserer Mitarbeiter. Bitte haben Sie einen Moment Geduld.';
+        $this->sendWhatsAppBotReply($chat, $botReply, [
+            'ai_generated' => true,
+            'escalation_reply' => true
+        ]);
     }
 
     /**
@@ -452,12 +625,23 @@ class WhatsAppWebhookController extends Controller
      */
     private function findOrCreateWhatsAppChat(Visitor $visitor, string $whatsappNumber): Chat
     {
-        // Suche nach aktivem WhatsApp-Chat für diese Nummer
+        // Suche nach bestehendem WhatsApp-Chat für diese Nummer
         $chat = Chat::where('whatsapp_number', $whatsappNumber)
-            ->whereIn('status', ['bot', 'human', 'in_progress'])
+            ->orderByDesc('updated_at')
             ->first();
 
         if ($chat) {
+            if ($chat->status === 'closed') {
+                return Chat::create([
+                    'session_id' => 'whatsapp_' . $whatsappNumber . '_' . time(),
+                    'visitor_id' => $visitor->id,
+                    'whatsapp_number' => $whatsappNumber,
+                    'channel' => 'whatsapp',
+                    'status' => 'bot',
+                    'state' => 'active'
+                ]);
+            }
+
             // ✅ WICHTIG: Aktualisiere visitor_id falls er sich geändert hat
             if ($chat->visitor_id !== $visitor->id) {
                 $chat->update(['visitor_id' => $visitor->id]);
@@ -488,7 +672,7 @@ class WhatsAppWebhookController extends Controller
             'visitor_id' => $visitor->id,
             'whatsapp_number' => $whatsappNumber,
             'channel' => 'whatsapp',
-            'status' => 'human', // WhatsApp-Chats direkt an Agents weiterleiten
+            'status' => 'bot',
             'state' => 'active'
         ]);
     }

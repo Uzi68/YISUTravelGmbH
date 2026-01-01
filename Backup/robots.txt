@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Blockiere administrative und irrelevante Bereiche
+Disallow: /admin/
+Disallow: /wp-admin/
+Disallow: /cgi-bin/
+Disallow: /login
+Disallow: /search
+
+# Gebe die Sitemap der Website an, damit Bots die Struktur verstehen
+Sitemap: https://yisu-travel.de/sitemap.xml

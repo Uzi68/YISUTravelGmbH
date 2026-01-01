@@ -1,93 +1,298 @@
-<!-- Desktop -->
-<section class="popular-destinations" *ngIf="isBrowser">
-  <h2 class="section-title">Unsere schönsten Reiseziele</h2>
-  <swiper-container
-    loop="true"
-    slides-per-view="3"
-    slides-per-group="1"
-    speed="500"
-    space-between="15"
-    class="desktop custom-swiper"
-    autoplay-delay="2500"
-    autoplay-disable-on-interaction="false"
-  >
-    <swiper-slide>
-      <div class="slider-wrapper">
-        <img src="/reiseziele/turkey.jpg" alt="Türkei" class="slider-img">
-        <div class="slider-caption">Türkei</div>
+<section class="destination-showcase">
+  <div class="container destination-container">
+    <div class="destination-header">
+      <div class="destination-headline">
+        <span class="destination-eyebrow">Urlaubsfeeling inklusive</span>
+        <h2 class="section-title">Unsere schönsten Reiseziele</h2>
+        <p class="destination-subtitle">
+          Kuratierte Highlights aus Sonne, Kultur und besonderen Momenten &ndash; maßgeschneidert von Ihrem YISU Travel Team.
+        </p>
       </div>
-    </swiper-slide>
-    <swiper-slide>
-      <div class="slider-wrapper">
-        <img src="/reiseziele/dubai.jpg" alt="Dubai" class="slider-img">
-        <div class="slider-caption">Dubai</div>
+      <div class="destination-header-meta">
+        <div class="destination-tags">
+          <span class="destination-tag">Strand &amp; Sonne</span>
+          <span class="destination-tag">City Lights</span>
+          <span class="destination-tag">Luxusmomente</span>
+          <span class="destination-tag">Abenteuer</span>
+        </div>
+        <div class="destination-controls">
+          <button
+            class="destination-nav prev"
+            type="button"
+            data-bs-target="#destinationsCarouselDesktop"
+            data-bs-slide="prev"
+            aria-label="Vorheriges Reiseziel"
+          >
+            <span aria-hidden="true">&larr;</span>
+            <span class="visually-hidden">Vorherige Folie</span>
+          </button>
+          <button
+            class="destination-nav next"
+            type="button"
+            data-bs-target="#destinationsCarouselDesktop"
+            data-bs-slide="next"
+            aria-label="Nächstes Reiseziel"
+          >
+            <span aria-hidden="true">&rarr;</span>
+            <span class="visually-hidden">Nächste Folie</span>
+          </button>
+        </div>
       </div>
-    </swiper-slide>
-    <swiper-slide>
-      <div class="slider-wrapper">
-        <img src="/reiseziele/thailand.jpg" alt="Thailand" class="slider-img">
-        <div class="slider-caption">Thailand</div>
-      </div>
-    </swiper-slide>
-    <swiper-slide>
-      <div class="slider-wrapper">
-        <img src="/reiseziele/agyptan.jpg" alt="Ägypten" class="slider-img">
-        <div class="slider-caption">Ägypten</div>
-      </div>
-    </swiper-slide>
-    <swiper-slide>
-      <div class="slider-wrapper">
-        <img src="/reiseziele/domrepublik.jpg" alt="Dominikanische Republik" class="slider-img">
-        <div class="slider-caption">Dominikanische Republik</div>
-      </div>
-    </swiper-slide>
-  </swiper-container>
-</section>
+    </div>
 
-<!-- Mobile -->
-<swiper-container
-  *ngIf="isBrowser"
-  loop="true"
-  navigation="false"
-  slides-per-view="1"
-  slides-per-group="1"
-  speed="500"
-  space-between="15"
-  class="custom-swiper mobile"
-  autoplay-delay="2500"
-  autoplay-disable-on-interaction="false"
->
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/reiseziele/turkey.jpg" alt="Türkei" class="slider-img">
-      <div class="slider-caption">Türkei</div>
+    <!-- Desktop -->
+    <div
+      id="destinationsCarouselDesktop"
+      class="carousel slide desktop destination-carousel"
+      [attr.data-bs-ride]="isBrowser ? 'carousel' : null"
+      [attr.data-bs-interval]="isBrowser ? 3500 : null"
+      appCarouselSwipe
+    >
+      <div class="carousel-inner">
+        <div class="carousel-item active">
+          <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+              <article class="destination-card featured">
+                <div class="destination-media">
+                  <img src="/reiseziele/turkey.jpg" alt="Türkei" class="destination-img">
+                  <span class="destination-label">Mediterranes Flair</span>
+                  <div class="destination-chip-list">
+                    <span class="destination-chip">Sonne pur</span>
+                    <span class="destination-chip">Familienfreundlich</span>
+                  </div>
+                </div>
+                <div class="destination-body">
+                  <div class="destination-top">
+                    <h3 class="destination-name">Türkei</h3>
+                    <span class="destination-badge">Beliebt</span>
+                  </div>
+                  <p class="destination-description">
+                    Von Istanbul bis an die türkische Riviera &ndash; verbinden Sie Kultur, Kulinarik und Beach Clubs zu einem einzigartigen Reiseerlebnis.
+                  </p>
+                  <div class="destination-cta">Jetzt Reiseidee sichern</div>
+                </div>
+              </article>
+            </div>
+            <div class="col-lg-4 col-md-6">
+              <article class="destination-card">
+                <div class="destination-media">
+                  <img src="/reiseziele/dubai.jpg" alt="Dubai" class="destination-img">
+                  <span class="destination-label">City of Superlatives</span>
+                  <div class="destination-chip-list">
+                    <span class="destination-chip">Skyline</span>
+                    <span class="destination-chip">Wüstenabenteuer</span>
+                  </div>
+                </div>
+                <div class="destination-body">
+                  <div class="destination-top">
+                    <h3 class="destination-name">Dubai</h3>
+                    <span class="destination-badge">Signature</span>
+                  </div>
+                  <p class="destination-description">
+                    Luxuriöse Resorts, Rooftop-Dinner und eine Safari in der arabischen Wüste &ndash; perfekt für Ihren unvergleichlichen City Trip.
+                  </p>
+                  <div class="destination-cta">Inspiration entdecken</div>
+                </div>
+              </article>
+            </div>
+            <div class="col-lg-4 col-md-6">
+              <article class="destination-card">
+                <div class="destination-media">
+                  <img src="/reiseziele/thailand.jpg" alt="Thailand" class="destination-img">
+                  <span class="destination-label">Tropische Vielfalt</span>
+                  <div class="destination-chip-list">
+                    <span class="destination-chip">Inselhopping</span>
+                    <span class="destination-chip">Streetfood</span>
+                  </div>
+                </div>
+                <div class="destination-body">
+                  <div class="destination-top">
+                    <h3 class="destination-name">Thailand</h3>
+                    <span class="destination-badge">Fernweh</span>
+                  </div>
+                  <p class="destination-description">
+                    Zwischen Phuket, Koh Samui und Bangkok warten Tempel, Nightlife und türkisfarbene Buchten auf Ihre persönliche Reise-Story.
+                  </p>
+                  <div class="destination-cta">Traumurlaub planen</div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+        <div class="carousel-item">
+          <div class="row g-4 justify-content-center">
+            <div class="col-lg-5 col-md-6">
+              <article class="destination-card">
+                <div class="destination-media">
+                  <img src="/reiseziele/agyptan.jpg" alt="Ägypten" class="destination-img">
+                  <span class="destination-label">Zeitlose Wunder</span>
+                  <div class="destination-chip-list">
+                    <span class="destination-chip">Nilkreuzfahrt</span>
+                    <span class="destination-chip">Tauchen</span>
+                  </div>
+                </div>
+                <div class="destination-body">
+                  <div class="destination-top">
+                    <h3 class="destination-name">Ägypten</h3>
+                    <span class="destination-badge">Heritage</span>
+                  </div>
+                  <p class="destination-description">
+                    Kombinieren Sie majestätische Kulturstätten mit entspannten Tagen am Roten Meer und exklusiven Ausflügen.
+                  </p>
+                  <div class="destination-cta">Reiseplan anfragen</div>
+                </div>
+              </article>
+            </div>
+            <div class="col-lg-5 col-md-6">
+              <article class="destination-card">
+                <div class="destination-media">
+                  <img src="/reiseziele/domrepublik.jpg" alt="Dominikanische Republik" class="destination-img">
+                  <span class="destination-label">Karibikträume</span>
+                  <div class="destination-chip-list">
+                    <span class="destination-chip">All Inclusive</span>
+                    <span class="destination-chip">Strandvibes</span>
+                  </div>
+                </div>
+                <div class="destination-body">
+                  <div class="destination-top">
+                    <h3 class="destination-name">Dominikanische Republik</h3>
+                    <span class="destination-badge">Exklusiv</span>
+                  </div>
+                  <p class="destination-description">
+                    Palmengesäumte Buchten, private Ausflüge und karibische Lebensfreude &ndash; Ihr Premium-Strandurlaub wartet.
+                  </p>
+                  <div class="destination-cta">Karibik erleben</div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </swiper-slide>
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/reiseziele/dubai.jpg" alt="Dubai" class="slider-img">
-      <div class="slider-caption">Dubai</div>
+
+    <!-- Mobile -->
+    <div
+      id="destinationsCarouselMobile"
+      class="carousel slide destination-carousel mobile"
+      [attr.data-bs-ride]="isBrowser ? 'carousel' : null"
+      [attr.data-bs-interval]="isBrowser ? 3500 : null"
+      appCarouselSwipe
+    >
+      <div class="carousel-inner">
+        <div class="carousel-item active">
+          <article class="destination-card featured">
+            <div class="destination-media">
+              <img src="/reiseziele/turkey.jpg" alt="Türkei" class="destination-img">
+              <span class="destination-label">Mediterranes Flair</span>
+              <div class="destination-chip-list">
+                <span class="destination-chip">Sonne pur</span>
+                <span class="destination-chip">Familienfreundlich</span>
+              </div>
+            </div>
+            <div class="destination-body">
+              <div class="destination-top">
+                <h3 class="destination-name">Türkei</h3>
+                <span class="destination-badge">Beliebt</span>
+              </div>
+              <p class="destination-description">
+                Von Istanbul bis an die türkische Riviera &ndash; verbinden Sie Kultur, Kulinarik und Beach Clubs zu einem einzigartigen Reiseerlebnis.
+              </p>
+              <div class="destination-cta">Jetzt Reiseidee sichern</div>
+            </div>
+          </article>
+        </div>
+        <div class="carousel-item">
+          <article class="destination-card">
+            <div class="destination-media">
+              <img src="/reiseziele/dubai.jpg" alt="Dubai" class="destination-img">
+              <span class="destination-label">City of Superlatives</span>
+              <div class="destination-chip-list">
+                <span class="destination-chip">Skyline</span>
+                <span class="destination-chip">Wüstenabenteuer</span>
+              </div>
+            </div>
+            <div class="destination-body">
+              <div class="destination-top">
+                <h3 class="destination-name">Dubai</h3>
+                <span class="destination-badge">Signature</span>
+              </div>
+              <p class="destination-description">
+                Luxuriöse Resorts, Rooftop-Dinner und eine Safari in der arabischen Wüste &ndash; perfekt für Ihren unvergleichlichen City Trip.
+              </p>
+              <div class="destination-cta">Inspiration entdecken</div>
+            </div>
+          </article>
+        </div>
+        <div class="carousel-item">
+          <article class="destination-card">
+            <div class="destination-media">
+              <img src="/reiseziele/thailand.jpg" alt="Thailand" class="destination-img">
+              <span class="destination-label">Tropische Vielfalt</span>
+              <div class="destination-chip-list">
+                <span class="destination-chip">Inselhopping</span>
+                <span class="destination-chip">Streetfood</span>
+              </div>
+            </div>
+            <div class="destination-body">
+              <div class="destination-top">
+                <h3 class="destination-name">Thailand</h3>
+                <span class="destination-badge">Fernweh</span>
+              </div>
+              <p class="destination-description">
+                Zwischen Phuket, Koh Samui und Bangkok warten Tempel, Nightlife und türkisfarbene Buchten auf Ihre persönliche Reise-Story.
+              </p>
+              <div class="destination-cta">Traumurlaub planen</div>
+            </div>
+          </article>
+        </div>
+        <div class="carousel-item">
+          <article class="destination-card">
+            <div class="destination-media">
+              <img src="/reiseziele/agyptan.jpg" alt="Ägypten" class="destination-img">
+              <span class="destination-label">Zeitlose Wunder</span>
+              <div class="destination-chip-list">
+                <span class="destination-chip">Nilkreuzfahrt</span>
+                <span class="destination-chip">Tauchen</span>
+              </div>
+            </div>
+            <div class="destination-body">
+              <div class="destination-top">
+                <h3 class="destination-name">Ägypten</h3>
+                <span class="destination-badge">Heritage</span>
+              </div>
+              <p class="destination-description">
+                Kombinieren Sie majestätische Kulturstätten mit entspannten Tagen am Roten Meer und exklusiven Ausflügen.
+              </p>
+              <div class="destination-cta">Reiseplan anfragen</div>
+            </div>
+          </article>
+        </div>
+        <div class="carousel-item">
+          <article class="destination-card">
+            <div class="destination-media">
+              <img src="/reiseziele/domrepublik.jpg" alt="Dominikanische Republik" class="destination-img">
+              <span class="destination-label">Karibikträume</span>
+              <div class="destination-chip-list">
+                <span class="destination-chip">All Inclusive</span>
+                <span class="destination-chip">Strandvibes</span>
+              </div>
+            </div>
+            <div class="destination-body">
+              <div class="destination-top">
+                <h3 class="destination-name">Dominikanische Republik</h3>
+                <span class="destination-badge">Exklusiv</span>
+              </div>
+              <p class="destination-description">
+                Palmengesäumte Buchten, private Ausflüge und karibische Lebensfreude &ndash; Ihr Premium-Strandurlaub wartet.
+              </p>
+              <div class="destination-cta">Karibik erleben</div>
+            </div>
+          </article>
+        </div>
+      </div>
     </div>
-  </swiper-slide>
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/reiseziele/thailand.jpg" alt="Thailand" class="slider-img">
-      <div class="slider-caption">Thailand</div>
-    </div>
-  </swiper-slide>
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/reiseziele/agyptan.jpg" alt="Ägypten" class="slider-img">
-      <div class="slider-caption">Ägypten</div>
-    </div>
-  </swiper-slide>
-  <swiper-slide>
-    <div class="slider-wrapper">
-      <img src="/reiseziele/domrepublik.jpg" alt="Dominikanische Republik" class="slider-img">
-      <div class="slider-caption">Dominikanische Republik</div>
-    </div>
-  </swiper-slide>
-</swiper-container>
+  </div>
+</section>
 
 
 

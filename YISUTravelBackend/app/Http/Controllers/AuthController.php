@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use \Illuminate\Http\JsonResponse;
 use App\Models\User;
 use App\Mail\PasswordResetMail;
+use App\Models\PushSubscription;
 
 class AuthController extends Controller
 {
@@ -19,8 +20,9 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->only('email', 'password');
+        $remember = $request->has('remember') ? $request->boolean('remember') : true;
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials, $remember)) {
             // Regeneriere die Session-ID für den eingeloggten Benutzer
             $request->session()->regenerate();
 
@@ -41,6 +43,13 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
+        $deviceId = $request->input('device_id');
+        if ($deviceId) {
+            PushSubscription::where('device_id', $deviceId)
+                ->where('user_id', Auth::id())
+                ->update(['is_active' => false]);
+        }
+
         // Benutzersession ungültig machen und den CSRF-Token zurücksetzen
         Auth::logout();
         $request->session()->invalidate();

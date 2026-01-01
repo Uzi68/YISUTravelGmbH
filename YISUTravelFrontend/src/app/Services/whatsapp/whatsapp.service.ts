@@ -10,6 +10,7 @@ export interface WhatsAppChat {
   channel: 'whatsapp';
   status: string;
   assigned_to?: number | null;
+  assigned_agent?: string | null;
   visitor?: any;
   messages?: any[];
   created_at: string;

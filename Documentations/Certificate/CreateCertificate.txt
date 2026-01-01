@@ -1,0 +1,35 @@
+https://www.youtube.com/watch?v=OWjVXb7-mSU
+openssl req -new -x509 -newkey rsa:2048 -sha256 -nodes -keyout localhost.key -days 3560 -out localhost.crt -config certificate.cnf
+
+=> Computer Zertifikate verwalten
+Vertrauenswürdige Zertifikate
+-> Zertifikate und importieren
+
+ng serve --ssl --ssl-cert C:\Users\uezey\Desktop\HttpOnly\Certificate\localhost.crt --ssl-key C:\Users\uezey\Desktop\HttpOnly\Certificate\localhost.key
+
+
+1. Selbstsigniertes Zertifikat als vertrauenswürdig hinzufügen
+Für Windows:
+
+    Zertifikat speichern:
+        Du solltest das localhost.crt-Zertifikat (das du erstellt hast) auf deinem Computer speichern.
+
+    MMC-Konsole öffnen:
+        Drücke Win + R, tippe mmc ein und drücke Enter.
+
+    Zertifikat-Snap-In hinzufügen:
+        In der MMC-Konsole klicke auf Datei → Snap-In hinzufügen/entfernen.
+        Wähle Zertifikate und klicke auf Hinzufügen.
+        Wähle Computer-Konto und dann Lokaler Computer → Fertigstellen.
+        Klicke auf OK.
+
+    Zertifikate hinzufügen:
+        Navigiere zu Vertrauenswürdige Stammzertifizierungsstellen → Zertifikate.
+        Rechtsklicke und wähle Alle Aufgaben → Importieren.
+        Wähle das Zertifikat localhost.crt aus und importiere es.
+        Achte darauf, es in den richtigen Ordner zu importieren (Vertrauenswürdige Stammzertifizierungsstellen).
+
+    Erfolgreich importiert:
+        Nach dem Import sollte der Browser das Zertifikat als vertrauenswürdig erkennen, wenn du https://localhost aufrufst.
+
+=> Browser neu starten

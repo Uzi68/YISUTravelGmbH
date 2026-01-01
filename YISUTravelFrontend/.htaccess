@@ -1,0 +1,50 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Umleitung von /startseite/ auf die Hauptseite /
+  RewriteCond %{REQUEST_URI} ^/startseite/?$
+  RewriteRule ^ / [R=301,L]
+
+  # Redirect to non-www
+  RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+
+  # HTTPS redirect
+  RewriteCond %{HTTPS} off
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  RewriteBase /
+
+  # Ensure index.html is not rewritten
+  RewriteRule ^index\.html$ - [L]
+
+  # Handle Angular routes (SSG and SSR)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+  AddType font/woff .woff
+  AddType application/octet-stream .ttf .otf
+</IfModule>
+
+<IfModule mod_headers.c>
+  # CORS for fonts (Cache-Directive bewusst ohne Langzeit-Cache)
+  <FilesMatch "\.(woff2?|ttf|otf)$">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  # Statische Assets ohne Langzeit-Cache (bei Bedarf revalidieren)
+  <FilesMatch "\.(css|js|png|jpe?g|gif|svg|ico)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
+</IfModule>

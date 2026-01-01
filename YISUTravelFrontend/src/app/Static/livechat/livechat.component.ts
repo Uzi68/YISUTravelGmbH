@@ -22,7 +22,7 @@ import {MatInput} from "@angular/material/input";
   templateUrl: './livechat.component.html',
   styleUrl: './livechat.component.css'
 })
-export class LivechatComponent{
+export class LivechatComponent implements AfterViewInit {
 /*
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -73,7 +73,7 @@ export class LivechatComponent{
 
   toggleChat() {
     this.isOpen = !this.isOpen;
-    if (this.isOpen) {
+    if (this.isOpen && this.chatMessagesContainer) {
       setTimeout(() => this.scrollToBottom(), 100);
     }
   }
@@ -84,13 +84,18 @@ export class LivechatComponent{
       this.newMessage = '';
       setTimeout(() => {
         this.messages.push({ text: 'Ich werde bald antworten...', sender: 'bot' });
-        this.scrollToBottom();
+        if (this.chatMessagesContainer) {
+          this.scrollToBottom();
+        }
       }, 1000);
     }
   }
 
   ngAfterViewInit() {
-    setTimeout(() => this.scrollToBottom(), 100);
+    // Ensure ViewChild is initialized before using it
+    if (this.chatMessagesContainer) {
+      setTimeout(() => this.scrollToBottom(), 100);
+    }
   }
 
   private scrollToBottom(): void {

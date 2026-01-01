@@ -1,4 +1,5 @@
-import {Injectable, NgZone} from '@angular/core';
+import {Injectable, Inject, NgZone, PLATFORM_ID} from '@angular/core';
+import {isPlatformBrowser} from '@angular/common';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import {NotificationSoundService} from "../notification-service/notification-sound.service";
@@ -23,18 +24,32 @@ export class PusherService {
   private visibilityChangeHandler: () => void = () => {};
 
 
-  constructor(private ngZone: NgZone, private notificationSound: NotificationSoundService) {
-    this.initializePusher();
-    this.setupTabVisibilityListener();
+  constructor(
+    private ngZone: NgZone,
+    private notificationSound: NotificationSoundService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.initializePusher();
+      this.setupTabVisibilityListener();
+    }
   }
 
 
   private setupTabVisibilityListener(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.visibilityChangeHandler = () => {
-      this.isTabActive = !document.hidden;
+      if (typeof document !== 'undefined') {
+        this.isTabActive = !document.hidden;
+      }
     };
 
-    document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+    }
   }
 
 
@@ -120,9 +135,10 @@ export class PusherService {
     channelName: string,
     event: string,
     callback: (data: T) => void,
-    options: { notify: boolean } = { notify: true }
+    options: { notify?: boolean; forcePrivate?: boolean } = {}
   ): { stop: () => void } {
     const eventKey = `${channelName}:${event}`;
+    const { notify = true, forcePrivate = false } = options;
 
     // Bestehenden Listener stoppen
     if (this.activeListeners.has(eventKey)) {
@@ -135,7 +151,7 @@ export class PusherService {
         // ✅ DEAKTIVIERT: Alte Notification-Logik (wird jetzt von NotificationSoundService übernommen)
         // Die Benachrichtigungen werden jetzt zentral über den NotificationSoundService
         // im admin-dashboard.component.ts handleIncomingMessageGlobal() verwaltet
-        // if (options.notify && this.shouldNotify()) {
+        // if (notify && this.shouldNotify()) {
         //   this.handleNotification(data);
         // }
         callback(data);
@@ -145,11 +161,12 @@ export class PusherService {
     // ✅ WICHTIG: Unterscheide zwischen Public und Private Channels
     // Private Channels: all.active.chats, agent.{id}, admin-dashboard, escalations, transfer.*
     // Public Channels: chat.{sessionId}, visitor.{sessionId}
-    const isPrivateChannel = channelName.includes('all.active.chats') ||
-                           channelName.includes('agent.') ||
-                           channelName.includes('admin-dashboard') ||
-                           channelName.includes('escalations') ||
-                           channelName.includes('transfer.');
+    const isPrivateChannel = forcePrivate ||
+      channelName.includes('all.active.chats') ||
+      channelName.includes('agent.') ||
+      channelName.includes('admin-dashboard') ||
+      channelName.includes('escalations') ||
+      channelName.includes('transfer.');
 
     // Laravel Echo fügt automatisch 'private-' Prefix hinzu bei echo.private()
     const channel = isPrivateChannel
@@ -172,6 +189,18 @@ export class PusherService {
 
     this.activeListeners.set(eventKey, stop);
     return { stop };
+  }
+
+  listenToPrivate<T>(
+    channelName: string,
+    event: string,
+    callback: (data: T) => void,
+    options: { notify?: boolean } = {}
+  ): { stop: () => void } {
+    return this.listenToChannel(channelName, event, callback, {
+      notify: options.notify,
+      forcePrivate: true
+    });
   }
 
   private shouldNotify(): boolean {
@@ -217,17 +246,23 @@ export class PusherService {
   }
 
   private async showBrowserNotification(data: any): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     const permission = await this.requestNotificationPermission();
 
     if (permission !== 'granted') return;
 
     const messageInfo = this.extractMessageInfo(data);
 
-    new Notification(messageInfo.title, {
-      body: messageInfo.body,
-      icon: messageInfo.icon,
-      tag: 'chat-notification'
-    });
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      new Notification(messageInfo.title, {
+        body: messageInfo.body,
+        icon: messageInfo.icon,
+        tag: 'chat-notification'
+      });
+    }
   }
 
   private extractMessageInfo(data: any): { title: string; body: string; icon: string } {
@@ -239,7 +274,9 @@ export class PusherService {
   }
 
   ngOnDestroy(): void {
-    document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+    if (isPlatformBrowser(this.platformId) && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+    }
     this.cleanupPusherSubscriptions();
   }
 
@@ -252,7 +289,12 @@ export class PusherService {
 
   requestNotificationPermission(): Promise<NotificationPermission> {
     return new Promise((resolve) => {
-      if (!('Notification' in window)) {
+      if (!isPlatformBrowser(this.platformId)) {
+        resolve('denied');
+        return;
+      }
+
+      if (typeof window === 'undefined' || !('Notification' in window)) {
         resolve('denied');
         return;
       }

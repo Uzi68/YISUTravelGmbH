@@ -229,6 +229,26 @@
                   </td>
                 </ng-container>
 
+                <!-- Push Status Column -->
+                <ng-container matColumnDef="push_status">
+                  <th mat-header-cell *matHeaderCellDef>
+                    <mat-icon>notifications_active</mat-icon>
+                    Push (FCM)
+                  </th>
+                  <td mat-cell *matCellDef="let user">
+                    <div class="push-status">
+                      <mat-chip [color]="user.push_enabled ? 'primary' : 'warn'">
+                        <mat-icon>{{ user.push_enabled ? 'notifications_active' : 'notifications_off' }}</mat-icon>
+                        {{ user.push_enabled ? 'Aktiv' : 'Aus' }}
+                      </mat-chip>
+                      <div class="push-meta" *ngIf="user.push_enabled">
+                        <span>{{ user.push_device_count || 1 }} Gerät(e)</span>
+                        <span>Zuletzt: {{ formatDateTime(user.push_last_seen_at) }}</span>
+                      </div>
+                    </div>
+                  </td>
+                </ng-container>
+
                 <!-- Created At Column -->
                 <ng-container matColumnDef="created_at">
                   <th mat-header-cell *matHeaderCellDef>

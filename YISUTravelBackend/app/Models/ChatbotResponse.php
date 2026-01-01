@@ -27,15 +27,4 @@ class ChatbotResponse extends Model
         return $this->hasMany(ChatbotOption::class);
     }
 
-    /**
-     * Scope for finding similar responses.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $input
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeFindSimilar($query, $input)
-    {
-        return $query->where('input', 'LIKE', "%$input%");
-    }
 }

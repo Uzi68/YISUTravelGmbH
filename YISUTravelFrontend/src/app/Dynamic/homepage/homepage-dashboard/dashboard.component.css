@@ -1,0 +1,69 @@
+/* Global spacing rules for homepage sections */
+app-homepage-firstview,
+app-homepage-secondview,
+app-homepage-contact,
+app-homepage-thirdview,
+app-swiper,
+app-offers,
+app-homepage-features,
+app-homepage-partner,
+app-homepage-flugpartner,
+app-interessante-themen,
+app-customer-ratings,
+app-homepage-bezahlmoeglichkeiten-notfallservice {
+  display: block;
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Ensure no extra spacing between components */
+app-homepage-firstview + app-homepage-secondview,
+app-homepage-secondview + app-homepage-contact,
+app-homepage-contact + app-homepage-thirdview,
+app-homepage-thirdview + app-swiper,
+app-swiper + app-offers,
+app-offers + app-homepage-features,
+app-homepage-features + app-homepage-partner,
+app-homepage-partner + app-homepage-flugpartner,
+app-homepage-flugpartner + app-interessante-themen,
+app-interessante-themen + app-customer-ratings,
+app-customer-ratings + app-homepage-bezahlmoeglichkeiten-notfallservice {
+  margin-top: 0 !important;
+}
+
+/* Mobile: Even tighter spacing */
+@media (max-width: 768px) {
+  app-homepage-firstview,
+  app-homepage-secondview,
+  app-homepage-contact,
+  app-homepage-thirdview,
+  app-swiper,
+  app-offers,
+  app-homepage-features,
+  app-homepage-partner,
+  app-homepage-flugpartner,
+  app-interessante-themen,
+  app-customer-ratings,
+  app-homepage-bezahlmoeglichkeiten-notfallservice {
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+  }
+  
+  app-homepage-firstview + app-homepage-secondview,
+  app-homepage-secondview + app-homepage-contact,
+  app-homepage-contact + app-homepage-thirdview,
+  app-homepage-thirdview + app-swiper,
+  app-swiper + app-offers,
+  app-offers + app-homepage-features,
+  app-homepage-features + app-homepage-partner,
+  app-homepage-partner + app-homepage-flugpartner,
+  app-homepage-flugpartner + app-interessante-themen,
+  app-interessante-themen + app-customer-ratings,
+  app-customer-ratings + app-homepage-bezahlmoeglichkeiten-notfallservice {
+    margin-top: 0 !important;
+  }
+}
+
+.section-placeholder {
+  min-height: 120px;
+}

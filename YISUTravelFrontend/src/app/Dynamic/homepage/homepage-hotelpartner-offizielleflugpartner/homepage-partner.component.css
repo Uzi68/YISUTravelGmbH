@@ -1,135 +1,575 @@
-/* Loading State Styles */
-.swiper-loading {
+/* ====================================
+   Hotel Partners Section - Modern Design
+   ==================================== */
+
+.hotel-partners-section {
+  background: var(--background-color);
+  padding: 1rem 0 1rem 0;
+  position: relative;
+}
+
+.hotel-partners-content {
+  padding: 1rem 0;
+}
+
+.section-label {
+  display: inline-block;
+  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--yisu-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  position: relative;
+}
+
+.section-label::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: var(--yisu-secondary);
+  border-radius: 2px;
+}
+
+.section-title {
+  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--header-color);
+  margin-bottom: 1.5rem;
+  line-height: 1.3;
+  transition: color 0.3s ease;
+}
+
+.section-description {
+  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-color);
+  line-height: 1.6;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+/* Partners Carousel */
+.partners-carousel {
+  position: relative;
+  padding: 2rem 0;
+}
+
+.partners-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+.partner-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
-  text-align: center;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 120px;
+  overflow: hidden;
+  position: relative;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 15px;
+.partner-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.05), rgba(251, 191, 36, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 12px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.swiper-loading p {
-  color: #666;
-  font-size: 1rem;
-  margin: 0;
-}
-
-.carousel-item img {
-  width: 100%; /* Make the image fill the column */
-  height: 80px; /* Set a fixed height for all images */
-  object-fit: cover; /* Maintain aspect ratio while filling the space */
-  margin: auto; /* Center the image in the column */
-  margin-bottom: 50px;
-}
-
-.lc-block img {
-  width: 100%; /* Make images take full width */
-  height: 150px; /* Set fixed height */
-  object-fit: contain; /* Ensure the entire image is visible */
-  margin: auto; /* Center the images */
-}
-
-
-
-.carousel-control-prev-icon,
-.carousel-control-next-icon {
-  border-radius: 50%; /* Optional: make the arrow backgrounds circular */
-}
-
-.carousel-control-prev,
-.carousel-control-next {
-  filter: invert(1); /* Invert colors for white arrows */
-}
-
-.carousel-indicators [data-bs-target] {
-  background-color: #4a4a4a; /* Set the color for the indicators */
-}
-
-.carousel-indicators .active {
-  background-color: #0077b6;
-}
-
-.carousel-indicators {
-  bottom: -35px;
-}
-
-.offiziellepartner {
-  background-color: rgba(195, 195, 195, 0.13);
-  padding: 40px 0;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  margin-top: 40px;
-}
-
-.title {
-  font-family: "Roboto", Sans-serif;
-  font-size: 3rem;
-  color: var(--text-color);
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.partner-card {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.partner-card:hover {
+.partner-item:hover {
   transform: translateY(-5px);
-  box-shadow: var(--shadow-color);
+  box-shadow: 0 8px 24px rgba(25, 118, 210, 0.15);
 }
 
-.partner-logo {
-  width: 80px;
-  height: auto;
-  margin-bottom: 15px;
+.partner-item:hover::before {
+  opacity: 1;
 }
-.partners-title {
-  font-family: "Roboto",Sans-serif;
-  font-size: 2.5rem;
-  font-weight: 500;
-  color: var(--text-color); /* Ein schöner Blauton für die Überschrift */
-  margin-bottom: 20px;
-  @media (max-width: 400px) {
+
+.partner-item img {
+  max-width: 100%;
+  max-height: 70px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: grayscale(100%);
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.partner-item:hover img {
+  filter: grayscale(0%);
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Carousel Controls */
+.partners-carousel .carousel-control-prev,
+.partners-carousel .carousel-control-next {
+  width: 50px;
+  height: 50px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  opacity: 0.8;
+}
+
+.partners-carousel .carousel-control-prev {
+  left: -25px;
+}
+
+.partners-carousel .carousel-control-next {
+  right: -25px;
+}
+
+.partners-carousel .carousel-control-prev:hover,
+.partners-carousel .carousel-control-next:hover {
+  opacity: 1;
+  background: var(--yisu-secondary);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.partners-carousel .carousel-control-prev-icon,
+.partners-carousel .carousel-control-next-icon {
+  width: 20px;
+  height: 20px;
+  background-color: var(--yisu-secondary);
+  border-radius: 50%;
+  filter: none;
+}
+
+.partners-carousel .carousel-control-prev:hover .carousel-control-prev-icon,
+.partners-carousel .carousel-control-next:hover .carousel-control-next-icon {
+  background-color: white;
+}
+
+/* Carousel Indicators */
+.partners-carousel .carousel-indicators {
+  bottom: -20px;
+  margin-bottom: 0;
+}
+
+.partners-carousel .carousel-indicators [data-bs-target] {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: rgba(25, 118, 210, 0.3);
+  border: none;
+  margin: 0 6px;
+  transition: all 0.3s ease;
+}
+
+.partners-carousel .carousel-indicators .active {
+  background-color: var(--yisu-secondary);
+  width: 30px;
+  border-radius: 15px;
+}
+
+/* Offizielle Partner Section */
+.offiziellepartner {
+  background: transparent;
+  padding: 1rem 2rem;
+  border-radius: 16px;
+  box-shadow: none;
+  margin-top: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Top border removed */
+
+.offiziellepartner .title {
+  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+  font-size: 2.75rem;
+  color: var(--header-color);
+  font-weight: 600;
+  text-transform: none;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.3px;
+}
+
+.offiziellepartner p {
+  font-size: 1.1rem;
+  color: var(--text-color);
+  margin-bottom: 2rem;
+  font-weight: 400;
+  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+.partner-cards-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.partner-cards-row > [class*="col-"] {
+  display: flex;
+  flex-direction: column;
+}
+
+.offiziellepartner .partner-card {
+  background: transparent;
+  border-radius: 16px;
+  padding: 2.5rem 3rem;
+  box-shadow: var(--yisu-shadow-sm);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid var(--yisu-border-light);
+  height: 100%;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shine effect removed */
+
+.offiziellepartner .partner-card:hover {
+  transform: translateY(-12px) scale(1.02);
+  box-shadow: var(--yisu-shadow-lg);
+  border-color: var(--header-color);
+}
+
+.offiziellepartner .partner-card .text-center {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.offiziellepartner .partner-logo {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  max-height: 120px;
+  object-fit: contain;
+  filter: grayscale(0%);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.offiziellepartner .partner-card:hover .partner-logo {
+  transform: scale(1.08);
+  filter: drop-shadow(0 4px 8px rgba(21, 101, 192, 0.25));
+}
+
+.offiziellepartner .partner-card-flat {
+  background: transparent;
+  border-radius: 16px;
+  padding: 2.5rem 3rem;
+  box-shadow: var(--yisu-shadow-md);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid var(--yisu-border-light);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Overlay effect removed */
+
+.offiziellepartner .partner-card-flat:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--yisu-shadow-lg);
+  border-color: var(--header-color);
+}
+
+.offiziellepartner .partner-logo-flat {
+  width: 100%;
+  max-width: 350px;
+  height: auto;
+  max-height: 120px;
+  object-fit: contain;
+  margin: auto;
+  filter: grayscale(0%);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.offiziellepartner .partner-card-flat:hover .partner-logo-flat {
+  transform: scale(1.06);
+  filter: drop-shadow(0 6px 12px rgba(21, 101, 192, 0.3));
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+  .hotel-partners-section {
+    padding: 1rem 0 1rem 0;
+  }
+
+  .section-title {
     font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-description {
+    font-size: 0.95rem;
+    margin-top: 8px;
+  }
+
+  .partners-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .partner-item {
+    height: 100px;
+    padding: 1rem;
+  }
+
+  .partner-item img {
+    max-height: 60px;
+  }
+
+  .partners-carousel .carousel-control-prev,
+  .partners-carousel .carousel-control-next {
+    display: none;
   }
 }
 
+@media (max-width: 768px) {
+  .hotel-partners-section {
+    padding: 0.75rem 0 0.75rem 0;
+  }
 
-.lead {
-  font-family: "Roboto",Sans-serif;
-  font-size: 1.3em;
+  .hotel-partners-content {
+    padding: 1rem 0;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-label::after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .section-title {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-description {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+
+  .partners-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    padding: 0.5rem 0;
+  }
+
+  .partner-item {
+    height: 90px;
+    padding: 0.75rem;
+    border-radius: 10px;
+  }
+
+  .partner-item img {
+    max-height: 50px;
+  }
+
+  .partners-carousel {
+    padding: 1rem 0;
+  }
+
+  .offiziellepartner {
+    padding: 1rem 1rem;
+    margin-top: 0.75rem;
+    border-radius: 20px;
+  }
+
+  .offiziellepartner .title {
+    font-size: 2.25rem;
+  }
+
+  .offiziellepartner p {
+    font-size: 1rem;
+  }
+
+  .partner-cards-row {
+    flex-direction: column;
+  }
+
+  .offiziellepartner .partner-card,
+  .offiziellepartner .partner-card-flat {
+    padding: 1rem 1rem;
+    margin-bottom: 0.75rem;
+    border-radius: 16px;
+    height: 180px;
+    min-height: 180px;
+    max-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .offiziellepartner .partner-logo,
+  .offiziellepartner .partner-logo-flat {
+    max-width: 180px;
+    max-height: 90px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+  
+  .partner-cards-row .col-md-4 {
+    margin-bottom: 0.75rem;
+  }
+  
+  .offiziellepartner .row.mt-4 .col-12.mb-4 {
+    margin-bottom: 0.75rem !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .hotel-partners-section {
+    padding: 0.5rem 0 0.5rem 0;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-description {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-top: 6px;
+  }
+
+  .partners-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .partner-item {
+    height: 80px;
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+
+  .partner-item img {
+    max-height: 45px;
+  }
+
+  .offiziellepartner {
+    padding: 0.75rem 0.75rem;
+    margin-top: 0.5rem;
+    border-radius: 16px;
+  }
+
+  .offiziellepartner .title {
+    font-size: 1.85rem;
+    line-height: 1.2;
+  }
+
+  .offiziellepartner p {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .partner-cards-row {
+    flex-direction: column;
+  }
+
+  .offiziellepartner .partner-card,
+  .offiziellepartner .partner-card-flat {
+    padding: 1rem 0.75rem;
+    border-radius: 16px;
+    margin-bottom: 0.5rem;
+    height: 140px;
+    min-height: 140px;
+    max-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .offiziellepartner .row.mt-4 .col-12.mb-4 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .offiziellepartner .partner-card:hover {
+    transform: translateY(-8px) scale(1.01);
+  }
+
+  .offiziellepartner .partner-logo,
+  .offiziellepartner .partner-logo-flat {
+    max-width: 150px;
+    max-height: 80px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+}
+
+/* Dark Mode Support */
+body.dark-mode .partner-item {
+  background: var(--background-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .partner-item:hover {
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+}
+
+body.dark-mode .offiziellepartner {
+  background: transparent;
+  box-shadow: none;
+}
+
+body.dark-mode .offiziellepartner .title {
+  color: var(--header-color);
+}
+
+body.dark-mode .offiziellepartner p {
   color: var(--text-color);
 }
 
-p {
-  line-height: 2;
-  color: var(--text-color);
+body.dark-mode .offiziellepartner .partner-card {
+  background: transparent;
+  border-color: var(--yisu-border-light);
+  box-shadow: var(--yisu-shadow-sm);
 }
 
+body.dark-mode .offiziellepartner .partner-card:hover {
+  border-color: var(--header-color);
+  box-shadow: var(--yisu-shadow-lg);
+}
 
-.descriptionhotelpartner {
-    color: var(--text-color);
-    font-weight: 400;
-    font-size: 1.5em;
-    font-family: "Roboto",Sans-serif;
+body.dark-mode .offiziellepartner .partner-card-flat {
+  background: transparent;
+  border-color: var(--yisu-border-light);
+  box-shadow: var(--yisu-shadow-md);
+}
+
+/* Overlay effect removed in dark mode as well */
+
+body.dark-mode .offiziellepartner .partner-card-flat:hover {
+  border-color: var(--header-color);
+  box-shadow: var(--yisu-shadow-lg);
 }

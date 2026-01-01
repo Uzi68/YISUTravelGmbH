@@ -1,6 +1,6 @@
 import {Inject, Injectable, PLATFORM_ID} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import {BehaviorSubject, Observable, of, switchMap, tap, throwError} from "rxjs";
+import {BehaviorSubject, Observable, of, switchMap, tap, throwError, map} from "rxjs";
 import {Router} from "@angular/router";
 import {catchError} from "rxjs/operators";
 import {isPlatformBrowser} from "@angular/common";
@@ -15,6 +15,7 @@ export class AuthService {
 
 
   //Cookie is called and the result is set in initialisation (Initialwert)
+  private readonly authStorageKey = 'authenticated';
   private authenticated = new BehaviorSubject<boolean>(this.getPersistedAuthState());
 
   private apiUrl = environment.apiUrl;
@@ -34,10 +35,14 @@ export class AuthService {
   }
 */
 
-  login(credentials: { email: string; password: string }): Observable<any> {
+  login(credentials: { email: string; password: string; remember?: boolean }): Observable<any> {
+    const payload = {
+      ...credentials,
+      remember: credentials.remember ?? true,
+    };
     return this.getCsrfToken().pipe(
       switchMap(() =>
-        this.http.post(`${this.apiUrl}/login`, credentials, {
+        this.http.post(`${this.apiUrl}/login`, payload, {
           withCredentials: true,
         })
       ),
@@ -47,7 +52,10 @@ export class AuthService {
 
 
   logout(): Observable<any> {
-    return this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).pipe(
+    const deviceId = isPlatformBrowser(this.platformId)
+      ? localStorage.getItem('yisu_push_device_id')
+      : null;
+    return this.http.post(`${this.apiUrl}/logout`, { device_id: deviceId }, { withCredentials: true }).pipe(
       tap(() => this.setAuthenticated(false)),
       tap(() => this.router.navigate(['/admin-login'])),
       catchError((error) => {
@@ -92,6 +100,17 @@ export class AuthService {
 
   //Authenticated state to cookies
   private getPersistedAuthState(): boolean {
+    if (isPlatformBrowser(this.platformId)) {
+      const stored = localStorage.getItem(this.authStorageKey);
+      if (stored !== null) {
+        try {
+          return JSON.parse(stored) === true;
+        } catch {
+          return stored === 'true';
+        }
+      }
+    }
+
     const authState = this.getCookie('authenticated');
     return authState === 'true'; // Convert string to boolean
   }
@@ -100,16 +119,25 @@ export class AuthService {
   //Persist authentication state to cookies
   private persistAuthState(isAuthenticated: boolean): void {
     if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.authStorageKey, JSON.stringify(isAuthenticated));
       const expirationDate = new Date();
-      expirationDate.setHours(expirationDate.getHours() + 1);  // Set cookie to expire in 10 Hours
+      expirationDate.setDate(expirationDate.getDate() + 30);  // Keep native app logins for ~1 month
       document.cookie = `authenticated=${isAuthenticated}; expires=${expirationDate.toUTCString()}; path=/;`;
     }
   }
 
   //Checking for Authentication
-  checkAuth(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/check-auth`, { withCredentials: true }).pipe(
+  checkAuth(): Observable<boolean> {
+    return this.http.get(`${this.apiUrl}/check-auth`, { withCredentials: true }).pipe(
+      map(() => true),
+      tap((isAuthenticated) => this.setAuthenticated(isAuthenticated)),
       catchError((error) => {
+        this.setAuthenticated(false);
+
+        if (error.status === 401 || error.status === 419) {
+          return of(false);
+        }
+
         console.error('Error checking auth:', error);
         return throwError(error);
       })

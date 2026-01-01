@@ -45,7 +45,7 @@ import { UserManagementService, StaffUser, CreateStaffUserRequest, UpdateStaffUs
 })
 export class StaffManagementComponent implements OnInit {
   staffUsers: StaffUser[] = [];
-  displayedColumns: string[] = ['name', 'email', 'phone', 'roles', 'is_active', 'created_at', 'actions'];
+  displayedColumns: string[] = ['name', 'email', 'phone', 'roles', 'is_active', 'push_status', 'created_at', 'actions'];
   loading = false;
   showAddForm = false;
   
@@ -209,5 +209,12 @@ export class StaffManagementComponent implements OnInit {
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString('de-DE');
+  }
+
+  formatDateTime(dateString?: string | null): string {
+    if (!dateString) {
+      return '-';
+    }
+    return new Date(dateString).toLocaleString('de-DE');
   }
 }

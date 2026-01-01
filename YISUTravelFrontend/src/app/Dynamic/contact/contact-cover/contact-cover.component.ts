@@ -1,10 +1,11 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { CarouselSwipeDirective } from '../../../Directives/carousel-swipe.directive';
 
 @Component({
   selector: 'app-contact-cover',
   standalone: true,
-  imports: [],
+  imports: [CarouselSwipeDirective],
   templateUrl: './contact-cover.component.html',
   styleUrl: './contact-cover.component.css'
 })

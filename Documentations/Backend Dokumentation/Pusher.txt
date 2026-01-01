@@ -1,0 +1,42 @@
+https://www.youtube.com/watch?v=bm5XPlWW1EA&list=PLlameCF3cMEsrtqpPkW3aRpuiQ5MyXrZT
+
+Pusher Installation Doku:
+composer require pusher/pusher-php-server
+npm install --save-dev laravel-echo pusher-js
+php artisan install:broadcasting
+No, Yes
+
+'useTLS' => env('PUSHER_SCHEME', 'https') === 'https',
+auf das ersetzen: 'useTLS' => true,
+
+ php artisan make:event MessagePusher 
+
+
+Übernehme von Dashboard.pusher:
+BROADCAST_CONNECTION=pusher
+BROADCAST_DRIVER=pusher
+PUSHER_APP_ID=2031485
+PUSHER_APP_KEY=1d031260d5bf381a1f39
+PUSHER_APP_SECRET=b976e5f358fca5d1f006
+PUSHER_APP_CLUSTER=eu
+
+in der .env
+
+
+#Entweder php artisan queue:work und QUEUE_CONNECTION=database
+#php artisan queue:work dauerhaft laufen lassen 
+#Oder QUEUE_CONNECTION=sync
+
+
+
+
+Unbedingt 
+                'verify' => false, kommentieren wenn wir es hochladen!
+
+
+in Angular:
+npm install pusher-js --legacy-peer-deps
+npm install pusher-js laravel-echo --legacy-peer-deps
+
+
+

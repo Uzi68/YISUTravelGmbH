@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withEnabledBlockingInitialNavigation } from '@angular/router';
 
 import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -9,7 +9,13 @@ import {authInterceptor} from "./Services/AuthService/auth.interceptor";
 
 
 export const appConfig: ApplicationConfig = {
-  providers: [provideZoneChangeDetection({ eventCoalescing: true }), provideRouter(routes), provideAnimationsAsync(),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor])), provideClientHydration(withEventReplay()), provideClientHydration()
+  providers: [
+    provideZoneChangeDetection({ eventCoalescing: true }), 
+    provideRouter(routes, withEnabledBlockingInitialNavigation()), 
+    provideAnimationsAsync(),
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor])), 
+    provideClientHydration()
+    // EventReplay kann Probleme verursachen wenn Assets noch nicht geladen sind - daher deaktiviert
+    // provideClientHydration(withEventReplay())
   ]
 };

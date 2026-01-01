@@ -34,7 +34,13 @@
   height: 80px; /* Set a fixed height for all images */
   object-fit: cover; /* Maintain aspect ratio while filling the space */
   margin: auto; /* Center the image in the column */
-  margin-bottom: 50px;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 768px) {
+  .carousel-item img {
+    margin-bottom: 5px;
+  }
 }
 
 .lc-block img {

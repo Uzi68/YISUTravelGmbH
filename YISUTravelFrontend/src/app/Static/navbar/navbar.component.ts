@@ -1,8 +1,9 @@
-import {Component, ElementRef, Inject, inject, PLATFORM_ID, ViewChild} from '@angular/core';
+import {Component, ElementRef, Inject, NgZone, OnDestroy, PLATFORM_ID, ViewChild} from '@angular/core';
 import {AsyncPipe, isPlatformBrowser, NgClass, NgIf, NgOptimizedImage, NgTemplateOutlet} from '@angular/common';
+import {BreakpointObserver} from '@angular/cdk/layout';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
-import {MatSidenavModule} from '@angular/material/sidenav';
+import {MatDrawerMode, MatSidenav, MatSidenavModule} from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from "@angular/material/menu";
@@ -10,9 +11,9 @@ import {NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet} from 
 import {MatSlideToggle} from "@angular/material/slide-toggle";
 import {AuthService} from "../../Services/AuthService/auth.service";
 import {FooterComponent} from "../footer/footer.component";
-import {BehaviorSubject, filter, Observable} from "rxjs";
+import {filter, Observable, Subscription} from "rxjs";
 import {ChatbotService} from "../../Services/chatbot-service/chatbot.service";
-import {response} from "express";
+import {ThemeService} from "../../Services/theme-service/theme.service";
 
 @Component({
   selector: 'app-navbar',
@@ -40,53 +41,63 @@ import {response} from "express";
         FooterComponent
     ]
 })
-export class NavbarComponent {
+export class NavbarComponent implements OnDestroy {
   isOpen: boolean = false;
   darkMode: boolean = false;
   searchActive = false;
   authenticated: Observable<boolean>;
   isAdminDashboardRoute = false;
+  isScrolled = false;
+  private themeSubscription?: Subscription;
+  private scrollRafId: number | null = null;
+  private removeScrollListener?: () => void;
+  private darkModeSwitchRef?: ElementRef;
+  private darkModeSwitchMobileRef?: ElementRef;
+  private breakpointSub?: Subscription;
+  private routerSub?: Subscription;
+  sidenavMode: MatDrawerMode = 'over';
+  isMobileViewport = false;
 
-  toggleSidenav(sidenav: any) {
-    this.isOpen = !this.isOpen;
-    sidenav.toggle();
+  toggleSidenav(sidenav: MatSidenav) {
+    if (sidenav.opened) {
+      this.closeSidenav(sidenav);
+    } else {
+      this.isOpen = true;
+      sidenav.open();
+    }
   }
 
   toggleSearch() {
     this.searchActive = !this.searchActive;
   }
 
-  closeSidenav() {
-    this.isOpen = false; // Close the sidenav
+  closeSidenav(sidenav?: MatSidenav) {
+    this.isOpen = false;
+    sidenav?.close();
+  }
+
+  onSidenavOpenedChange(opened: boolean) {
+    this.isOpen = opened;
   }
 
   ngAfterViewInit() {
-    if (this.element) {
-      this.element.nativeElement.querySelector('.mdc-switch__icon--on').firstChild.setAttribute('d', this.moon);
-      this.element.nativeElement.querySelector('.mdc-switch__icon--off').firstChild.setAttribute('d', this.sun);
-    }
-    if (this.elementMobile) {
-      this.elementMobile.nativeElement.querySelector('.mdc-switch__icon--on').firstChild.setAttribute('d', this.moon);
-      this.elementMobile.nativeElement.querySelector('.mdc-switch__icon--off').firstChild.setAttribute('d', this.sun);
-    }
+    this.applySwitchIcons(this.darkModeSwitchRef);
+    this.applySwitchIcons(this.darkModeSwitchMobileRef);
   }
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private authService: AuthService, private router: Router, private chatbot: ChatbotService) {
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private authService: AuthService,
+    private router: Router,
+    private chatbot: ChatbotService,
+    private themeService: ThemeService,
+    private ngZone: NgZone,
+    private breakpointObserver: BreakpointObserver
+  ) {
     this.authenticated = this.authService.getAuthenticated();
-    
-    // Dark Mode Flashbang Prevention - Set immediately in constructor
-    if (isPlatformBrowser(this.platformId)) {
-      const savedDarkMode = JSON.parse(localStorage.getItem('dark-mode') || 'false');
-      this.darkMode = savedDarkMode;
-      
-      // Apply Dark Mode immediately if it was saved
-      if (this.darkMode) {
-        document.documentElement.classList.add('dark-mode');
-        document.body.classList.add('dark-mode');
-      }
-    }
-    
-    this.router.events
+    this.darkMode = this.themeService.getDarkMode();
+
+    this.routerSub = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.isAdminDashboardRoute = event.url.includes('/admin-dashboard');
@@ -108,6 +119,29 @@ export class NavbarComponent {
   ngOnInit() {
     // Dark Mode state is already set in constructor to prevent flashbang
     // This is just for compatibility
+    if (isPlatformBrowser(this.platformId)) {
+      this.authService.checkAuth().subscribe({
+        error: (error) => console.error('Error synchronizing auth state:', error)
+      });
+
+      this.themeSubscription = this.themeService.darkModeChanges().subscribe(value => {
+        this.darkMode = value;
+      });
+
+      this.setupScrollListener();
+      this.observeViewport();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.themeSubscription?.unsubscribe();
+    this.breakpointSub?.unsubscribe();
+    this.routerSub?.unsubscribe();
+    if (this.scrollRafId !== null) {
+      cancelAnimationFrame(this.scrollRafId);
+      this.scrollRafId = null;
+    }
+    this.removeScrollListener?.();
   }
 
   checkAuth()  {
@@ -124,26 +158,87 @@ export class NavbarComponent {
 
 
   toggleDarkMode() {
-    this.darkMode = !this.darkMode;
+    this.themeService.toggleDarkMode();
+  }
 
-    // Add or remove the 'dark-mode' class
-    if (this.darkMode) {
-      document.documentElement.classList.add('dark-mode');
-      document.body.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-      document.body.classList.remove('dark-mode');
+  private setupScrollListener(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
     }
 
-    // Save the state in localStorage if running in the browser
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('dark-mode', JSON.stringify(this.darkMode));
+    this.ngZone.runOutsideAngular(() => {
+      const handler = () => {
+        if (this.scrollRafId !== null) {
+          return;
+        }
+
+        this.scrollRafId = window.requestAnimationFrame(() => {
+          this.scrollRafId = null;
+          const shouldBeScrolled = window.scrollY > 40;
+          if (shouldBeScrolled !== this.isScrolled) {
+            this.ngZone.run(() => {
+              this.isScrolled = shouldBeScrolled;
+            });
+          }
+        });
+      };
+
+      window.addEventListener('scroll', handler, {passive: true});
+      this.removeScrollListener = () => window.removeEventListener('scroll', handler);
+    });
+
+    this.updateScrollState();
+  }
+
+  private observeViewport(): void {
+    this.breakpointSub = this.breakpointObserver
+      .observe('(max-width: 940px)')
+      .subscribe(result => {
+        this.isMobileViewport = result.matches;
+        this.sidenavMode = result.matches ? 'over' : 'push';
+      });
+  }
+
+  private updateScrollState(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    const shouldBeScrolled = window.scrollY > 40;
+    if (shouldBeScrolled !== this.isScrolled) {
+      this.isScrolled = shouldBeScrolled;
     }
   }
 
+  private applySwitchIcons(element?: ElementRef, attempt: number = 0): void {
+    if (!element || attempt > 5) {
+      return;
+    }
 
-  @ViewChild('darkModeSwitch', {read: ElementRef}) element: ElementRef | undefined;
-  @ViewChild('darkModeSwitchMobile', {read: ElementRef}) elementMobile: ElementRef | undefined;
+    const host = element.nativeElement as HTMLElement;
+    const iconOnPath = host.querySelector('.mdc-switch__icon--on path');
+    const iconOffPath = host.querySelector('.mdc-switch__icon--off path');
+
+    if (iconOnPath && iconOffPath) {
+      iconOnPath.setAttribute('d', this.moon);
+      iconOffPath.setAttribute('d', this.sun);
+    } else {
+      setTimeout(() => this.applySwitchIcons(element, attempt + 1), 50);
+    }
+  }
+
+  @ViewChild('darkModeSwitch', {read: ElementRef})
+  set darkModeSwitch(element: ElementRef | undefined) {
+    this.darkModeSwitchRef = element;
+    setTimeout(() => this.applySwitchIcons(element), 0);
+  }
+
+  @ViewChild('darkModeSwitchMobile', {read: ElementRef})
+  set darkModeSwitchMobile(element: ElementRef | undefined) {
+    this.darkModeSwitchMobileRef = element;
+    setTimeout(() => this.applySwitchIcons(element), 0);
+  }
+
+
 
   sun = 'M12 15.5q1.45 0 2.475-1.025Q15.5 13.45 15.5 12q0-1.45-1.025-2.475Q13.45 8.5 12 8.5q-1.45 0-2.475 1.025Q8.5 10.55 8.5 12q0 1.45 1.025 2.475Q10.55 15.5 12 15.5Zm0 1.5q-2.075 0-3.537-1.463T7 12q0-2.075 1.463-3.537T12 7q2.075 0 3.537 1.463T17 12q0 2.075-1.463 3.537T12 17ZM1.75 12.75q-.325 0-.538-.213Q1 12.325 1 12q0-.325.212-.537Q1.425 11.25 1.75 11.25h2.5q.325 0 .537.213Q5 11.675 5 12q0 .325-.213.537-.213.213-.537.213Zm18 0q-.325 0-.538-.213Q19 12.325 19 12q0-.325.212-.537.212-.213.538-.213h2.5q.325 0 .538.213Q23 11.675 23 12q0 .325-.212.537-.212.213-.538.213ZM12 5q-.325 0-.537-.213Q11.25 4.575 11.25 4.25v-2.5q0-.325.213-.538Q11.675 1 12 1q.325 0 .537.212 .213.212 .213.538v2.5q0 .325-.213.537Q12.325 5 12 5Zm0 18q-.325 0-.537-.212-.213-.212-.213-.538v-2.5q0-.325.213-.538Q11.675 19 12 19q.325 0 .537.212 .213.212 .213.538v2.5q0 .325-.213.538Q12.325 23 12 23ZM6 7.05l-1.425-1.4q-.225-.225-.213-.537.013-.312.213-.537.225-.225.537-.225t.537.225L7.05 6q.2.225 .2.525 0 .3-.2.5-.2.225-.513.225-.312 0-.537-.2Zm12.35 12.375L16.95 18q-.2-.225-.2-.538t.225-.512q.2-.225.5-.225t.525.225l1.425 1.4q.225.225 .212.538-.012.313-.212.538-.225.225-.538.225t-.538-.225ZM16.95 7.05q-.225-.225-.225-.525 0-.3.225-.525l1.4-1.425q.225-.225.538-.213.313 .013.538 .213.225 .225.225 .537t-.225.537L18 7.05q-.2.2-.512.2-.312 0-.538-.2ZM4.575 19.425q-.225-.225-.225-.538t.225-.538L6 16.95q.225-.225.525-.225.3 0 .525.225 .225.225 .225.525 0 .3-.225.525l-1.4 1.425q-.225.225-.537.212-.312-.012-.537-.212ZM12 12Z'
   moon = 'M12 21q-3.75 0-6.375-2.625T3 12q0-3.75 2.625-6.375T12 3q.2 0 .425.013 .225.013 .575.038-.9.8-1.4 1.975-.5 1.175-.5 2.475 0 2.25 1.575 3.825Q14.25 12.9 16.5 12.9q1.3 0 2.475-.463T20.95 11.15q.025.3 .038.488Q21 11.825 21 12q0 3.75-2.625 6.375T12 21Zm0-1.5q2.725 0 4.75-1.687t2.525-3.963q-.625.275-1.337.412Q17.225 14.4 16.5 14.4q-2.875 0-4.887-2.013T9.6 7.5q0-.6.125-1.287.125-.687.45-1.562-2.45.675-4.062 2.738Q4.5 9.45 4.5 12q0 3.125 2.188 5.313T12 19.5Zm-.1-7.425Z'

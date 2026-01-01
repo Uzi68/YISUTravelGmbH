@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "37116369602",
+    "project_id": "yisu-travel-gmbh",
+    "storage_bucket": "yisu-travel-gmbh.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:37116369602:android:04f86da5161f298060f95b",
+        "android_client_info": {
+          "package_name": "com.yisutravelgmbh.yisutravelapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwtioHJHlfyT2mOaRRUwoR9PL7U6SrNVA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

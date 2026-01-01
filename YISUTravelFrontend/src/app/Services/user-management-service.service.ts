@@ -16,6 +16,10 @@ export interface StaffUser {
   roles: string[];
   created_at: string;
   updated_at: string;
+  push_enabled?: boolean;
+  push_device_count?: number;
+  push_last_seen_at?: string;
+  push_last_notified_at?: string;
 }
 
 export interface CreateStaffUserRequest {

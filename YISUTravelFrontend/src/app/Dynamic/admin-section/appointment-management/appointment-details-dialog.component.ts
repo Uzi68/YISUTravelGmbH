@@ -203,6 +203,14 @@ import { AppointmentService } from '../../../Services/appointment-service/appoin
                 <mat-icon>block</mat-icon>
                 Ganzen Tag blockieren
               </button>
+              <button mat-raised-button color="primary" (click)="onBlockTimeSlots()">
+                <mat-icon>schedule</mat-icon>
+                Zeit-Slots blockieren
+              </button>
+              <button mat-raised-button color="accent" (click)="onUnblockTimeSlots()">
+                <mat-icon>lock_open</mat-icon>
+                Zeit-Slots freigeben
+              </button>
             </div>
           </div>
         </div>
@@ -1011,7 +1019,7 @@ export class AppointmentDetailsDialog {
           this.dialogRef.close({ action: 'refresh' });
         },
         error: (error) => {
-          console.error('Error releasing appointment:', error);
+          // Error releasing appointment
           this.snackBar.open('Fehler beim Freigeben des Termins', 'OK', {
             duration: 3000
           });
@@ -1035,7 +1043,7 @@ export class AppointmentDetailsDialog {
           this.dialogRef.close({ action: 'refresh' });
         },
         error: (error) => {
-          console.error('Error restoring appointment:', error);
+          // Error restoring appointment
           this.snackBar.open('Fehler beim Wiederherstellen des Termins', 'OK', {
             duration: 3000
           });

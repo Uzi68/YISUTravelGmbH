@@ -218,11 +218,13 @@ a {
 
 .instagram-btn {
   background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
-  color: white;
+  color: white !important;
   border: none;
   border-radius: 50%; /* Makes it circular */
   font-size: 20px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.3s ease;
 }
 
@@ -239,15 +241,26 @@ h6 {
 }
 
 .instagram-btn i {
-  margin-right: 0; /* Remove margin inside icon */
+  margin: 0;
+  color: white !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
 }
 
 
 
-.icon {
+.contact-info .icon {
   color: #0dc8ee;
   height: 15px;
   width: 15px;
+}
+
+.social-icons .icon {
+  width: 20px;
+  height: 20px;
 }
 
 section {
@@ -261,7 +274,7 @@ section {
   width: 40px; /* Breite der Schaltfläche */
   height: 40px; /* Höhe der Schaltfläche */
   border-radius: 50%; /* Runde Schaltflächen */
-  color: white; /* Schriftfarbe */
+  color: white !important; /* Schriftfarbe */
   text-decoration: none; /* Unterstreichung entfernen */
   transition: background-color 0.3s ease, transform 0.3s ease; /* Sanfte Übergänge */
   margin: 5px; /* Abstand zwischen den Schaltflächen */
@@ -275,6 +288,11 @@ section {
 /* Icon-Stile */
 .btn-social i {
   font-size: 20px; /* Größe der Icons */
+  color: white !important;
+}
+
+.btn-social:hover i {
+  color: white !important;
 }
 
 

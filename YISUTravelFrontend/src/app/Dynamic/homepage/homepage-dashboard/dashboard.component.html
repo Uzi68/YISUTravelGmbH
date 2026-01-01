@@ -1,19 +1,56 @@
 <!--<app-test-pusher></app-test-pusher> -->
 <app-homepage-firstview></app-homepage-firstview>
 <app-homepage-secondview></app-homepage-secondview>
-<app-homepage-contact></app-homepage-contact>
-<app-homepage-thirdview></app-homepage-thirdview>
-<app-swiper></app-swiper>
-<app-offers></app-offers>
-<app-homepage-features></app-homepage-features>
-<app-homepage-partner></app-homepage-partner>
-<app-homepage-flugpartner></app-homepage-flugpartner>
-<app-interessante-themen></app-interessante-themen>
-<app-homepage-fourthview></app-homepage-fourthview>
-<app-homepage-fifthview></app-homepage-fifthview>
-<app-customer-ratings></app-customer-ratings>
-<app-homepage-sixthview></app-homepage-sixthview>
-<app-homepage-bezahlmoeglichkeiten-notfallservice></app-homepage-bezahlmoeglichkeiten-notfallservice>
+@defer (on viewport) {
+  <app-homepage-contact></app-homepage-contact>
+} @placeholder {
+  <div class="section-placeholder"></div>
+}
+@defer (on viewport) {
+  <app-homepage-thirdview></app-homepage-thirdview>
+} @placeholder {
+  <div class="section-placeholder"></div>
+}
+@defer (on viewport) {
+  <app-swiper></app-swiper>
+} @placeholder {
+  <div class="section-placeholder"></div>
+}
+@defer (on viewport) {
+  <app-offers></app-offers>
+} @placeholder {
+  <div class="section-placeholder"></div>
+}
+@defer (on viewport) {
+  <app-homepage-features></app-homepage-features>
+} @placeholder {
+  <div class="section-placeholder"></div>
+}
+@defer (on viewport) {
+  <app-homepage-partner></app-homepage-partner>
+} @placeholder {
+  <div class="section-placeholder"></div>
+}
+@defer (on viewport) {
+  <app-homepage-flugpartner></app-homepage-flugpartner>
+} @placeholder {
+  <div class="section-placeholder"></div>
+}
+@defer (on viewport) {
+  <app-interessante-themen></app-interessante-themen>
+} @placeholder {
+  <div class="section-placeholder"></div>
+}
+@defer (on viewport) {
+  <app-customer-ratings></app-customer-ratings>
+} @placeholder {
+  <div class="section-placeholder"></div>
+}
+@defer (on viewport) {
+  <app-homepage-bezahlmoeglichkeiten-notfallservice></app-homepage-bezahlmoeglichkeiten-notfallservice>
+} @placeholder {
+  <div class="section-placeholder"></div>
+}
 
 
 

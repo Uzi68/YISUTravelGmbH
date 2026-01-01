@@ -2,7 +2,13 @@ body {
   background: #374E59;
   color: #0077b6;
   font-family: 'Sen', sans-serif;
-  margin-bottom: 200px;
+  margin-bottom: 50px;
+}
+
+@media (max-width: 768px) {
+  body {
+    margin-bottom: 10px;
+  }
 }
 
 /* ====================================
@@ -87,7 +93,7 @@ body {
   }
   
   .contact-images-swiper {
-    height: 300px;
+    height: 100%;
   }
   
   .contact-images-swiper::part(button-prev),
@@ -155,7 +161,13 @@ span {
 
 
 .menu-container:nth-child(3) {
-  margin-top: 200px;
+  margin-top: 15px;
+}
+
+@media (max-width: 768px) {
+  .menu-container:nth-child(3) {
+    margin-top: 10px;
+  }
 }
 
 nav {
@@ -200,7 +212,7 @@ li strong {
 }
 
 /* Contact Info Styles */
-.icon {
+.contact-info .icon {
   color: var(--header-color);
   margin-right: 10px; /* Add space between icon and text */
   height: 15px;
@@ -216,21 +228,43 @@ li strong {
   margin-right: 10px; /* Space between buttons */
 }
 
-.btn-primary {
-  background: var(--yisu-navbar-top) !important;
-  color: #2c3e50 !important;
-  border: none !important;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.25);
+.social-links {
+  display: flex;
+  gap: 12px;
 }
 
-.btn-primary:hover {
-  background: #f59e0b !important;
-  color: #2c3e50 !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
+.social-link {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #fff;
+  background: var(--yisu-secondary);
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
+
+.social-link svg {
+  width: 20px;
+  height: 20px;
+}
+
+.social-link.instagram {
+  background: #ac2bac;
+}
+
+.social-link.facebook {
+  background: #3b5998;
+}
+
+.social-link:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+/* Button styles werden jetzt global in styles.css verwaltet */
 
 .btn-outline-secondary {
   color: #0077b6; /* Button outline color */

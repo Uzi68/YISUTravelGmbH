@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { RouterLink } from "@angular/router";
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { OfferService, Offer } from '../../../Services/offer.service';
 
 @Component({
@@ -19,10 +19,17 @@ export class OffersComponent implements OnInit {
   loading = false;
   error = '';
 
-  constructor(private offerService: OfferService) {}
+  constructor(
+    private offerService: OfferService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
 
   ngOnInit(): void {
     this.loadOffers();
+
+    if (isPlatformBrowser(this.platformId)) {
+      queueMicrotask(() => this.refreshOffersFromServer());
+    }
   }
 
   loadOffers(): void {
@@ -56,6 +63,30 @@ export class OffersComponent implements OnInit {
         if (!this.error) {
           this.error = 'Fehler beim Laden der Angebote';
         }
+      }
+    });
+  }
+
+  private refreshOffersFromServer(): void {
+    this.offerService.getFeaturedOffer(true).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.featuredOffer = response.data;
+        }
+      },
+      error: (error) => {
+        console.error('Error refreshing featured offer:', error);
+      }
+    });
+
+    this.offerService.getActiveOffers(true).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.otherOffers = response.data.slice(0, 3);
+        }
+      },
+      error: (error) => {
+        console.error('Error refreshing active offers:', error);
       }
     });
   }

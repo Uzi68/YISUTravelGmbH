@@ -1,10 +1,38 @@
 .customer-registration-container {
   padding: 20px;
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
   min-height: 100vh;
   display: flex;
   align-items: center;
+  color: var(--text-color);
+}
+
+.customer-registration-container mat-card {
+  width: 100%;
+  background-color: var(--yisu-bg-card);
+  color: inherit;
+  box-shadow: var(--shadow-color);
+  border-radius: 16px;
+  border: 1px solid var(--yisu-border-light);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.customer-registration-container mat-card:hover {
+  box-shadow: var(--yisu-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.customer-registration-container mat-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--header-color);
+  font-size: 1.5rem;
+}
+
+.customer-registration-container mat-card-subtitle {
+  color: var(--yisu-text-medium);
 }
 
 .form-row {
@@ -15,6 +43,10 @@
 
 .form-row mat-form-field {
   flex: 1;
+  --mdc-outlined-text-field-container-color: rgba(240, 249, 255, 0.7);
+  --mdc-outlined-text-field-focus-outline-color: var(--header-color);
+  --mdc-outlined-text-field-hover-outline-color: var(--header-color);
+  --mdc-outlined-text-field-input-text-color: var(--text-color);
 }
 
 .form-actions {
@@ -24,16 +56,35 @@
   margin-top: 20px;
 }
 
+.form-actions button[mat-button] {
+  color: var(--link-color);
+}
+
+.form-actions button[mat-raised-button] {
+  background: var(--yisu-button-primary);
+  color: var(--yisu-text-white);
+  box-shadow: var(--yisu-shadow-sm);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.form-actions button[mat-raised-button]:hover {
+  background: var(--yisu-button-primary-hover);
+  box-shadow: var(--yisu-shadow-md);
+  transform: translateY(-1px);
+}
+
 .registration-benefits {
   margin-top: 30px;
   padding: 20px;
-  background: #f5f5f5;
-  border-radius: 8px;
+  background: var(--box-color);
+  border-radius: 12px;
+  border: 1px solid var(--yisu-border-light);
+  color: var(--text-color);
 }
 
 .registration-benefits h3 {
   margin-bottom: 16px;
-  color: #333;
+  color: var(--header-color);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -50,37 +101,76 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
-  color: #666;
+  color: var(--yisu-text-medium);
 }
 
 .registration-benefits li mat-icon {
-  color: #4caf50;
+  color: var(--yisu-button-secondary);
   font-size: 20px;
   width: 20px;
   height: 20px;
 }
 
+.form-row mat-form-field mat-icon,
+.customer-registration-container mat-card-title mat-icon {
+  color: var(--yisu-secondary);
+}
+
+:host-context(body.dark-mode) .form-row mat-form-field mat-icon,
+:host-context(body.dark-mode) .customer-registration-container mat-card-title mat-icon {
+  color: var(--yisu-button-secondary);
+}
+
 mat-progress-spinner {
   margin: 20px auto;
   display: block;
+  color: var(--yisu-button-secondary);
+}
+
+:host-context(body.dark-mode) .form-row mat-form-field {
+  --mdc-outlined-text-field-container-color: rgba(148, 197, 255, 0.12);
+  --mdc-outlined-text-field-outline-color: rgba(148, 163, 184, 0.35);
+  --mdc-outlined-text-field-hover-outline-color: rgba(148, 197, 255, 0.75);
+  --mdc-outlined-text-field-focus-outline-color: rgba(125, 211, 252, 0.95);
+}
+
+:host-context(body.dark-mode) .form-actions button[mat-raised-button] {
+  background: var(--yisu-button-secondary);
+  color: var(--yisu-text-dark);
+}
+
+:host-context(body.dark-mode) .form-actions button[mat-raised-button]:hover {
+  background: var(--yisu-button-secondary-hover);
+}
+
+:host-context(body.dark-mode) .customer-registration-container mat-card {
+  border-color: var(--yisu-border-medium);
+}
+
+:host-context(body.dark-mode) .registration-benefits {
+  border-color: var(--yisu-border-medium);
 }
 
 @media (max-width: 768px) {
   .customer-registration-container {
-    padding: 10px;
+    padding: 12px;
   }
   
   .form-row {
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
   
   .form-actions {
     flex-direction: column;
   }
   
+  .form-actions button {
+    width: 100%;
+  }
+  
   .registration-benefits {
-    margin-top: 20px;
+    margin-top: 24px;
     padding: 16px;
   }
 }

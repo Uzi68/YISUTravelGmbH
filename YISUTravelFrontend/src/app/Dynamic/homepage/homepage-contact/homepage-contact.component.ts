@@ -1,8 +1,9 @@
-import {Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, Inject, PLATFORM_ID, QueryList, ViewChildren, OnInit} from '@angular/core';
+import {Component, ElementRef, Inject, PLATFORM_ID, QueryList, ViewChildren, OnInit} from '@angular/core';
 import {isPlatformBrowser, NgClass, NgForOf} from "@angular/common";
 import {RouterLink, Router} from "@angular/router";
 import {MatButton, MatFabAnchor, MatFabButton, MatButtonModule} from "@angular/material/button";
 import {MatIcon, MatIconModule} from "@angular/material/icon";
+import { CarouselSwipeDirective } from '../../../Directives/carousel-swipe.directive';
 
 @Component({
   selector: 'app-homepage-contact',
@@ -16,11 +17,11 @@ import {MatIcon, MatIconModule} from "@angular/material/icon";
     MatIcon,
     MatFabAnchor,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    CarouselSwipeDirective
   ],
   templateUrl: './homepage-contact.component.html',
-  styleUrl: './homepage-contact.component.css',
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]
+  styleUrl: './homepage-contact.component.css'
 })
 export class HomepageContactComponent implements OnInit {
   isOpen = false;
@@ -37,16 +38,8 @@ export class HomepageContactComponent implements OnInit {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
-  async ngOnInit() {
-    if (this.isBrowser) {
-      // Initialize Swiper elements
-      try {
-        const { register } = await import('swiper/element/bundle');
-        register();
-      } catch (error) {
-        console.error('Swiper initialization failed:', error);
-      }
-    }
+  ngOnInit() {
+    // Bootstrap Carousel wird automatisch initialisiert - keine manuelle Initialisierung nötig
   }
 
   openAppointmentBooking(): void {

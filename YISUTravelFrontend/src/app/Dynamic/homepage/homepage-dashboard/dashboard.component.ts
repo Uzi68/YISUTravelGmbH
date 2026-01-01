@@ -2,9 +2,6 @@ import { Component } from '@angular/core';
 import {HomepageFirstviewComponent} from "../homepage-cover/homepage-firstview.component";
 import {HomepageSecondviewComponent} from "../homepage-willkommensnachricht/homepage-secondview.component";
 import {HomepageThirdviewComponent} from "../homepage-tourismusexperten/homepage-thirdview.component";
-import {HomepageFourthviewComponent} from "../homepage-ueber-uns/homepage-fourthview.component";
-import {HomepageFifthviewComponent} from "../homepage-twoimages/homepage-fifthview.component";
-import {HomepageSixthviewComponent} from "../homepage-unternehmenszahlen/homepage-sixthview.component";
 import {HomepageContactComponent} from "../homepage-contact/homepage-contact.component";
 import {HomepagePartnerComponent} from "../homepage-hotelpartner-offizielleflugpartner/homepage-partner.component";
 import {HomepageIconsComponent} from "../homepage-icons/homepage-icons.component";
@@ -18,7 +15,6 @@ import {
 } from "../homepage-emergency/homepage-bezahlmoeglichkeiten-notfallservice.component";
 import {SwiperComponent} from "../top-reiseziele/swiper.component";
 import {OffersComponent} from "../offers/offers.component";
-import {TestPusherComponent} from "../../admin-section/admin-dashboard/test-pusher/test-pusher.component";
 
 @Component({
   selector: 'app-dashboard',
@@ -27,9 +23,6 @@ import {TestPusherComponent} from "../../admin-section/admin-dashboard/test-push
     HomepageFirstviewComponent,
     HomepageSecondviewComponent,
     HomepageThirdviewComponent,
-    HomepageFourthviewComponent,
-    HomepageFifthviewComponent,
-    HomepageSixthviewComponent,
     HomepageContactComponent,
     HomepagePartnerComponent,
     HomepageIconsComponent,
@@ -40,8 +33,7 @@ import {TestPusherComponent} from "../../admin-section/admin-dashboard/test-push
     CustomerRatingsComponent,
     HomepageBezahlmoeglichkeitenNotfallserviceComponent,
     SwiperComponent,
-    OffersComponent,
-    TestPusherComponent
+    OffersComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'

@@ -21,7 +21,7 @@ class ChatbotResponses extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Response erfolgreich gespeichert',
+                'message' => 'Wissenseintrag erfolgreich gespeichert',
                 'data' => $response
             ]);
         } catch (\Exception $e) {
@@ -57,16 +57,16 @@ class ChatbotResponses extends Controller
 
             if (!$response) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Response nicht gefunden'
-                ], 404);
+                'success' => false,
+                'message' => 'Wissenseintrag nicht gefunden'
+            ], 404);
             }
 
             $response->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Response erfolgreich gelöscht'
+                'message' => 'Wissenseintrag erfolgreich gelöscht'
             ]);
 
         } catch (\Exception $e) {
@@ -83,9 +83,9 @@ class ChatbotResponses extends Controller
 
             if(!$response) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Response nicht gefunden'
-                ], 404);
+                'success' => false,
+                'message' => 'Wissenseintrag nicht gefunden'
+            ], 404);
             }
 
             $validated = $request->validate([
@@ -98,7 +98,7 @@ class ChatbotResponses extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Response erfolgreich aktualisiert',
+                'message' => 'Wissenseintrag erfolgreich aktualisiert',
                 'data' => $response
             ]);
         } catch (\Exception $e) {

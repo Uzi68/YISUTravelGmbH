@@ -7,19 +7,32 @@ import {of} from "rxjs";
 export const authGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
   const authService = inject(AuthService);
+  const requiredRoles = route.data?.['roles'] as string[] | undefined;
 
   // Prüfe die Authentifizierung über das Backend (wegen HttpOnly-Cookie)
   return authService.getUserRole().pipe(
     map((response) => {
+      const roles = Array.isArray(response.role) ? response.role : [];
+      const hasRequiredRole =
+        !requiredRoles || requiredRoles.some((role) => roles.includes(role));
 
-      //Überprüfe ob User Admin ist
-      if (response.role.includes('Admin') || response.role.includes('Agent')) {
+      if (hasRequiredRole) {
         return true; // Zugriff gewährt
-      } else {
+      }
 
-        router.navigate(['/admin-login']); //Benutzer ist kein Admin => umleiten
+      if (roles.includes('User')) {
+        router.navigate(['/customer-dashboard']);
         return false;
       }
+
+      if (roles.includes('Admin') || roles.includes('Agent')) {
+        router.navigate(['/admin-dashboard']);
+        return false;
+      }
+
+      router.navigate(['/admin-login']);
+      return false;
+      //Überprüfe ob User Admin ist
     }),
     catchError(() => {
       // Fehler bei der API-Abfrage (z. B. ungültiges Cookie), Umleitung zum Login
@@ -38,7 +51,9 @@ export const adminGuard: CanActivateFn = (route, state) => {
 
   return authService.getUserRole().pipe(
     map((response) => {
-      if (response.role.includes('Admin')) {
+      const roles = Array.isArray(response.role) ? response.role : [];
+
+      if (roles.includes('Admin')) {
         return true; // Zugriff nur für Admin
       } else {
         router.navigate(['/admin-login']);

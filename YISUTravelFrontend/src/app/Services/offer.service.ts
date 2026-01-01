@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -64,12 +64,18 @@ export class OfferService {
     return this.http.get<ApiResponse<Offer[]>>(`${this.apiUrl}/offers`, { withCredentials: true });
   }
 
-  getActiveOffers(): Observable<ApiResponse<Offer[]>> {
-    return this.http.get<ApiResponse<Offer[]>>(`${this.apiUrl}/offers/active`, { withCredentials: true });
+  getActiveOffers(forceRefresh = false): Observable<ApiResponse<Offer[]>> {
+    return this.http.get<ApiResponse<Offer[]>>(
+      `${this.apiUrl}/offers/active`,
+      this.createRequestOptions(forceRefresh)
+    );
   }
 
-  getFeaturedOffer(): Observable<ApiResponse<Offer | null>> {
-    return this.http.get<ApiResponse<Offer | null>>(`${this.apiUrl}/offers/featured`, { withCredentials: true });
+  getFeaturedOffer(forceRefresh = false): Observable<ApiResponse<Offer | null>> {
+    return this.http.get<ApiResponse<Offer | null>>(
+      `${this.apiUrl}/offers/featured`,
+      this.createRequestOptions(forceRefresh)
+    );
   }
 
   getOfferById(id: number): Observable<ApiResponse<Offer>> {
@@ -134,6 +140,18 @@ export class OfferService {
     
     // If it's just a filename, add offers prefix
     return `${environment.backendUrl}/storage/offers/${imageUrl}`;
+  }
+
+  private createRequestOptions(forceRefresh = false): { withCredentials: boolean; params?: HttpParams } {
+    const options: { withCredentials: boolean; params?: HttpParams } = {
+      withCredentials: true
+    };
+
+    if (forceRefresh) {
+      options.params = new HttpParams().set('_', Date.now().toString());
+    }
+
+    return options;
   }
 }
 

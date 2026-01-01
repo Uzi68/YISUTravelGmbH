@@ -17,11 +17,24 @@
           <input matInput formControlName="password" type="password" required placeholder="Passwort eingeben">
         </mat-form-field>
 
+        <mat-checkbox formControlName="remember" class="remember-row">
+          Login merken
+        </mat-checkbox>
+
         <div class="login-actions">
-        <!--  <button mat-raised-button class="submitButton" (click)="callXSFR()" type="submit" [disabled]="contactForm.invalid">-->
-          <button mat-raised-button class="submitButton" type="submit" [disabled]="contactForm.invalid">
-            Login
+          <button mat-raised-button class="submitButton" type="submit" [disabled]="contactForm.invalid || isLoading">
+            <mat-progress-spinner
+              *ngIf="isLoading"
+              class="button-spinner"
+              diameter="20"
+              mode="indeterminate">
+            </mat-progress-spinner>
+            <span>{{ isLoading ? 'Wird angemeldet...' : 'Login' }}</span>
           </button>
+        </div>
+        <div class="login-error" *ngIf="errorMessage">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ errorMessage }}</span>
         </div>
         
         <div class="login-links">

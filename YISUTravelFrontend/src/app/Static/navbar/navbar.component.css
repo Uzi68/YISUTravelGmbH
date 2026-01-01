@@ -6,18 +6,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 2rem;
-  font-size: 16px;
+  padding: 0.5rem 1.25rem;
+  font-size: 15px;
   max-width: 1600px;
   margin: 0 auto;
   background: transparent;
-  height: 65px;
-  gap: 1.5rem;
+  height: 56px;
+  gap: 1rem;
   
   @media (max-width: 768px) {
     justify-content: space-between;
     padding: 0.5rem 1rem;
-    height: 60px;
+    height: 56px;
     gap: 1rem;
   }
 }
@@ -28,8 +28,123 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.9);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toolbarbackground--scrolled {
+  background: rgba(15, 76, 129, 0.92);
+  border-bottom: 1px solid rgba(15, 76, 129, 0.35);
+  box-shadow: 0 6px 16px rgba(15, 76, 129, 0.25);
+}
+
+:host-context(body.dark-mode) .toolbarbackground {
+  background: rgba(15, 23, 42, 0.65);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.35);
+}
+
+:host-context(body.dark-mode) .toolbarbackground--scrolled {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.55);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a {
+  color: #f5faff !important;
+  text-shadow: 0 1px 3px rgba(15, 76, 129, 0.35);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mdc-button__label {
+  color: #f5faff !important;
+  text-shadow: 0 1px 3px rgba(15, 76, 129, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mat-mdc-button {
+  --mdc-text-button-label-text-color: #f5faff;
+  --mdc-text-button-label-text-color-hover: #ffffff;
+  --mdc-text-button-label-text-color-focus: #ffffff;
+  color: #f5faff !important;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mat-mdc-button .mdc-button__label {
+  color: inherit !important;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a::after {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a:hover {
+  color: var(--yisu-nav-items-active);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(15, 76, 129, 0.35);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a.active-list-item {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff !important;
+  box-shadow: 0 3px 10px rgba(15, 76, 129, 0.4);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a.active-list-item:hover {
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff !important;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a.cta {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(15, 76, 129, 0.35);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a.cta:hover {
+  background: rgba(255, 255, 255, 0.32);
+  color: #ffffff !important;
+  box-shadow: 0 6px 16px rgba(15, 76, 129, 0.4);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu a.cta.active-list-item {
+  background: rgba(255, 255, 255, 0.32);
+  color: #ffffff !important;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mdc-button__label i,
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mdc-button__label mat-icon,
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mdc-button__label svg,
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .desktop-menu .mdc-button__label svg path {
+  color: #f5faff !important;
+  fill: #f5faff !important;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .adminicon {
+  fill: #f9fbff;
+  filter: drop-shadow(0 2px 8px rgba(15, 76, 129, 0.45));
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .adminicon:hover {
+  background: rgba(255, 255, 255, 0.12);
+  fill: rgba(255, 255, 255, 1);
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .mobile-menu-btn {
+  fill: #f9fbff;
+}
+
+:host-context(body:not(.dark-mode)) .toolbarbackground--scrolled .mobile-menu-btn svg path {
+  fill: #f9fbff;
+}
+
+body:not(.dark-mode) .toolbarbackground--scrolled .desktop-menu a i,
+body:not(.dark-mode) .toolbarbackground--scrolled .desktop-menu a svg,
+body:not(.dark-mode) .toolbarbackground--scrolled .desktop-menu a svg path {
+  color: #f5faff !important;
+  fill: #f5faff !important;
 }
 ::ng-deep .mat-mdc-menu-content {
   padding: 0px !important;
@@ -79,7 +194,7 @@ body.dark-mode .adminicon {
 }
 
 .logo-img {
-  height: 65px;
+  height: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
   flex-shrink: 0;
@@ -94,7 +209,7 @@ body.dark-mode .adminicon {
   }
   
   @media (max-width: 940px) {
-    height: 55px;
+    height: 46px;
     padding: 6px 10px;
   }
 }
@@ -111,11 +226,13 @@ body.dark-mode .logo-img {
 
 .instagram-btn {
   background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
-  color: white;
+  color: white !important;
   border: none;
   border-radius: 50%; /* Makes it circular */
   font-size: 20px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.3s ease;
 }
 
@@ -124,7 +241,13 @@ body.dark-mode .logo-img {
 }
 
 .instagram-btn i {
-  margin-right: 0; /* Remove margin inside icon */
+  margin: 0;
+  color: white !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
 }
 .logo-wrapper {
   width: 50px;              /* gleiche Höhe wie dein Bild */
@@ -207,24 +330,42 @@ body.dark-mode .logo-img {
 
 mat-slide-toggle {
   align-content: center;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/* Optimize Material Slide Toggle transitions */
+::ng-deep .mat-mdc-slide-toggle .mdc-switch {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+::ng-deep .mat-mdc-slide-toggle .mdc-switch__track {
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: background-color;
+}
+
+::ng-deep .mat-mdc-slide-toggle .mdc-switch__handle {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 
 .desktop-menu {
   display: flex;
   align-items: center;
-  gap: 3rem;
+  gap: 1.25rem;
   flex-shrink: 0;
   
   a {
-    font-size: 17px;
-    font-weight: 500;
-    padding: 0.75rem 1.8rem;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
     color: var(--yisu-nav-items);
     text-decoration: none;
     border-radius: 10px;
     position: relative;
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
     letter-spacing: 0.5px;
     white-space: nowrap;
     
@@ -244,7 +385,6 @@ mat-slide-toggle {
     &:hover {
       color: var(--yisu-nav-items-hover);
       background: var(--yisu-nav-items-hover-background);
-      transform: translateY(-1px);
       
       &::after {
         width: 75%;
@@ -254,9 +394,7 @@ mat-slide-toggle {
     &.active-list-item {
       background: var(--yisu-nav-items);
       color: var(--yisu-nav-items-active);
-      font-weight: 600;
       box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
-      transform: translateY(-1px);
       
       &::after {
         background: var(--yisu-nav-items-active);
@@ -281,28 +419,113 @@ mat-slide-toggle {
   }
 }
 
+/* Emphasized CTA for Termin buchen */
+.desktop-menu a.cta {
+  background: var(--yisu-secondary);
+  color: var(--yisu-text-white);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35);
+  transition: all 0.3s ease;
+}
+
+.desktop-menu a.cta::after {
+  background: rgba(255, 255, 255, 0.8) !important;
+  height: 3px;
+  bottom: 6px;
+  width: 0;
+  border-radius: 999px;
+}
+
+.desktop-menu a.cta:hover {
+  background: var(--yisu-nav-items);
+  color: var(--yisu-text-white);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.45);
+}
+
+.desktop-menu a.cta:hover::after {
+  width: 75%;
+}
+
+.desktop-menu a.cta.active-list-item::after {
+  width: 80%;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.desktop-menu a.cta.active-list-item:hover::after {
+  width: 90%;
+  background: #fff !important;
+}
+
+body.dark-mode .desktop-menu a.cta {
+  background: var(--yisu-secondary);
+  color: var(--yisu-text-white);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+  &::after {
+    background: rgba(255, 255, 255, 0.8) !important;
+  }
+}
+
+body.dark-mode .desktop-menu a.cta:hover {
+  background: var(--yisu-nav-items);
+  color: var(--yisu-text-white);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45);
+  &::after {
+    width: 75%;
+    background: rgba(255, 255, 255, 0.9) !important;
+  }
+}
+
+body.dark-mode .desktop-menu a.cta.active-list-item::after {
+  width: 80%;
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+body.dark-mode .desktop-menu a.cta.active-list-item:hover::after {
+  width: 90%;
+  background: #fff !important;
+}
+
 /* Dark Mode Navigation Styles */
 body.dark-mode .desktop-menu a {
-  color: var(--yisu-secondary);
-  background: transparent;
-  
-  &:hover {
-    color: var(--yisu-text-black);
-    background: var(--yisu-secondary);
-    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
-  }
-  
-  &.active-list-item {
-    background: var(--yisu-secondary);
-    color: var(--yisu-text-black);
-    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
-    
-    &:hover {
-      background: #f59e0b;
-      color: var(--yisu-text-black);
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
-    }
-  }
+  color: #90c5f8 !important; /* Helleres Blau für bessere Lesbarkeit */
+  background: transparent !important;
+}
+
+body.dark-mode .desktop-menu a:hover {
+  color: #ffffff !important; /* Weißer Text beim Hover */
+  background: rgba(59, 130, 246, 0.25) !important; /* Helles Blau mit Transparenz */
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .desktop-menu a::after {
+  background: rgba(144, 197, 248, 0.6) !important; /* Helle Linie im Dark Mode */
+}
+
+body.dark-mode .desktop-menu a:hover::after {
+  background: rgba(255, 255, 255, 0.9) !important; /* Sehr helle Linie beim Hover */
+  width: 75% !important;
+}
+
+body.dark-mode .desktop-menu a.active-list-item {
+  background: var(--yisu-secondary) !important;
+  color: #ffffff !important; /* Weißer Text wenn aktiv */
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .desktop-menu a.active-list-item::after {
+  background: rgba(255, 255, 255, 0.9) !important;
+  width: 80% !important;
+}
+
+body.dark-mode .desktop-menu a.active-list-item:hover {
+  background: var(--yisu-nav-items) !important;
+  color: #ffffff !important; /* Weißer Text beim Hover wenn aktiv */
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5) !important;
+}
+
+body.dark-mode .desktop-menu a.active-list-item:hover::after {
+  background: rgba(255, 255, 255, 1) !important;
+  width: 90% !important;
 }
 
 /* Dark Mode Quick Access Buttons */
@@ -334,33 +557,65 @@ body.dark-mode .desktop-menu2 a {
 /* Burger menu button for mobile */
 .mobile-menu-btn {
   display: none;
-  fill: var(--yisu-nav-items);
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  will-change: transform;
 
-  /* Show burger button on tablet/mobile screens */
   @media (max-width: 940px) {
-    display: block;
-    position: relative; /* For the animation */
-    border-radius: 50%; /* Make the button circular for better aesthetics */
-  }
-
-  /* Icon styles */
-  .mat-icon {
-    transition: transform 0.3s ease, opacity 0.3s ease; /* Smooth transition for rotation */
-    color: white; /* Burger icon color */
-    font-size: 25px; /* Increase icon size for better visibility */
-    display: inline-block; /* Use inline-block to allow padding adjustments */
-    margin: 0; /* Remove any default margins */
-  }
-
-  /* Sidenav animation when open */
-  .open {
-    transform: rotate(90deg); /* Rotate the icon to 90 degrees */
+    display: inline-flex;
   }
 }
 
-/* For the main icon */
-.mat-sidenav.open .mobile-menu-btn mat-icon {
-  transition: transform 0.3s ease; /* Smooth transition for rotation */
+.mobile-menu-btn:hover {
+  background: rgba(25, 118, 210, 0.08);
+}
+
+.mobile-menu-btn .burger-line {
+  position: absolute;
+  width: 22px;
+  height: 3px;
+  border-radius: 4px;
+  background: var(--yisu-nav-items);
+  transition: transform 0.35s ease, opacity 0.25s ease, background-color 0.3s ease;
+  will-change: transform, opacity;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+body.dark-mode .mobile-menu-btn .burger-line {
+  background: #f5faff;
+}
+
+.burger-line-top {
+  top: 16px;
+}
+
+.burger-line-middle {
+  top: 22.5px;
+}
+
+.burger-line-bottom {
+  top: 29px;
+}
+
+.mobile-menu-btn.open .burger-line-top {
+  transform: translateX(-50%) rotate(45deg);
+  top: 22.5px;
+}
+
+.mobile-menu-btn.open .burger-line-middle {
+  opacity: 0;
+}
+
+.mobile-menu-btn.open .burger-line-bottom {
+  transform: translateX(-50%) rotate(-45deg);
+  top: 22.5px;
 }
 
 mat-sidenav-content {
@@ -374,6 +629,12 @@ mat-sidenav {
   width: 250px; /* Side menu width on mobile */
 }
 
+.mobile-sidenav-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Hide mobile menu button on desktop */
 @media (min-width: 941px) {
   .mobile-menu-btn {
@@ -385,12 +646,6 @@ mat-sidenav {
   .darkmode-button {
     display: none;
   }
-}
-
-/* Sidenav animation when open */
-.mat-sidenav.open .mobile-menu-btn mat-icon {
-  transform: rotate(90deg); /* Rotate the burger icon to X */
-  fill: var(--yisu-nav-items-hover);
 }
 
 .mobile-sidenav a {
@@ -419,10 +674,10 @@ mat-sidenav {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    color: var(--yisu-white);
+    color: #1976d2;
     text-decoration: none;
     transition: all 0.3s ease;
-    box-shadow: var(--yisu-shadow-sm);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     
     i {
       font-size: 20px;
@@ -436,7 +691,7 @@ mat-sidenav {
 }
 
 svg {
-  font-size: 26px;
+  font-size: 15px;
 }
 
 /* Additional Info Bar unter Navbar */
@@ -456,7 +711,7 @@ svg {
     cursor: default;
     
     &:hover {
-      color: var(--yisu-accent);
+      color: var(--yisu-nav-items);
     }
   }
   
@@ -465,23 +720,14 @@ svg {
   }
 }
 
+/* Dark Mode Hover Color für Additional Info */
+body.dark-mode .additional-info span:hover {
+  color: var(--yisu-secondary);
+}
+
 #additiona-info-left {
   margin-left: 0;
 }
-
-.mobile-menu-btn {
-  transition: transform 0.3s ease; /* Ensure the button itself has a transition */
-}
-
-.mobile-menu-btn.open {
-  transform: rotate(90deg); /* Adjust rotation angle to suit your design */
-}
-
-/* Optional: Apply additional styles to the SVG if needed */
-.mobile-menu-btn svg {
-  transition: transform 0.3s ease; /* Ensure the SVGs also have a smooth transition */
-}
-
 
 #additiona-info-right {
   margin-right: 0px;
@@ -496,15 +742,21 @@ svg {
 
 /* Top Info Bar mit Logo und Social Media */
 .additional-info-top {
-  background: linear-gradient(135deg, var(--yisu-navbar-top) 0%, #f59e0b 100%);
+  background: #afdef8;
   padding: 0.75rem 0;
-  border-bottom: 3px solid rgba(25, 118, 210, 0.2);
+  border-bottom: 3px solid #ffa600;
   position: relative;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+  box-shadow: none;
   
   @media (max-width: 940px) {
     display: none;
   }
+}
+
+:host-context(.dark-mode) .additional-info-top {
+  background: linear-gradient(135deg, rgba(46, 103, 195, 0.92), rgba(96, 165, 250, 0.85)) !important; /* Harmonischer Verlauf aus bestehenden Dark-Mode-Farben */
+  border-bottom: 3px solid #ffa600;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.45);
 }
 
 .logo-social-container {
@@ -520,7 +772,6 @@ svg {
 }
 
 
-
 /* Other existing styles remain unchanged */
 
 
@@ -531,18 +782,23 @@ svg {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  color: var(--yisu-white);
+  color: white !important;
   text-decoration: none;
   transition: all 0.3s ease;
-  box-shadow: var(--yisu-shadow-sm);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   
   i {
     font-size: 20px;
+    color: white !important;
   }
   
   &:hover {
     transform: translateY(-3px) scale(1.1);
     box-shadow: var(--yisu-shadow-md);
+    
+    i {
+      color: white !important;
+    }
   }
 }
 
@@ -606,21 +862,32 @@ svg {
   font-weight: 600;
   color: var(--yisu-nav-items);
   margin: 1.25rem 0 0.75rem;
-  padding: 0 1rem;
+  padding: 0 1rem 3%;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid var(--yisu-nav-items);
-  padding-bottom: 0.5rem;
 }
 
 /* Dark Mode Sidenav Styles */
 body.dark-mode .sidenav-icon {
-  color: var(--yisu-accent);
+  color: #90c5f8; /* Helleres Blau für bessere Lesbarkeit */
 }
 
 body.dark-mode .sidenav-header {
-  color: var(--yisu-accent);
-  border-bottom: 2px solid var(--yisu-accent);
+  color: #90c5f8; /* Helleres Blau */
+  border-bottom: 2px solid #90c5f8;
+}
+
+body.dark-mode .sidenav-text {
+  color: #cbd5e1; /* Hellerer Text für bessere Lesbarkeit */
+}
+
+body.dark-mode .mat-nav-list a:hover .sidenav-text {
+  color: #ffffff; /* Sehr heller Text beim Hover */
+}
+
+body.dark-mode .mat-nav-list a:hover .sidenav-icon {
+  color: #ffffff; /* Sehr helles Icon beim Hover */
 }
 
 .mat-nav-list a {
@@ -638,6 +905,10 @@ body.dark-mode .sidenav-header {
   }
 }
 
+body.dark-mode .mat-nav-list a:hover {
+  background: rgba(59, 130, 246, 0.2); /* Helleres Blau mit Transparenz für besseren Kontrast */
+}
+
 .sidenav-text {
   color: var(--yisu-text-dark);
   font-weight: 500;
@@ -647,9 +918,3 @@ body.dark-mode .sidenav-header {
 mat-sidenav-container {
   background-color: var(--background-color);
 }
-
-
-
-
-
-

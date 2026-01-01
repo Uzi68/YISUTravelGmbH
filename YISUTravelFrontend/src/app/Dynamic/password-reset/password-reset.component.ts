@@ -57,6 +57,15 @@ export class PasswordResetComponent implements OnInit {
       password: ['', [Validators.required, Validators.minLength(8)]],
       password_confirmation: ['', Validators.required]
     }, { validators: this.passwordMatchValidator });
+
+    const snapshot = this.route.snapshot.queryParamMap;
+    if (snapshot.has('token') && snapshot.has('email')) {
+      this.token = snapshot.get('token') ?? '';
+      this.email = snapshot.get('email') ?? '';
+      if (this.token && this.email) {
+        this.step = 2;
+      }
+    }
   }
 
   ngOnInit(): void {
@@ -66,9 +75,6 @@ export class PasswordResetComponent implements OnInit {
         this.token = params['token'];
         this.email = params['email'];
         this.step = 2;
-        this.resetForm.patchValue({
-          email: this.email
-        });
       }
     });
   }
@@ -111,7 +117,7 @@ export class PasswordResetComponent implements OnInit {
       this.userManagementService.resetPassword(formData).subscribe({
         next: (response) => {
           this.snackBar.open('Passwort erfolgreich zurückgesetzt', 'Schließen', { duration: 3000 });
-          this.router.navigate(['/login']);
+          this.router.navigate(['/admin-login']);
         },
         error: (error) => {
           console.error('Error resetting password:', error);
@@ -140,7 +146,7 @@ export class PasswordResetComponent implements OnInit {
   }
 
   goToLogin(): void {
-    this.router.navigate(['/login']);
+    this.router.navigate(['/admin-login']);
   }
 
   resendEmail(): void {

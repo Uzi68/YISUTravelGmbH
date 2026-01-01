@@ -1,0 +1,28 @@
+1) Android Studio downloaden
+2) Path wählen, in die Umgebungsvariable
+ANDROID_HOME
+C:\Users\uezey\AppData\Local\Android\Sdk
+
+3) In ein Project rein, Terminal öffnen und:
+npx react-native run-android
+
+
+Kompilieren:
+cd /android/
+./gradlew clean
+
+Danach:
+./gradlew assembleRelease
+
+Im Ordner:
+/android/app/build/outputs/apk/release/<beide Dateien wurden hier generiert>
+
+
+Neu erstellt:
+Ordner erstellen, CMD:
+npx @react-native-community/cli@latest init Parksaati
+
+Danach Android Studio und ausführen:
+npx react-native run-android
+
+npm install react-native-splash-screen --save

@@ -1,19 +1,15 @@
 /* You can add global styles to this file, and also import other style files */
 @import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 
-/* DSGVO-konform: Lokale Fonts */
-@import '@fontsource/material-icons';
-@import '@fontsource/playfair-display/400.css';
-@import '@fontsource/playfair-display/600.css';
-@import '@fontsource/playfair-display/700.css';
-@import '@fontsource/poppins/300.css';
-@import '@fontsource/poppins/400.css';
-@import '@fontsource/poppins/500.css';
-@import '@fontsource/poppins/600.css';
-@import '@fontsource/open-sans/300.css';
-@import '@fontsource/open-sans/400.css';
-@import '@fontsource/open-sans/500.css';
-@import '@fontsource/open-sans/600.css';
+/* Lokaler Zeichensatz nur für Material Icons */
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/material-icons/material-icons-latin-400-normal.woff2') format('woff2'),
+       url('/fonts/material-icons/material-icons-latin-400-normal.woff') format('woff');
+}
 
 html, body {
   height: 100%;
@@ -55,25 +51,36 @@ html.dark-mode body {
 /* Font Familie Definitionen */
 body { 
   margin: 0; 
-  font-family: 'Open Sans', "Helvetica Neue", sans-serif;
+  font-family: var(--yisu-font-sans);
   font-weight: 400;
   line-height: 1.6;
 }
 
 /* Font Klassen */
 .font-heading {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--yisu-font-serif, Georgia, serif);
   font-weight: 700;
 }
 
 .font-subheading {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--yisu-font-sans);
   font-weight: 500;
 }
 
 .font-body {
-  font-family: 'Open Sans', sans-serif;
+  font-family: var(--yisu-font-sans);
   font-weight: 400;
+}
+
+/* z-index vom container neutralisieren */
+.mat-drawer-container {
+  z-index: auto !important;
+}
+
+/* Drawer ganz nach vorne */
+.mat-drawer {
+  position: fixed !important;
+  z-index: 3000 !important;
 }
 
 /* Ensure Material Icons render correctly */
@@ -94,6 +101,30 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'liga';
 }
+
+.icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: middle;
+  fill: currentColor;
+}
+
+.icon use {
+  fill: currentColor;
+}
+
+.fa-sm {
+  font-size: 0.875em;
+}
+
+.fa-2x {
+  font-size: 2em;
+}
+
+.fa-3x {
+  font-size: 3em;
+}
 body.dark-mode {
   background-color: #121212;
 }
@@ -104,9 +135,11 @@ body.dark-mode {
 
 /* Default (Light Mode) - Flyer-basiertes Travel Farbschema */
 :root {
+  --yisu-font-sans: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --yisu-font-serif: "Times New Roman", Georgia, serif;
   /* === Flyer Travel Agency Farbschema === */
-  --yisu-primary: #1976d2;          /* Modernes Blau - Logo/Text */
-  --yisu-secondary: #fbbf24;        /* Sonniges Gelb - Banner/Akzente */
+  --yisu-primary: #afdef8;          /* Vorgabe Blau - Logo/Text */
+  --yisu-secondary: #1565c0;        /* Sekundäres Blau - Banner/Akzente */
   --yisu-nav-items: #1976d2;
   --yisu-nav-items-hover: #1976d2;
   --yisu-nav-items-hover-background: #ffffff;
@@ -117,6 +150,8 @@ body.dark-mode {
   --yisu-red: #dc2626;              /* Rot - Akzent aus Flyer */
   --yisu-light: #ffffff;            /* Main Background */
   --yisu-white: #ffffff;            /* Pure White */
+  --yisu-highlight-solid: #0f4c81;  /* Satteres Blau für Sektionen */
+  --yisu-highlight-gradient: linear-gradient(135deg, #0f4c81 0%, #1565c0 100%);
   
   /* === Textfarben === */
   --yisu-text-dark: #333333;        /* Dunkles Grau - Haupttexte */
@@ -128,12 +163,12 @@ body.dark-mode {
   /* === UI Elemente === */
   --yisu-navbar-bg: #ffffff;        /* Weiß - Navbar Background */
   --yisu-navbar-text: #333333;      /* Dunkles Grau - Navbar Text */
-  --yisu-navbar-hover: #fbbf24;     /* Gelb - Hover */
-  --yisu-navbar-top: #fbbf24;       /* Sonniges Gelb - Top Bar */
+  --yisu-navbar-hover: #1565c0;     /* Blau - Hover */
+  --yisu-navbar-top: #1565c0;       /* Blau - Top Bar */
   
   /* === Buttons & Links === */
-  --yisu-button-primary: #fbbf24;   /* Sonniges Gelb - CTA Button */
-  --yisu-button-primary-hover: #f59e0b;
+  --yisu-button-primary: #afdef8;   /* Vorgabe Blau - CTA Button */
+  --yisu-button-primary-hover: #90d0f0;
   --yisu-button-secondary: #87ceeb; /* Himmelblau - Akzent Button */
   --yisu-button-secondary-hover: #7dd3fc;
   
@@ -145,7 +180,7 @@ body.dark-mode {
   
   /* === Borders & Shadows === */
   --yisu-border-light: #e0f2fe;
-  --yisu-border-medium: #fbbf24;    /* Sonniges Gelb - Border */
+  --yisu-border-medium: #90caf9;    /* Mittleres Blau - Border */
   --yisu-shadow-sm: 0 2px 8px rgba(30, 58, 138, 0.08);
   --yisu-shadow-md: 0 4px 16px rgba(30, 58, 138, 0.12);
   --yisu-shadow-lg: 0 8px 24px rgba(30, 58, 138, 0.15);
@@ -165,17 +200,22 @@ body.dark-mode {
   --offershadow-background-color: var(--yisu-shadow-md);
   --primary-color: var(--yisu-primary);
   --secondary-color: var(--yisu-secondary);
-  --link-color: var(--yisu-primary);
+  --link-color: #1976d2;
   --box-color: var(--yisu-bg-section);
   --dropdown-color: var(--yisu-white);
-  --header-color: var(--yisu-primary);
+  --header-color: #1976d2;
   --lc-block-color: var(--yisu-white);
   --lc-block-text-color: var(--yisu-text-medium);
   --lc-block-header-color: var(--yisu-text-dark);
   --lc-block-hover1-color: #f8f9fa;
   --lc-block-hover2-color: var(--yisu-white);
-  --lc-block-hover3-color: rgba(255, 215, 94, 0.08);
-  --amt-section-color: var(--yisu-primary);
+  --lc-block-hover3-color: rgba(25, 118, 210, 0.08);
+  --amt-section-color: var(--yisu-highlight-gradient);
+  --amt-section-gradient: linear-gradient(125deg, #1e6ef0 0%, #2f86ff 55%, #63a7ff 100%);
+  --amt-section-fade: linear-gradient(180deg, rgba(46, 114, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
+  --customer-ratings-gradient: linear-gradient(180deg, #f4f7ff 0%, #0b1f47 18%, #061531 55%, #030b1e 100%);
+  --customer-ratings-fade: linear-gradient(180deg, rgba(11, 31, 71, 0.25) 0%, rgba(3, 11, 30, 0) 90%);
+  --homepage-divider-color: #f5f8ff;
   --ueber-uns-color: rgba(142, 209, 220, 0.1);
   --customer-ratings-color: var(--yisu-bg-section);
   --additional-info-color: var(--yisu-bg-section);
@@ -190,13 +230,13 @@ body.dark-mode {
 body.dark-mode {
   /* === Flyer-basiertes Travel Agency Dark Mode === */
   --yisu-primary: #60a5fa;          /* Helleres Blau - Dark Mode */
-  --yisu-secondary: #fbbf24;        /* Sonniges Gelb - bleibt gleich */
-  --yisu-nav-items: #fbbf24;        /* Sonniges Gelb - bleibt gleich */
-  --yisu-nav-items-hover: #fbbf24;
-  --yisu-nav-items-hover-background: #fbbf240f;
-  --yisu-nav-items-active: #0f172a; /*#f59e0b*/
-  --yisu-nav-items-active-hover: #1e293b;
-  --yisu-nav-items-active-hover-background: #facc15;
+  --yisu-secondary: #2e67c3;        /* Sekundäres Blau - Dark Mode */
+  --yisu-nav-items: #60a5fa;        /* Blau - Nav Items */
+  --yisu-nav-items-hover: #3b82f6;
+  --yisu-nav-items-hover-background: #1e293b;
+  --yisu-nav-items-active: #ffffff; /* Weißer Text wenn aktiv */
+  --yisu-nav-items-active-hover: #ffffff; /* Weißer Text beim Hover wenn aktiv */
+  --yisu-nav-items-active-hover-background: #1d4ed8;
   --yisu-accent: #7dd3fc;           /* Helleres Himmelblau - Dark Mode */
   --yisu-light: #0f172a;            /* Dunkler Hintergrund */
   --yisu-white: #ffffff;            /* Pure White */
@@ -210,14 +250,16 @@ body.dark-mode {
   /* === UI Elemente Dark Mode === */
   --yisu-navbar-bg: #87ceeb;        /* Himmelblau - Navbar Background */
   --yisu-navbar-text: #1e3a8a;      /* Dunkles Blau - Navbar Text */
-  --yisu-navbar-hover: #fbbf24;     /* Sonniges Gelb - Hover */
-  --yisu-navbar-top: #fbbf24;       /* Sonniges Gelb - Top Bar */
+  --yisu-navbar-hover: #3b82f6;     /* Blau - Hover */
+  --yisu-navbar-top: #3b82f6;       /* Blau - Top Bar */
   
   /* === Buttons & Links Dark Mode === */
-  --yisu-button-primary: #fbbf24;   /* Sonniges Gelb - CTA Button */
-  --yisu-button-primary-hover: #f59e0b;
+  --yisu-button-primary: #afdef8;   /* Vorgabe Blau - CTA Button */
+  --yisu-button-primary-hover: #90d0f0;
   --yisu-button-secondary: #7dd3fc; /* Helleres Himmelblau - Akzent */
   --yisu-button-secondary-hover: #60a5fa;
+  --yisu-highlight-solid: #1e3a8a;  /* Dunkleres Blau für Sektionen im Dark Mode */
+  --yisu-highlight-gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
   
   /* === Backgrounds Dark Mode === */
   --yisu-bg-main: #0f172a;          /* Main Background */
@@ -227,7 +269,7 @@ body.dark-mode {
   
   /* === Borders & Shadows Dark Mode === */
   --yisu-border-light: #475569;
-  --yisu-border-medium: #fbbf24;    /* Sonniges Gelb - Border */
+  --yisu-border-medium: #3b82f6;    /* Blau - Border */
   --yisu-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --yisu-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --yisu-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -247,17 +289,22 @@ body.dark-mode {
   --offershadow-background-color: var(--yisu-shadow-md);
   --primary-color: var(--yisu-primary);
   --secondary-color: var(--yisu-secondary);
-  --link-color: var(--yisu-secondary);
+  --link-color: #60a5fa;
   --box-color: var(--yisu-bg-section);
   --dropdown-color: var(--yisu-bg-card);
-  --header-color: var(--yisu-secondary);
+  --header-color: #60a5fa;
   --lc-block-color: var(--yisu-bg-card);
   --lc-block-text-color: var(--yisu-text-dark);
   --lc-block-header-color: var(--yisu-text-white);
   --lc-block-hover1-color: #1a3a4a;
   --lc-block-hover2-color: #0e2431;
   --lc-block-hover3-color: rgba(255, 215, 94, 0.15);
-  --amt-section-color: var(--yisu-primary);
+  --amt-section-color: var(--yisu-highlight-gradient);
+  --amt-section-gradient: linear-gradient(135deg, #17295c 0%, #1e3a78 45%, #2a5dd6 100%);
+  --amt-section-fade: linear-gradient(180deg, rgba(42, 93, 214, 0.25) 0%, rgba(3, 11, 28, 0) 100%);
+  --customer-ratings-gradient: linear-gradient(180deg, #0b1227 0%, #07132c 45%, #061a3f 70%, #030b1e 100%);
+  --customer-ratings-fade: linear-gradient(180deg, rgba(39, 84, 195, 0.35) 0%, rgba(3, 11, 30, 0) 85%);
+  --homepage-divider-color: #0b1227;
   --ueber-uns-color: rgba(102, 191, 210, 0.2);
   --customer-ratings-color: var(--yisu-bg-section);
   --additional-info-color: var(--yisu-bg-section);
@@ -316,55 +363,54 @@ body.dark-mode {
 
 /* Global Material Form Field Dark Mode Overrides */
 body.dark-mode {
-  --mdc-outlined-text-field-container-shape: 12px;
-  --mdc-outlined-text-field-outline-color: var(--yisu-text-medium);
-  --mdc-outlined-text-field-label-text-color: var(--yisu-text-medium);
-  --mdc-outlined-text-field-input-text-color: var(--yisu-text-dark);
-  --mdc-outlined-text-field-caret-color: var(--yisu-secondary);
-  --mdc-outlined-text-field-placeholder-text-color: var(--yisu-text-light);
-  --mdc-outlined-text-field-hover-outline-color: var(--yisu-secondary);
-  --mdc-outlined-text-field-hover-label-text-color: var(--yisu-secondary);
-  --mdc-outlined-text-field-hover-input-text-color: var(--yisu-text-dark);
-  --mdc-outlined-text-field-hover-caret-color: var(--yisu-secondary);
-  --mdc-outlined-text-field-focus-outline-color: var(--yisu-secondary);
-  --mdc-outlined-text-field-focus-label-text-color: var(--yisu-secondary);
-  --mdc-outlined-text-field-focus-input-text-color: var(--yisu-text-dark);
-  --mdc-outlined-text-field-focus-caret-color: var(--yisu-secondary);
+  --mdc-outlined-text-field-outline-color: rgba(118, 177, 255, 0.75);
+  --mdc-outlined-text-field-label-text-color: rgba(255, 255, 255, 0.78);
+  --mdc-outlined-text-field-input-text-color: #ffffff;
+  --mdc-outlined-text-field-caret-color: #7ab8ff;
+  --mdc-outlined-text-field-placeholder-text-color: rgba(255, 255, 255, 0.6);
+  --mdc-outlined-text-field-hover-outline-color: rgba(143, 197, 255, 0.9);
+  --mdc-outlined-text-field-hover-label-text-color: #d6e8ff;
+  --mdc-outlined-text-field-hover-input-text-color: #ffffff;
+  --mdc-outlined-text-field-hover-caret-color: #9fc5ff;
+  --mdc-outlined-text-field-focus-outline-color: #6baeff;
+  --mdc-outlined-text-field-focus-label-text-color: #b9d8ff;
+  --mdc-outlined-text-field-focus-input-text-color: #ffffff;
+  --mdc-outlined-text-field-focus-caret-color: #9fc5ff;
   --mdc-outlined-text-field-error-outline-color: #f87171;
   --mdc-outlined-text-field-error-label-text-color: #f87171;
   --mdc-outlined-text-field-error-hover-outline-color: #f87171;
   --mdc-outlined-text-field-error-hover-label-text-color: #f87171;
-  --mdc-outlined-text-field-error-hover-input-text-color: var(--yisu-text-dark);
+  --mdc-outlined-text-field-error-hover-input-text-color: #ffffff;
   --mdc-outlined-text-field-error-hover-caret-color: #f87171;
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper {
-  background-color: var(--yisu-bg-card) !important;
+  background-color: transparent !important;
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-input-control {
-  background-color: var(--yisu-bg-card) !important;
+  background-color: transparent !important;
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-input-element {
-  color: var(--yisu-text-dark) !important;
+  color: #ffffff !important;
   background-color: transparent !important;
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-label {
-  color: var(--yisu-text-medium) !important;
+  color: rgba(255, 255, 255, 0.78) !important;
 }
 
 body.dark-mode .mat-mdc-form-field.mat-focused .mat-mdc-form-field-label {
-  color: var(--yisu-secondary) !important;
+  color: #b9d8ff !important;
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-outline {
-  color: var(--yisu-text-medium) !important;
+  color: rgba(118, 177, 255, 0.75) !important;
 }
 
 body.dark-mode .mat-mdc-form-field.mat-focused .mat-mdc-form-field-outline {
-  color: var(--yisu-secondary) !important;
+  color: #6baeff !important;
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-icon-suffix {
@@ -372,7 +418,7 @@ body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-icon-suffix {
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-hint-text {
-  color: var(--yisu-text-light) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-error {
@@ -380,28 +426,154 @@ body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-error {
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-form-field-focus-overlay {
-  background-color: rgba(251, 191, 36, 0.04) !important;
-}
-
-/* Additional Material Design Overrides */
-body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex {
-  background-color: var(--yisu-bg-card) !important;
-}
-
-body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex .mat-mdc-form-field-infix {
-  background-color: var(--yisu-bg-card) !important;
+  background-color: rgba(123, 184, 255, 0.16) !important;
 }
 
 body.dark-mode .mat-mdc-form-field .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex .mat-mdc-form-field-infix input {
-  color: var(--yisu-text-dark) !important;
+  color: #ffffff !important;
   background-color: transparent !important;
 }
 
-/* Button Overrides */
+/* ====================================
+   YISU Travel - Einheitliche Button Styles
+   ==================================== */
+
+/* Globale Primary Button Styles */
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-flat-button.mat-primary,
+button[type="submit"],
+.submit-button,
+.cta-button,
+.custom-button,
+.btn-primary {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-text-white) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 0.75rem 1.5rem !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35) !important;
+  cursor: pointer !important;
+}
+
+.mat-mdc-raised-button.mat-primary:hover:not(:disabled),
+.mat-mdc-flat-button.mat-primary:hover:not(:disabled),
+button[type="submit"]:hover:not(:disabled),
+.submit-button:hover:not(:disabled),
+.cta-button:hover:not(:disabled),
+.custom-button:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.45) !important;
+}
+
+/* Disabled Button Styles - Better Readability */
+.mat-mdc-raised-button.mat-primary:disabled,
+.mat-mdc-raised-button.mat-primary[disabled],
+.mat-mdc-flat-button.mat-primary:disabled,
+.mat-mdc-flat-button.mat-primary[disabled],
+.mat-raised-button.mat-primary:disabled,
+.mat-raised-button.mat-primary[disabled],
+button[type="submit"]:disabled,
+.submit-button:disabled,
+.cta-button:disabled,
+.custom-button:disabled,
+.btn-primary:disabled {
+  background-color: #e0e0e0 !important;
+  color: #616161 !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+  border: 1px solid #bdbdbd !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.mat-mdc-raised-button.mat-primary:disabled .mat-mdc-button-wrapper,
+.mat-mdc-raised-button.mat-primary[disabled] .mat-mdc-button-wrapper,
+.mat-mdc-flat-button.mat-primary:disabled .mat-mdc-button-wrapper,
+.mat-mdc-flat-button.mat-primary[disabled] .mat-mdc-button-wrapper,
+.mat-raised-button.mat-primary:disabled .mat-button-wrapper,
+.mat-raised-button.mat-primary[disabled] .mat-button-wrapper {
+  color: #616161 !important;
+}
+
+.mat-mdc-raised-button.mat-primary:disabled .mat-icon,
+.mat-mdc-raised-button.mat-primary[disabled] .mat-icon,
+.mat-mdc-flat-button.mat-primary:disabled .mat-icon,
+.mat-mdc-flat-button.mat-primary[disabled] .mat-icon,
+.mat-raised-button.mat-primary:disabled .mat-icon,
+.mat-raised-button.mat-primary[disabled] .mat-icon {
+  color: #616161 !important;
+}
+
+/* Dark Mode Disabled Button - Gray/White instead of blue */
+body.dark-mode .mat-mdc-raised-button.mat-primary:disabled,
+body.dark-mode .mat-mdc-raised-button.mat-primary[disabled],
+body.dark-mode .mat-mdc-flat-button.mat-primary:disabled,
+body.dark-mode .mat-mdc-flat-button.mat-primary[disabled],
+body.dark-mode .mat-raised-button.mat-primary:disabled,
+body.dark-mode .mat-raised-button.mat-primary[disabled],
+body.dark-mode button[type="submit"]:disabled,
+body.dark-mode .submit-button:disabled,
+body.dark-mode .cta-button:disabled,
+body.dark-mode .custom-button:disabled,
+body.dark-mode .btn-primary:disabled {
+  background-color: #525252 !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #757575 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark-mode .mat-mdc-raised-button.mat-primary:disabled .mat-mdc-button-wrapper,
+body.dark-mode .mat-mdc-raised-button.mat-primary[disabled] .mat-mdc-button-wrapper,
+body.dark-mode .mat-mdc-flat-button.mat-primary:disabled .mat-mdc-button-wrapper,
+body.dark-mode .mat-mdc-flat-button.mat-primary[disabled] .mat-mdc-button-wrapper,
+body.dark-mode .mat-raised-button.mat-primary:disabled .mat-button-wrapper,
+body.dark-mode .mat-raised-button.mat-primary[disabled] .mat-button-wrapper {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .mat-mdc-raised-button.mat-primary:disabled .mat-icon,
+body.dark-mode .mat-mdc-raised-button.mat-primary[disabled] .mat-icon,
+body.dark-mode .mat-mdc-flat-button.mat-primary:disabled .mat-icon,
+body.dark-mode .mat-mdc-flat-button.mat-primary[disabled] .mat-icon,
+body.dark-mode .mat-raised-button.mat-primary:disabled .mat-icon,
+body.dark-mode .mat-raised-button.mat-primary[disabled] .mat-icon {
+  color: #e0e0e0 !important;
+}
+
+/* Dark Mode Button Overrides */
 body.dark-mode .mat-mdc-raised-button {
   border: none !important;
   outline: none !important;
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35) !important;
+}
+
+body.dark-mode .mat-mdc-raised-button.mat-primary,
+body.dark-mode .mat-mdc-flat-button.mat-primary,
+body.dark-mode button[type="submit"],
+body.dark-mode .submit-button,
+body.dark-mode .cta-button,
+body.dark-mode .custom-button,
+body.dark-mode .btn-primary {
+  background: var(--yisu-secondary) !important;
+  color: var(--yisu-text-white) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35) !important;
+}
+
+body.dark-mode .mat-mdc-raised-button.mat-primary:hover:not(:disabled),
+body.dark-mode .mat-mdc-flat-button.mat-primary:hover:not(:disabled),
+body.dark-mode button[type="submit"]:hover:not(:disabled),
+body.dark-mode .submit-button:hover:not(:disabled),
+body.dark-mode .cta-button:hover:not(:disabled),
+body.dark-mode .custom-button:hover:not(:disabled),
+body.dark-mode .btn-primary:hover:not(:disabled) {
+  background: var(--yisu-nav-items) !important;
+  color: var(--yisu-text-white) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45) !important;
 }
 
 body.dark-mode .mat-mdc-raised-button:not(:disabled) {
@@ -497,65 +669,17 @@ body.dark-mode .mat-mdc-row:nth-child(odd) {
 
 /* Material Icon Dark Mode */
 body.dark-mode mat-icon {
-  color: var(--yisu-secondary) !important;
+  color: #60a5fa !important;
 }
 
 /* Material Button Dark Mode */
 body.dark-mode .mat-mdc-icon-button {
-  color: var(--yisu-secondary) !important;
+  color: #60a5fa !important;
 }
 
 body.dark-mode .mat-mdc-icon-button:hover {
-  background: rgba(251, 191, 36, 0.1) !important;
+  background: rgba(25, 118, 210, 0.12) !important;
 }
 
 
 
-/* Roboto Font Faces */
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 100; /* Thin */
-  font-style: normal;
-  src: url('/fonts/Roboto-Thin.ttf') format('truetype'),
-  url('/fonts/Roboto-ThinItalic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 300; /* Light */
-  font-style: normal;
-  src: url('/fonts/Roboto-Light.ttf') format('truetype'),
-  url('/fonts/Roboto-LightItalic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 400; /* Regular */
-  font-style: normal;
-  src: url('/fonts/Roboto-Regular.ttf') format('truetype'),
-  url('/fonts/Roboto-Italic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 500; /* Medium */
-  font-style: normal;
-  src: url('/fonts/Roboto-Medium.ttf') format('truetype'),
-  url('/fonts/Roboto-MediumItalic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 700; /* Bold */
-  font-style: normal;
-  src: url('/fonts/Roboto-Bold.ttf') format('truetype'),
-  url('/fonts/Roboto-BoldItalic.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Roboto';
-  font-weight: 900; /* Black */
-  font-style: normal;
-  src: url('/fonts/Roboto-Black.ttf') format('truetype'),
-  url('/fonts/Roboto-BlackItalic.ttf') format('truetype');
-}

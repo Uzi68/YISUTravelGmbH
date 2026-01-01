@@ -70,7 +70,7 @@ section {
 }
 
 .offer-rating {
-  color: #ffc107;
+  color: var(--yisu-primary);
   font-size: 1.1rem;
 }
 

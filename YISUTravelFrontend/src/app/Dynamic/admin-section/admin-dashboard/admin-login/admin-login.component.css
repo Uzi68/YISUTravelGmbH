@@ -40,8 +40,31 @@ mat-label {
   font-weight: bold;
 }
 
+.remember-row {
+  display: block;
+  margin: 4px 0 8px;
+  color: var(--text-color);
+}
+
 .submitButton:hover {
   color: white;
+}
+
+.submitButton {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.button-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  vertical-align: middle;
 }
 
 input {
@@ -73,6 +96,23 @@ button:hover:not([disabled]) {
   margin-top: 16px;
 }
 
+.login-error {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background-color: rgba(211, 47, 47, 0.08);
+  color: #d32f2f;
+  font-size: 0.95rem;
+}
+
+.login-error mat-icon {
+  color: #d32f2f;
+  font-size: 20px;
+}
+
 .login-links {
   display: flex;
   justify-content: space-between;
@@ -84,11 +124,29 @@ button:hover:not([disabled]) {
   width: auto;
   padding: 8px 16px;
   font-size: 0.875rem;
-  color: #666;
+  color: var(--link-color) !important;
+  background-color: transparent;
 }
 
 .login-links button:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(25, 118, 210, 0.08);
+}
+
+:host-context(body.dark-mode) .login-links button {
+  color: var(--yisu-button-secondary) !important;
+}
+
+:host-context(body.dark-mode) .login-links button:hover {
+  background-color: rgba(96, 165, 250, 0.18);
+}
+
+:host-context(body.dark-mode) .login-error {
+  background-color: rgba(248, 113, 113, 0.18);
+  color: #fecaca;
+}
+
+:host-context(body.dark-mode) .login-error mat-icon {
+  color: #fca5a5;
 }
 
 

@@ -8,9 +8,9 @@ body {
   display: flex;
   align-items: center;
   max-width: 1800px;
-  margin: 50px auto;
-  padding: 20px;
-  gap: 30px;
+  margin: 15px auto;
+  padding: 15px;
+  gap: 20px;
   border-radius: 15px; /* Rounded corners */
   overflow: hidden; /* Contain children */
   background-color: transparent; /* White background */
@@ -56,10 +56,7 @@ body {
 .logo:hover {
   transform: scale(1.1); /* Scale up on hover */
 }
-.btn-primary {
-  background-color: #0077b6; /* Button primary color */
-  border-color: #0077b6; /* Button border color */
-}
+/* Button styles werden jetzt global in styles.css verwaltet */
 .mat-mdc-unelevated-button {
   border-radius: 6px; /* Example: new border radius */
 }
@@ -87,14 +84,9 @@ p {
 }
 
 .cta-button {
-  display: inline-block;
-  padding: 12px 24px;
-  background-color: #007bff; /* Bootstrap primary color */
-  color: white; /* White text */
-  text-decoration: none; /* Remove underline */
-  border-radius: 5px; /* Rounded corners */
-  transition: background-color 0.3s, transform 0.3s; /* Transition effect */
-  font-size: 1rem; /* Button font size */
+  /* Button styles werden jetzt global in styles.css verwaltet */
+  text-decoration: none; /* Remove underline for links */
+  display: inline-block; /* Keep inline-block for proper spacing */
 }
 
 
@@ -121,10 +113,11 @@ p {
 @media (max-width: 768px) {
   .about-us-container {
     flex-direction: column; /* Stack the elements on smaller screens */
+    margin: 10px auto;
   }
 
   .text-section {
-    padding: 20px; /* Less padding on smaller screens */
+    padding: 10px; /* Less padding on smaller screens */
   }
 
   h2 {

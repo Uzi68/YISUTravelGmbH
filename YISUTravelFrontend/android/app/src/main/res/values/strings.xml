@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">YISU Travel GmbH</string>
+    <string name="title_activity_main">YISU Travel GmbH</string>
+    <string name="package_name">com.yisutravelgmbh.yisutravelapp</string>
+    <string name="custom_url_scheme">com.yisutravelgmbh.yisutravelapp</string>
+</resources>

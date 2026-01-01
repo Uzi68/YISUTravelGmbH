@@ -14,6 +14,29 @@
   <!-- Chat Window -->
   @if (isOpen()) {
     <div class="chatbot-window" @windowAnimation (@windowAnimation.done)="onAnimationDone()">
+      
+      <!-- Modern Modal Overlay für Chat-Beendigung -->
+      @if (showCloseConfirmationInChat()) {
+        <div class="chat-end-modal-overlay" (click)="cancelCloseChat()">
+          <div class="chat-end-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <mat-icon class="modal-icon">chat_bubble_outline</mat-icon>
+              <h3>Chat beenden?</h3>
+            </div>
+            <div class="modal-content">
+              <p>Möchten Sie den Chat wirklich beenden? Alle Nachrichten werden gelöscht.</p>
+            </div>
+            <div class="modal-actions">
+              <button mat-stroked-button class="cancel-btn" (click)="cancelCloseChat()">
+                Abbrechen
+              </button>
+              <button mat-raised-button color="warn" class="confirm-btn" (click)="confirmCloseChat()">
+                Chat beenden
+              </button>
+            </div>
+          </div>
+        </div>
+      }
       <div class="chatbot-header">
         <div class="header-content">
           <div class="avatar">
@@ -37,26 +60,27 @@
         </div>
       </div>
 
+      <!-- Status Indicators (fixiert oben unter Header) -->
+      @if (showAgentConnection() && assignedAgentName()) {
+        <div class="chat-status-indicator stable-connection" [@fadeInOut]>
+          <div class="status-message">
+            <mat-icon>support_agent</mat-icon>
+            <span>Sie sind mit {{ assignedAgentName() }} verbunden</span>
+          </div>
+        </div>
+      }
+
+      <!-- Waiting for Assignment Indicator -->
+      @if (chatStatus() === 'human' && isEscalated() && !assignedAgentName()) {
+        <div class="chat-status-indicator">
+          <div class="status-message waiting">
+            <mat-icon>hourglass_empty</mat-icon>
+            <span>Warten auf Mitarbeiter...</span>
+          </div>
+        </div>
+      }
+
       <div class="chatbot-messages" #messageContainer>
-
-        @if (showAgentConnection() && assignedAgentName()) {
-          <div class="chat-status-indicator stable-connection" [@fadeInOut]>
-            <div class="status-message">
-              <mat-icon>support_agent</mat-icon>
-              <span>Sie sind mit {{ assignedAgentName() }} verbunden</span>
-            </div>
-          </div>
-        }
-
-        <!-- Waiting for Assignment Indicator -->
-        @if (chatStatus() === 'human' && isEscalated() && !assignedAgentName()) {
-          <div class="chat-status-indicator">
-            <div class="status-message waiting">
-              <mat-icon>hourglass_empty</mat-icon>
-              <span>Warten auf Mitarbeiter...</span>
-            </div>
-          </div>
-        }
 
         <!-- Registrierungsformular -->
         @if (showRegistrationForm() && !isEscalated()) {
@@ -66,34 +90,59 @@
               <p>Bitte geben Sie Ihre Daten ein, um fortzufahren:</p>
 
               <form (ngSubmit)="submitRegistration()" class="registration-form-fields">
-                <input type="text" placeholder="Vorname" required
-                       [(ngModel)]="registrationForm().first_name"
-                       name="first_name"
-                       [disabled]="isTyping()">
-                <input type="text" placeholder="Nachname" required
-                       [(ngModel)]="registrationForm().last_name"
-                       name="last_name"
-                       [disabled]="isTyping()">
+                <mat-form-field appearance="outline">
+                  <mat-label>Vorname</mat-label>
+                  <input matInput 
+                         type="text" 
+                         required
+                         [(ngModel)]="registrationForm().first_name"
+                         name="first_name"
+                         [disabled]="isTyping()"
+                         placeholder=" ">
+                </mat-form-field>
 
-                <input type="email" placeholder="E-Mail Adresse" required
-                       [(ngModel)]="registrationForm().email"
-                       name="email"
-                       [disabled]="isTyping()">
+                <mat-form-field appearance="outline">
+                  <mat-label>Nachname</mat-label>
+                  <input matInput 
+                         type="text" 
+                         required
+                         [(ngModel)]="registrationForm().last_name"
+                         name="last_name"
+                         [disabled]="isTyping()"
+                         placeholder=" ">
+                </mat-form-field>
 
-                <input type="tel" placeholder="Telefonnummer" required
-                       [(ngModel)]="registrationForm().phone"
-                       name="phone"
-                       [disabled]="isTyping()">
+                <mat-form-field appearance="outline">
+                  <mat-label>E-Mail Adresse</mat-label>
+                  <input matInput 
+                         type="email" 
+                         required
+                         [(ngModel)]="registrationForm().email"
+                         name="email"
+                         [disabled]="isTyping()"
+                         placeholder=" ">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Telefonnummer</mat-label>
+                  <input matInput 
+                         type="tel" 
+                         required
+                         [(ngModel)]="registrationForm().phone"
+                         name="phone"
+                         [disabled]="isTyping()"
+                         placeholder=" ">
+                </mat-form-field>
 
                 <div class="terms-checkbox">
                   <mat-checkbox
                     [(ngModel)]="registrationForm().agb_accepted"
                     name="agb_accepted"
                     [disabled]="isTyping()">
-                    Ich akzeptiere die
-                    <a routerLink="agb" target="_blank" class="terms-link">AGB</a>
-                    und
-                    <a routerLink="datenschutzerklaerung" target="_blank" class="terms-link">Datenschutzbestimmungen</a>
+                    <span class="terms-checkbox-text">Ich akzeptiere die</span>
+                    <a routerLink="/agb" class="terms-link">AGB</a>
+                    <span class="terms-checkbox-text">und</span>
+                    <a routerLink="/datenschutzerklaerung" class="terms-link">Datenschutzbestimmungen</a>
                   </mat-checkbox>
                 </div>
 
@@ -114,12 +163,12 @@
         }
 
         <!-- Welcome Message -->
-        @if ((showQuickQuestions() || messages().length === 0) && !showRegistrationForm()) {
+        @if ((showQuickQuestions() || messages().length === 0) && !showRegistrationForm() && (isRegistered() || isAuthenticated)) {
           <div class="welcome-message" [class.after-messages]="messages().length > 0">
             <div class="welcome-bubble">
               <p>Hallo! 👋 Wie kann ich Ihnen helfen?</p>
               <div class="quick-questions">
-                @for (question of quickQuestions(); track question) {
+                @for (question of quickQuestions(); track trackQuickQuestion($index, question)) {
                   <button mat-stroked-button (click)="sendMessage(question)">
                     {{ question }}
                   </button>
@@ -130,17 +179,63 @@
         }
 
         <!-- Messages -->
-        @for (message of messages(); track $index) {
+        @for (message of messages(); track trackMessage($index, message)) {
           <div class="message"
                [class.user-message]="message.from === 'user'"
                [class.bot-message]="message.from === 'bot' || message.from === 'agent'"
+               [class.agent-message]="message.from === 'agent'"
                [class.system-message]="message.from === 'system'">
-            <div class="message-bubble"
-                 [class.system-bubble]="message.from === 'system'">
-              @if (message.from === 'system') {
-                <mat-icon class="system-icon">info</mat-icon>
+          <div class="message-bubble"
+               [class.system-bubble]="message.from === 'system'"
+               [class.escalation-bubble]="message.message_type === 'escalation_prompt'">
+              @if (message.message_type === 'escalation_prompt' &&
+              (message.metadata?.is_manual || message.metadata?.is_automatic)) {
+                <div class="escalation-card">
+                  <div class="escalation-chip">
+                    <mat-icon>auto_awesome</mat-icon>
+                    <span>Persönlicher Service</span>
+                  </div>
+                  <div class="escalation-header">
+                    <div class="escalation-icon">
+                      <mat-icon>support_agent</mat-icon>
+                    </div>
+                    <div class="escalation-text">
+                      <p class="escalation-title">{{ message.text }}</p>
+                      <p class="escalation-subtitle">
+                        Unser Team meldet sich persönlich und hilft Ihnen bei allen Fragen.
+                      </p>
+                    </div>
+                  </div>
+                  <div class="escalation-options">
+                    <button
+                      mat-stroked-button
+                      (click)="handleEscalationResponse('decline', message.metadata)"
+                      class="decline-btn">
+                      <mat-icon>close</mat-icon>
+                      <span>Nein, danke</span>
+                    </button>
+                    <button
+                      mat-raised-button
+                      color="primary"
+                      (click)="handleEscalationResponse('accept', message.metadata)"
+                      class="accept-btn">
+                      <mat-icon>headset_mic</mat-icon>
+                      <span>Ja, gerne</span>
+                    </button>
+                  </div>
+                  <div class="escalation-footer">
+                    <div class="message-meta">
+                      <span class="message-badge bot">Bot</span>
+                      <span class="message-time">{{ message.timestamp | date:'HH:mm' }}</span>
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                @if (message.from === 'system') {
+                  <mat-icon class="system-icon">info</mat-icon>
+                }
+                <span>{{ message.text }}</span>
               }
-              <span>{{ message.text }}</span>
 
               <!-- File Attachment Display -->
               @if (message.attachment) {
@@ -177,27 +272,9 @@
               }
 
               <!-- ✅ VEREINHEITLICHTE Escalation Options -->
-              @if (message.message_type === 'escalation_prompt' &&
-              (message.metadata?.is_manual || message.metadata?.is_automatic)) {
-                <div class="escalation-options">
-                  <button
-                    mat-stroked-button
-                    (click)="handleEscalationResponse('decline', message.metadata)"
-                    class="decline-btn">
-                    Nein, danke
-                  </button>
-                  <button
-                    mat-raised-button
-                    color="primary"
-                    (click)="handleEscalationResponse('accept', message.metadata)"
-                    class="accept-btn">
-                    Ja, gerne
-                  </button>
-                </div>
-              }
 
               <!-- Message Meta NUR für non-system Messages -->
-              @if (message.from !== 'system') {
+              @if (message.from !== 'system' && message.message_type !== 'escalation_prompt') {
                 <div class="message-meta">
                   <!-- Message Type Badge -->
                   @if (message.from === 'agent') {
@@ -212,20 +289,7 @@
           </div>
         }
 
-        <!-- Bestätigungsnachricht für Chat-Beendigung -->
-        @if (showCloseConfirmationInChat()) {
-          <div class="message bot-message confirm-close-message">
-            <div class="message-bubble">
-              <p>Möchten Sie den Chat wirklich beenden?</p>
-              <div class="confirm-buttons">
-                <button mat-stroked-button color="warn" (click)="confirmCloseChat()">Ja</button>
-                <button mat-stroked-button (click)="cancelCloseChat()">Nein</button>
-              </div>
-            </div>
-          </div>
-        }
-
-        <!-- Typing Indicator -->
+        <!-- Typing Indicator (nach Messages, damit er unten erscheint) -->
         @if (isTyping()) {
           <div class="typing-indicator">
             <div class="typing-dots">
@@ -270,18 +334,19 @@
               <mat-icon>attach_file</mat-icon>
             </button>
 
-            <textarea matInput
-                      #inputField
-                      [ngModel]="inputMessage()"
-                      (ngModelChange)="inputMessage.set($event)"
-                      (input)="onTextareaInput($event)"
-                      name="message"
-                      [placeholder]="chatStatus() === 'human' ?
-                        (assignedAgentName() ? 'Nachricht an ' + assignedAgentName() + '...' : 'Nachricht an Mitarbeiter...') :
-                        'Ihre Nachricht...'"
-                      autocomplete="off"
-                      class="input-field"
-                      (keydown)="onKeyDown($event)">
+            <textarea 
+              #inputField
+              [ngModel]="inputMessage()"
+              (ngModelChange)="inputMessage.set($event)"
+              (input)="onTextareaInput($event)"
+              name="message"
+              [placeholder]="chatStatus() === 'human' ?
+                (assignedAgentName() ? 'Nachricht an ' + assignedAgentName() + '...' : 'Nachricht an Mitarbeiter...') :
+                'Ihre Nachricht...'"
+              autocomplete="off"
+              class="chatbot-textarea"
+              rows="1"
+              (keydown)="onKeyDown($event)">
             </textarea>
 
             <button mat-icon-button
