@@ -4,6 +4,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BroadcastAuthController;
 use App\Http\Controllers\ChatAssignmentController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\ChatbotInstructionsController;
 use App\Http\Controllers\ChatbotResponses;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatRequestController;
@@ -175,6 +176,16 @@ Route::get('get-chatbotresponses', [ChatbotResponses::class, 'getTrainedData']);
 Route::delete('delete-chatbotresponse/{id}', [ChatbotResponses::class, 'deleteChatbotResponse']);
 
 Route::put('update-chatbotresponse/{id}', [ChatbotResponses::class, 'updateChatbotResponse']);
+
+// Chatbot instructions
+Route::post('insert-chatbotinstruction', [ChatbotInstructionsController::class, 'insertInstruction'])
+    ->middleware('auth');
+Route::get('get-chatbotinstructions', [ChatbotInstructionsController::class, 'getInstructions'])
+    ->middleware('auth');
+Route::delete('delete-chatbotinstruction/{id}', [ChatbotInstructionsController::class, 'deleteInstruction'])
+    ->middleware('auth');
+Route::put('update-chatbotinstruction/{id}', [ChatbotInstructionsController::class, 'updateInstruction'])
+    ->middleware('auth');
 
 //Besucher registrieren
 Route::post('register-visitor', [ChatbotController::class, 'registerVisitor']);

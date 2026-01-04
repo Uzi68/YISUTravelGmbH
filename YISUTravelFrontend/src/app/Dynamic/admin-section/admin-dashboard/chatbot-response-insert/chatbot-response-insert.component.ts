@@ -15,7 +15,12 @@ import {NgForOf, NgIf} from "@angular/common";
 import {MatButton, MatIconButton} from "@angular/material/button";
 import {ChatbotService} from "../../../../Services/chatbot-service/chatbot.service";
 import {COMMA, ENTER, SEMICOLON} from "@angular/cdk/keycodes";
-import {ChatbotResponse, ChatbotResponseCreate} from "../../../../Models/Chatbot";
+import {
+  ChatbotInstruction,
+  ChatbotInstructionCreate,
+  ChatbotResponse,
+  ChatbotResponseCreate
+} from "../../../../Models/Chatbot";
 import {animate, style, transition, trigger} from "@angular/animations";
 import {MatPaginator, PageEvent} from "@angular/material/paginator";
 import {MatDivider} from "@angular/material/divider";
@@ -67,11 +72,20 @@ export class ChatbotResponseInsertComponent {
     response: '',
     keywords: []
   };
+  instructions: ChatbotInstruction[] = [];
+  editingInstruction: ChatbotInstruction | null = null;
+  newInstruction: ChatbotInstructionCreate = {
+    topic: '',
+    instruction: ''
+  };
 
   separatorKeysCodes: number[] = [ENTER, COMMA, SEMICOLON];
   showSuccess: boolean = false;
   errorMessage: string = '';
   isLoading: boolean = false;
+  showInstructionSuccess: boolean = false;
+  instructionErrorMessage: string = '';
+  isInstructionLoading: boolean = false;
 
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -90,7 +104,7 @@ export class ChatbotResponseInsertComponent {
     this.pageSize = event.pageSize;
 
     // Nach oben scrollen zur Response-Container
-    const container = document.querySelector('.response-container');
+    const container = document.querySelector('.knowledge-container');
     if (container) {
       container.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -121,6 +135,7 @@ export class ChatbotResponseInsertComponent {
 
 ngOnInit() {
   this.loadResponses();
+  this.loadInstructions();
 }
 
   startEdit(response: ChatbotResponse) {
@@ -139,6 +154,10 @@ ngOnInit() {
 
   trackByKeyword(index: number, keyword: string): string {
     return keyword;
+  }
+
+  trackByInstructionId(index: number, item: ChatbotInstruction): number {
+    return item.id;
   }
 
 
@@ -168,6 +187,12 @@ clearForm(): void {
   this.newResponse = { input: '', response: '', keywords: [] };
   this.showSuccess = false;
   this.errorMessage = '';
+}
+
+clearInstructionForm(): void {
+  this.newInstruction = { topic: '', instruction: '' };
+  this.showInstructionSuccess = false;
+  this.instructionErrorMessage = '';
 }
 
   submit(): void {
@@ -210,6 +235,10 @@ clearForm(): void {
     this.errorMessage = '';
   }
 
+  clearInstructionError(): void {
+    this.instructionErrorMessage = '';
+  }
+
   loadResponses(): void {
     this.chatbotService.getResponse().subscribe({
       next: (response) => {
@@ -219,6 +248,18 @@ clearForm(): void {
       error: (err) => {
         console.error('Fehler beim Laden der Responses:', err);
         this.getResponses = [];
+      }
+    });
+  }
+
+  loadInstructions(): void {
+    this.chatbotService.getInstructions().subscribe({
+      next: (response) => {
+        this.instructions = response;
+      },
+      error: (err) => {
+        console.error('Fehler beim Laden der Instruktionen:', err);
+        this.instructions = [];
       }
     });
   }
@@ -279,6 +320,83 @@ clearForm(): void {
 
   cancelEdit(): void {
     this.editingResponse = null;
+  }
+
+  startInstructionEdit(instruction: ChatbotInstruction) {
+    this.editingInstruction = { ...instruction };
+  }
+
+  submitInstruction(): void {
+    this.showInstructionSuccess = false;
+    this.instructionErrorMessage = '';
+
+    if (!this.newInstruction.topic || !this.newInstruction.instruction) {
+      this.instructionErrorMessage = 'Thema und Instruktion sind erforderlich!';
+      return;
+    }
+
+    this.isInstructionLoading = true;
+
+    this.chatbotService.insertInstruction(this.newInstruction)
+      .subscribe({
+        next: () => {
+          this.isInstructionLoading = false;
+          this.showInstructionSuccess = true;
+          this.newInstruction = { topic: '', instruction: '' };
+
+          this.loadInstructions();
+
+          setTimeout(() => {
+            this.showInstructionSuccess = false;
+          }, 4000);
+        },
+        error: (err) => {
+          this.isInstructionLoading = false;
+          console.error('Fehler:', err);
+        }
+      });
+  }
+
+  saveInstructionEdit(): void {
+    if (!this.editingInstruction) return;
+
+    this.isInstructionLoading = true;
+
+    this.chatbotService.updateInstruction(this.editingInstruction.id, this.editingInstruction)
+      .subscribe({
+        next: (updatedInstruction) => {
+          const index = this.instructions.findIndex(i => i.id === this.editingInstruction!.id);
+          if (index !== -1) {
+            this.instructions[index] = { ...updatedInstruction };
+          }
+          this.editingInstruction = null;
+          this.showInstructionSuccess = true;
+          this.isInstructionLoading = false;
+        },
+        error: (err) => {
+          this.isInstructionLoading = false;
+          this.instructionErrorMessage = 'Fehler beim Speichern der Instruktion';
+        }
+      });
+  }
+
+  cancelInstructionEdit(): void {
+    this.editingInstruction = null;
+  }
+
+  deleteInstruction(id: number, event: Event) {
+    event.stopPropagation();
+
+    if (confirm('Moechten Sie diese Instruktion wirklich loeschen?')) {
+      this.chatbotService.deleteInstruction(id).subscribe({
+        next: () => {
+          this.instructions = this.instructions.filter(i => i.id !== id);
+        },
+        error: (err) => {
+          console.error('Fehler beim Loeschen:', err);
+        }
+      });
+    }
   }
 
 }

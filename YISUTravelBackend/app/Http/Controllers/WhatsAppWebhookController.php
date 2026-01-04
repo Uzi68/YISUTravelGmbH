@@ -438,6 +438,12 @@ class WhatsAppWebhookController extends Controller
             $reason = 'missing_knowledge';
         }
 
+        $allowedEscalationReasons = ['frustration', 'repetition', 'user_request'];
+        if ($needsEscalation && !in_array($reason, $allowedEscalationReasons, true)) {
+            $needsEscalation = false;
+            $reason = 'none';
+        }
+
         if ($needsEscalation) {
             $this->escalationNotifier->notify($chat, $trimmedText, $reason);
             $this->escalateWhatsAppChat($chat, $trimmedText);

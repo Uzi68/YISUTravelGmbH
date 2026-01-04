@@ -4,7 +4,12 @@ import {BehaviorSubject, Observable, tap, throwError} from "rxjs";
 import {catchError, map} from "rxjs/operators";
 import { isPlatformBrowser } from "@angular/common";
 import {Visitor} from "../../Models/Visitor";
-import {ChatbotResponse, ChatbotResponseCreate} from "../../Models/Chatbot";
+import {
+  ChatbotInstruction,
+  ChatbotInstructionCreate,
+  ChatbotResponse,
+  ChatbotResponseCreate
+} from "../../Models/Chatbot";
 import {ApiResponse} from "../../Models/apiresponse.model";
 import {environment} from "../../../environments/environment";
 
@@ -306,6 +311,40 @@ export class ChatbotService {
     return this.http.put<ApiResponse<ChatbotResponse>>(
       `${this.apiUrl}/update-chatbotresponse/${id}`,
       response,
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data)
+    );
+  }
+
+  insertInstruction(instruction: ChatbotInstructionCreate): Observable<ChatbotInstruction> {
+    return this.http.post<ApiResponse<ChatbotInstruction>>(
+      `${this.apiUrl}/insert-chatbotinstruction`,
+      instruction,
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data)
+    );
+  }
+
+  getInstructions(): Observable<ChatbotInstruction[]> {
+    return this.http.get<ChatbotInstruction[]>(
+      `${this.apiUrl}/get-chatbotinstructions`,
+      { withCredentials: true }
+    );
+  }
+
+  deleteInstruction(id: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.apiUrl}/delete-chatbotinstruction/${id}`,
+      { withCredentials: true }
+    );
+  }
+
+  updateInstruction(id: number, instruction: ChatbotInstruction): Observable<ChatbotInstruction> {
+    return this.http.put<ApiResponse<ChatbotInstruction>>(
+      `${this.apiUrl}/update-chatbotinstruction/${id}`,
+      instruction,
       { withCredentials: true }
     ).pipe(
       map(res => res.data)

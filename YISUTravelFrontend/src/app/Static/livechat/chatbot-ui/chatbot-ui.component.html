@@ -186,56 +186,11 @@
                [class.agent-message]="message.from === 'agent'"
                [class.system-message]="message.from === 'system'">
           <div class="message-bubble"
-               [class.system-bubble]="message.from === 'system'"
-               [class.escalation-bubble]="message.message_type === 'escalation_prompt'">
-              @if (message.message_type === 'escalation_prompt' &&
-              (message.metadata?.is_manual || message.metadata?.is_automatic)) {
-                <div class="escalation-card">
-                  <div class="escalation-chip">
-                    <mat-icon>auto_awesome</mat-icon>
-                    <span>Persönlicher Service</span>
-                  </div>
-                  <div class="escalation-header">
-                    <div class="escalation-icon">
-                      <mat-icon>support_agent</mat-icon>
-                    </div>
-                    <div class="escalation-text">
-                      <p class="escalation-title">{{ message.text }}</p>
-                      <p class="escalation-subtitle">
-                        Unser Team meldet sich persönlich und hilft Ihnen bei allen Fragen.
-                      </p>
-                    </div>
-                  </div>
-                  <div class="escalation-options">
-                    <button
-                      mat-stroked-button
-                      (click)="handleEscalationResponse('decline', message.metadata)"
-                      class="decline-btn">
-                      <mat-icon>close</mat-icon>
-                      <span>Nein, danke</span>
-                    </button>
-                    <button
-                      mat-raised-button
-                      color="primary"
-                      (click)="handleEscalationResponse('accept', message.metadata)"
-                      class="accept-btn">
-                      <mat-icon>headset_mic</mat-icon>
-                      <span>Ja, gerne</span>
-                    </button>
-                  </div>
-                  <div class="escalation-footer">
-                    <div class="message-meta">
-                      <span class="message-badge bot">Bot</span>
-                      <span class="message-time">{{ message.timestamp | date:'HH:mm' }}</span>
-                    </div>
-                  </div>
-                </div>
-              } @else {
-                @if (message.from === 'system') {
-                  <mat-icon class="system-icon">info</mat-icon>
-                }
-                <span>{{ message.text }}</span>
-              }
+               [class.system-bubble]="message.from === 'system'">
+            @if (message.from === 'system') {
+              <mat-icon class="system-icon">info</mat-icon>
+            }
+            <span>{{ message.text }}</span>
 
               <!-- File Attachment Display -->
               @if (message.attachment) {
@@ -274,7 +229,7 @@
               <!-- ✅ VEREINHEITLICHTE Escalation Options -->
 
               <!-- Message Meta NUR für non-system Messages -->
-              @if (message.from !== 'system' && message.message_type !== 'escalation_prompt') {
+              @if (message.from !== 'system') {
                 <div class="message-meta">
                   <!-- Message Type Badge -->
                   @if (message.from === 'agent') {

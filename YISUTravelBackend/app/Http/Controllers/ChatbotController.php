@@ -134,6 +134,55 @@ class ChatbotController extends Controller
 
         $this->dispatchStaffPushForUserMessage($existingChat, $userMessage);
 
+        if ($existingChat->state === self::STATE_AWAITING_ESCALATION_CONSENT) {
+            $decision = $this->aiChatService->interpretEscalationDecision($existingChat, $originalInput);
+            if (($decision['decision'] ?? 'unknown') !== 'unknown') {
+                $decisionResult = $this->processEscalationDecision(
+                    $existingChat,
+                    $userMessage,
+                    $sessionId,
+                    $decision['decision'],
+                    (string) ($decision['reply'] ?? '')
+                );
+
+                $messages = Message::where('chat_id', $existingChat->id)
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                $formattedMessages = $messages->map(function ($message) {
+                    return [
+                        'from' => $message->from,
+                        'text' => $message->text,
+                        'message_type' => $message->message_type,
+                        'metadata' => $message->metadata,
+                    ];
+                });
+
+                $responseMessages = [
+                    [
+                        'from' => $userMessage->from,
+                        'text' => $userMessage->text,
+                        'timestamp' => $userMessage->created_at
+                    ],
+                    [
+                        'from' => $decisionResult['reply_message']->from,
+                        'text' => $decisionResult['reply_message']->text,
+                        'timestamp' => $decisionResult['reply_message']->created_at,
+                        'message_type' => $decisionResult['reply_message']->message_type,
+                        'metadata' => $decisionResult['reply_message']->metadata
+                    ]
+                ];
+
+                return response()->json([
+                    'messages' => $formattedMessages,
+                    'new_messages' => $responseMessages,
+                    'session_id' => $sessionId
+                ]);
+            }
+
+            $existingChat->update(['state' => self::STATE_IDLE]);
+        }
+
         $aiResult = $this->aiChatService->generateReply($existingChat, $originalInput);
         $reply = $aiResult['reply'];
         $aiEscalate = $aiResult['needs_escalation'] ?? false;
@@ -146,22 +195,26 @@ class ChatbotController extends Controller
             $escalationReason = 'missing_knowledge';
         }
 
+        $allowedEscalationReasons = ['frustration', 'repetition', 'user_request'];
+        if ($shouldEscalate && !in_array($escalationReason, $allowedEscalationReasons, true)) {
+            $shouldEscalate = false;
+            $escalationReason = 'none';
+        }
+
         if ($shouldEscalate) {
             $this->escalationNotifier->notify($existingChat, $originalInput, $escalationReason);
         }
 
-        if ($shouldEscalate) {
-            $reply = $this->getEscalationPromptText();
+        if ($shouldEscalate && !in_array($existingChat->status, ['human', 'in_progress'], true)) {
+            $escalationPrompt = $this->aiChatService->generateEscalationPromptMessage($originalInput);
+            if ($escalationPrompt !== '') {
+                $reply = $escalationPrompt;
+            }
+            $existingChat->update(['state' => self::STATE_AWAITING_ESCALATION_CONSENT]);
             $botMessage = Message::create([
                 'chat_id' => $existingChat->id,
                 'from' => 'bot',
-                'text' => $reply,
-                'message_type' => 'escalation_prompt',
-                'metadata' => [
-                    'escalation_prompt_id' => null,
-                    'is_automatic' => true,
-                    'options' => $this->getEscalationPromptOptions()
-                ]
+                'text' => $reply
             ]);
         } else {
             $botMessage = Message::create([
@@ -295,6 +348,7 @@ class ChatbotController extends Controller
 
     // Zustandsdefinitionen
     const STATE_IDLE = 'idle';
+    const STATE_AWAITING_ESCALATION_CONSENT = 'awaiting_escalation_consent';
 
     public function handleInputAnonymous(Request $request): \Illuminate\Http\JsonResponse
     {
@@ -383,6 +437,53 @@ class ChatbotController extends Controller
 
         $this->dispatchStaffPushForUserMessage($chat, $userMessage);
 
+        if ($chat->state === self::STATE_AWAITING_ESCALATION_CONSENT) {
+            $decision = $this->aiChatService->interpretEscalationDecision($chat, $originalInput);
+            if (($decision['decision'] ?? 'unknown') !== 'unknown') {
+                $chat->update(['last_activity' => now()]);
+                $chat->refresh();
+
+                $decisionResult = $this->processEscalationDecision(
+                    $chat,
+                    $userMessage,
+                    $sessionId,
+                    $decision['decision'],
+                    (string) ($decision['reply'] ?? '')
+                );
+
+                if ($userMessage && $userMessage->id) {
+                    broadcast(new MessagePusher($userMessage, $sessionId))->toOthers();
+                }
+
+                $responseMessages = [
+                    [
+                        'from' => 'user',
+                        'text' => $originalInput,
+                        'timestamp' => $userMessage->created_at
+                    ],
+                    [
+                        'from' => $decisionResult['reply_message']->from,
+                        'text' => $decisionResult['reply_message']->text,
+                        'timestamp' => $decisionResult['reply_message']->created_at,
+                        'message_type' => $decisionResult['reply_message']->message_type
+                    ]
+                ];
+
+                return response()->json([
+                    'success' => true,
+                    'session_id' => $sessionId,
+                    'should_escalate' => $decision['decision'] === 'accept',
+                    'state' => $chat->state,
+                    'status' => $decisionResult['chat_status'],
+                    'new_messages' => $responseMessages,
+                    'messages' => $responseMessages,
+                    'reply' => $decisionResult['reply_text'],
+                ]);
+            }
+
+            $chat->update(['state' => self::STATE_IDLE]);
+        }
+
         // ✅ FIX: Aktualisiere last_activity für Website-Besucher beim Senden einer Nachricht
         $chat->update(['last_activity' => now()]);
         // ✅ WICHTIG: Chat neu laden damit last_activity im Event verfügbar ist
@@ -399,13 +500,15 @@ class ChatbotController extends Controller
             $escalationReason = 'missing_knowledge';
         }
 
+        $allowedEscalationReasons = ['frustration', 'repetition', 'user_request'];
+        if ($shouldEscalate && !in_array($escalationReason, $allowedEscalationReasons, true)) {
+            $shouldEscalate = false;
+            $escalationReason = 'none';
+        }
+
         if ($shouldEscalate) {
             $this->escalationNotifier->notify($chat, $originalInput, $escalationReason);
         }
-
-        $reply = $shouldEscalate
-            ? $this->getEscalationPromptText()
-            : $reply;
 
         /*
         $botMessage = Message::create([
@@ -429,27 +532,21 @@ class ChatbotController extends Controller
             ]
         ];  */
 
-        // Automatischen Escalation Prompt als richtige Nachricht senden
-        $escalationMessage = null;
-        $botMessage = null;  // ✅ Initialisierung hinzugefügt
+        $botMessage = null;
 
-        if ($shouldEscalate && !in_array($chat->status, ['human', 'in_progress'])) {
-            // Keine normale Bot-Nachricht speichern, wenn Escalation erkannt wurde
-            // Nur die Escalation-Prompt-Nachricht erstellen
+        if ($shouldEscalate && !in_array($chat->status, ['human', 'in_progress'], true)) {
+            $escalationPrompt = $this->aiChatService->generateEscalationPromptMessage($originalInput);
+            if ($escalationPrompt !== '') {
+                $reply = $escalationPrompt;
+            }
+            $chat->update(['state' => self::STATE_AWAITING_ESCALATION_CONSENT]);
 
-            $escalationMessage = Message::create([
+            $botMessage = Message::create([
                 'chat_id' => $chat->id,
                 'from' => 'bot',
-                'text' => $this->getEscalationPromptText(),
-                'message_type' => 'escalation_prompt',
-                'metadata' => [
-                    'escalation_prompt_id' => null,
-                    'is_automatic' => true,
-                    'options' => $this->getEscalationPromptOptions()
-                ]
+                'text' => $reply,
             ]);
 
-            // Response-Array vorbereiten - NUR mit User-Message und Escalation-Prompt
             $responseMessages = [
                 [
                     'from' => 'user',
@@ -458,17 +555,10 @@ class ChatbotController extends Controller
                 ],
                 [
                     'from' => 'bot',
-                    'text' => $this->getEscalationPromptText(),
-                    'timestamp' => $escalationMessage->created_at,
-                    'message_type' => 'escalation_prompt',
-                    'metadata' => [
-                        'is_automatic' => true,
-                        'escalation_prompt_id' => null,
-                        'options' => $this->getEscalationPromptOptions()
-                    ]
+                    'text' => $reply,
+                    'timestamp' => $botMessage->created_at
                 ]
             ];
-
         } else {
             // Normale Bot-Antwort nur wenn KEINE Escalation
             $botMessage = Message::create([
@@ -502,11 +592,6 @@ class ChatbotController extends Controller
             if ($botMessage && $botMessage->id) {
                 broadcast(new MessagePusher($botMessage, $sessionId))->toOthers();
             }
-
-            // 3. Zuletzt Escalation-Nachricht (nur an Admin - Customer bekommt sie aus Response)
-            if ($escalationMessage && $escalationMessage->id) {
-                broadcast(new MessagePusher($escalationMessage, $sessionId))->toOthers();
-            }
         } catch (\Exception $e) {
             \Log::error('Broadcasting error: ' . $e->getMessage());
         }
@@ -523,17 +608,89 @@ class ChatbotController extends Controller
         ]);
     }
 
-    private function getEscalationPromptText(): string
+    /**
+     * @return array{reply_message: Message, reply_text: string, chat_status: string}
+     */
+    private function processEscalationDecision(
+        Chat $chat,
+        Message $userMessage,
+        string $sessionId,
+        string $response,
+        string $replyText
+    ): array
     {
-        return 'Wollen Sie mit einem Mitarbeiter sprechen?';
-    }
+        return DB::transaction(function () use ($chat, $userMessage, $sessionId, $response, $replyText) {
+            $userMessage->message_type = 'escalation_response';
+            $userMessage->save();
 
-    private function getEscalationPromptOptions(): array
-    {
-        return [
-            ['text' => 'Ja, gerne', 'value' => 'accept'],
-            ['text' => 'Nein, danke', 'value' => 'decline']
-        ];
+            $chat->update(['state' => self::STATE_IDLE]);
+
+            $replyText = trim($replyText);
+            if ($replyText === '') {
+                $replyText = $this->aiChatService->generateEscalationDecisionReply($userMessage->text, $response);
+            }
+
+            if ($response === 'accept') {
+                $previousStatus = $chat->status;
+                $chat->update(['status' => 'human']);
+
+                Escalation::create([
+                    'chat_id' => $chat->id,
+                    'requested_at' => now(),
+                    'status' => 'pending'
+                ]);
+
+                $chatRequest = ChatRequest::create([
+                    'visitor_id' => $chat->visitor_id,
+                    'chat_id' => $chat->id,
+                    'initial_question' => $userMessage->text,
+                    'status' => 'pending'
+                ]);
+
+                event(new ChatEscalated($chat, $chatRequest));
+
+                if ($previousStatus !== 'human') {
+                    broadcast(new ChatStatusChanged($chat, $previousStatus, 'human'))->toOthers();
+                }
+
+                event(new AllChatsUpdate([
+                    'type' => 'chat_escalated',
+                    'chat' => [
+                        'session_id' => $chat->session_id,
+                        'chat_id' => $chat->id,
+                        'status' => 'human',
+                        'channel' => $chat->channel ?? 'website',
+                        'whatsapp_number' => $chat->whatsapp_number ?? null,
+                        'customer_first_name' => $chat->visitor?->first_name ?? ($chat->channel === 'whatsapp' ? 'WhatsApp' : 'Anonymous'),
+                        'customer_last_name' => $chat->visitor?->last_name ?? ($chat->channel === 'whatsapp' ? 'Kunde' : ''),
+                        'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
+                        'last_message' => $userMessage->text,
+                        'last_message_time' => now(),
+                        'unread_count' => 1,
+                        'isNew' => true,
+                        'can_assign' => true,
+                        'needs_assignment' => true,
+                        'assigned_to' => null,
+                        'assigned_agent' => null
+                    ]
+                ]));
+            }
+
+            $replyMessage = Message::create([
+                'chat_id' => $chat->id,
+                'from' => 'bot',
+                'text' => $replyText,
+                'message_type' => 'escalation_reply'
+            ]);
+
+            broadcast(new MessagePusher($replyMessage, $chat->session_id));
+
+            return [
+                'reply_message' => $replyMessage,
+                'reply_text' => $replyText,
+                'chat_status' => $chat->status
+            ];
+        });
     }
 
     public function end_chatbotSession(Request $request): \Illuminate\Http\JsonResponse
@@ -1953,7 +2110,17 @@ class ChatbotController extends Controller
             }
 
             $response = $validated['response'];
-            $responseText = $response === 'accept' ? 'Ja, gerne' : 'Nein, danke';
+            $lastUserMessage = Message::query()
+                ->where('chat_id', $chat->id)
+                ->where('from', 'user')
+                ->orderBy('created_at', 'desc')
+                ->first();
+            $languageSeed = $lastUserMessage ? (string) $lastUserMessage->text : $response;
+            $decisionTexts = $this->aiChatService->generateEscalationDecisionTexts($languageSeed, $response);
+            $responseText = trim((string) ($decisionTexts['user_text'] ?? ''));
+            if ($responseText === '') {
+                $responseText = $response;
+            }
 
             // ✅ KORRIGIERT: Sichere Prüfung mit isset() oder array_key_exists()
             if (isset($validated['prompt_id']) && !empty($validated['prompt_id'])) {
@@ -1967,8 +2134,6 @@ class ChatbotController extends Controller
                 }
             }
 
-            // Rest der Methode bleibt gleich...
-
             // User-Response als Message speichern
             $userResponseMessage = Message::create([
                 'chat_id' => $chat->id,
@@ -1979,78 +2144,19 @@ class ChatbotController extends Controller
 
             // ✅ Broadcasting der User-Response damit Admin sie sieht
             broadcast(new MessagePusher($userResponseMessage, $chat->session_id));
-
-            $botReply = '';
-
-            if ($response === 'accept') {
-                // Status auf 'human' setzen
-                $chat->update(['status' => 'human']);
-
-                $botReply = 'Vielen Dank! Ich verbinde Sie mit einem unserer Mitarbeiter. Bitte haben Sie einen Moment Geduld.';
-
-                // Escalation durchführen
-                $escalation = Escalation::create([
-                    'chat_id' => $chat->id,
-                    'requested_at' => now(),
-                    'status' => 'pending'
-                ]);
-
-                // ChatEscalated Event mit ChatRequest
-                $chatRequest = ChatRequest::create([
-                    'visitor_id' => $chat->visitor_id,
-                    'chat_id' => $chat->id,
-                    'initial_question' => 'Möchte mit Mitarbeiter sprechen (via Escalation Prompt)',
-                    'status' => 'pending'
-                ]);
-
-                event(new ChatEscalated($chat, $chatRequest));
-
-                // Status Change Event
-                broadcast(new ChatStatusChanged($chat, 'bot', 'human'))->toOthers();
-
-                // Admin-Dashboard informieren
-                event(new AllChatsUpdate([
-                    'type' => 'chat_escalated',
-                    'chat' => [
-                        'session_id' => $chat->session_id,
-                        'chat_id' => $chat->id,
-                        'status' => 'human',
-                        'channel' => $chat->channel ?? 'website',
-                        'whatsapp_number' => $chat->whatsapp_number ?? null,
-                        'customer_first_name' => $chat->visitor?->first_name ?? ($chat->channel === 'whatsapp' ? 'WhatsApp' : 'Anonymous'),
-                        'customer_last_name' => $chat->visitor?->last_name ?? ($chat->channel === 'whatsapp' ? 'Kunde' : ''),
-                        'customer_phone' => $chat->visitor?->phone ?? ($chat->whatsapp_number ? '+' . $chat->whatsapp_number : 'Nicht bekannt'),
-                        'last_message' => $responseText,
-                        'last_message_time' => now(),
-                        'unread_count' => 1,
-                        'isNew' => true,
-                        'can_assign' => true,
-                        'needs_assignment' => true,
-                        'assigned_to' => null,
-                        'assigned_agent' => null
-                    ]
-                ]));
-
-            } else {
-                $botReply = 'Kein Problem! Ich helfe Ihnen gerne weiter. Was kann ich für Sie tun?';
-            }
-
-            // Bot-Reply als Message speichern
-            $replyMessage = Message::create([
-                'chat_id' => $chat->id,
-                'from' => 'bot',
-                'text' => $botReply,
-                'message_type' => 'escalation_reply'
-            ]);
-
-            // ✅ Broadcasting der Antwort OHNE toOthers() - damit auch der Visitor die Message erhält
-            broadcast(new MessagePusher($replyMessage, $chat->session_id));
+            $decisionResult = $this->processEscalationDecision(
+                $chat,
+                $userResponseMessage,
+                $chat->session_id,
+                $response,
+                (string) ($decisionTexts['bot_reply'] ?? '')
+            );
 
             return response()->json([
                 'success' => true,
                 'response' => $response,
-                'chat_status' => $chat->status,
-                'message' => $botReply
+                'chat_status' => $decisionResult['chat_status'],
+                'message' => $decisionResult['reply_text']
             ]);
         });
     }

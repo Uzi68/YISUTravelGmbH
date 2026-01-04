@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Chat;
+use App\Models\ChatbotInstruction;
 use App\Models\ChatbotResponse;
 use App\Models\Message;
 use Illuminate\Support\Collection;
@@ -43,8 +44,7 @@ class OpenAiChatService
             ];
         }
 
-        $language = $this->detectLanguage($input);
-        $messages = $this->buildMessages($chat, $input, $knowledgeEntries, $knowledgeOnly, $language);
+        $messages = $this->buildMessages($chat, $input, $knowledgeEntries, $knowledgeOnly);
         $baseUrl = rtrim((string) config('services.openai.base_url', 'https://api.openai.com/v1'), '/');
         $model = (string) config('services.openai.model', 'gpt-4o-mini');
         $temperature = (float) config('services.openai.temperature', 0.3);
@@ -118,6 +118,285 @@ class OpenAiChatService
     }
 
     /**
+     * @return array{decision: string, reply: string}
+     */
+    public function interpretEscalationDecision(Chat $chat, string $input): array
+    {
+        $apiKey = config('services.openai.api_key');
+        if (!$apiKey) {
+            Log::warning('OpenAI API key missing for escalation decision');
+            return [
+                'decision' => 'unknown',
+                'reply' => ''
+            ];
+        }
+
+        $baseUrl = rtrim((string) config('services.openai.base_url', 'https://api.openai.com/v1'), '/');
+        $model = (string) config('services.openai.model', 'gpt-4o-mini');
+        $timeout = (int) config('services.openai.timeout', 20);
+
+        $systemPrompt = 'Classify whether the user accepts or declines speaking with a staff member. '
+            . 'The assistant message (if provided) is the last question about speaking with staff. '
+            . 'Return JSON with fields "decision" (accept, decline, unknown) and "reply" (string). '
+            . 'Choose accept if the user clearly agrees or expresses desire/consent in that context, '
+            . 'even if they do not say an explicit yes. Short affirmations or "I want" replies count. '
+            . 'Choose decline if the user clearly refuses or says they do not want to speak with staff. '
+            . 'If the user introduces another request or topic, decision must be unknown. '
+            . 'Complaints, frustration, repetition, or unrelated messages are NOT a decline or accept. '
+            . 'If decision is accept or decline, reply with a short, professional confirmation in the same language '
+            . 'as the user message. If decision is unknown, reply must be an empty string. '
+            . 'Do not mix languages.';
+
+        $messages = [
+            ['role' => 'system', 'content' => $systemPrompt],
+        ];
+
+        $lastBotMessage = Message::query()
+            ->where('chat_id', $chat->id)
+            ->where('from', 'bot')
+            ->orderBy('created_at', 'desc')
+            ->value('text');
+        if (is_string($lastBotMessage) && trim($lastBotMessage) !== '') {
+            $messages[] = ['role' => 'assistant', 'content' => trim($lastBotMessage)];
+        }
+
+        $messages[] = ['role' => 'user', 'content' => trim($input)];
+
+        $payload = [
+            'model' => $model,
+            'messages' => $messages,
+            'temperature' => 0.0,
+            'response_format' => ['type' => 'json_object']
+        ];
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->timeout($timeout)
+                ->post($baseUrl . '/chat/completions', $payload);
+        } catch (\Throwable $e) {
+            Log::error('OpenAI escalation decision failed', ['error' => $e->getMessage()]);
+            return [
+                'decision' => 'unknown',
+                'reply' => ''
+            ];
+        }
+
+        if (!$response->successful()) {
+            Log::warning('OpenAI escalation decision failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            return [
+                'decision' => 'unknown',
+                'reply' => ''
+            ];
+        }
+
+        $content = data_get($response->json(), 'choices.0.message.content');
+        $decoded = is_string($content) ? json_decode($content, true) : null;
+
+        if (!is_array($decoded)) {
+            return [
+                'decision' => 'unknown',
+                'reply' => ''
+            ];
+        }
+
+        $decision = (string) ($decoded['decision'] ?? 'unknown');
+        $reply = $this->sanitizeReply((string) ($decoded['reply'] ?? ''));
+
+        if (!in_array($decision, ['accept', 'decline', 'unknown'], true)) {
+            $decision = 'unknown';
+        }
+
+        if ($decision !== 'unknown' && $reply === '') {
+            $decision = 'unknown';
+        }
+
+        return [
+            'decision' => $decision,
+            'reply' => $reply
+        ];
+    }
+
+    public function generateEscalationDecisionReply(string $input, string $decision): string
+    {
+        $apiKey = config('services.openai.api_key');
+        if (!$apiKey) {
+            Log::warning('OpenAI API key missing for escalation reply');
+            return '';
+        }
+
+        $baseUrl = rtrim((string) config('services.openai.base_url', 'https://api.openai.com/v1'), '/');
+        $model = (string) config('services.openai.model', 'gpt-4o-mini');
+        $timeout = (int) config('services.openai.timeout', 20);
+
+        $decisionLabel = strtoupper($decision) === 'DECLINE' ? 'DECLINE' : 'ACCEPT';
+        $systemPrompt = 'Write a short, professional confirmation message for this decision: ' . $decisionLabel . '. '
+            . 'Use the same language as the user message. Do not mix languages. '
+            . 'Do not make assumptions about the user intent. '
+            . 'Output plain text only.';
+
+        $messages = [
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => trim($input)]
+        ];
+
+        $payload = [
+            'model' => $model,
+            'messages' => $messages,
+            'temperature' => 0.2
+        ];
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->timeout($timeout)
+                ->post($baseUrl . '/chat/completions', $payload);
+        } catch (\Throwable $e) {
+            Log::error('OpenAI escalation reply failed', ['error' => $e->getMessage()]);
+            return '';
+        }
+
+        if (!$response->successful()) {
+            Log::warning('OpenAI escalation reply failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            return '';
+        }
+
+        $content = data_get($response->json(), 'choices.0.message.content');
+        $reply = is_string($content) ? trim($content) : '';
+        return $this->sanitizeReply($reply);
+    }
+
+    public function generateEscalationPromptMessage(string $input): string
+    {
+        $apiKey = config('services.openai.api_key');
+        if (!$apiKey) {
+            Log::warning('OpenAI API key missing for escalation prompt');
+            return '';
+        }
+
+        $baseUrl = rtrim((string) config('services.openai.base_url', 'https://api.openai.com/v1'), '/');
+        $model = (string) config('services.openai.model', 'gpt-4o-mini');
+        $timeout = (int) config('services.openai.timeout', 20);
+
+        $systemPrompt = 'Write a short, professional reply in the same language as the user. '
+            . 'Briefly acknowledge the issue or limitation, then ask if the user wants to speak with a staff member. '
+            . 'Do not mix languages. Output plain text only.';
+
+        $messages = [
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => trim($input)]
+        ];
+
+        $payload = [
+            'model' => $model,
+            'messages' => $messages,
+            'temperature' => 0.2
+        ];
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->timeout($timeout)
+                ->post($baseUrl . '/chat/completions', $payload);
+        } catch (\Throwable $e) {
+            Log::error('OpenAI escalation prompt failed', ['error' => $e->getMessage()]);
+            return '';
+        }
+
+        if (!$response->successful()) {
+            Log::warning('OpenAI escalation prompt failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            return '';
+        }
+
+        $content = data_get($response->json(), 'choices.0.message.content');
+        $reply = is_string($content) ? trim($content) : '';
+        return $this->sanitizeReply($reply);
+    }
+
+    /**
+     * @return array{user_text: string, bot_reply: string}
+     */
+    public function generateEscalationDecisionTexts(string $input, string $decision): array
+    {
+        $apiKey = config('services.openai.api_key');
+        if (!$apiKey) {
+            Log::warning('OpenAI API key missing for escalation texts');
+            return [
+                'user_text' => '',
+                'bot_reply' => ''
+            ];
+        }
+
+        $baseUrl = rtrim((string) config('services.openai.base_url', 'https://api.openai.com/v1'), '/');
+        $model = (string) config('services.openai.model', 'gpt-4o-mini');
+        $timeout = (int) config('services.openai.timeout', 20);
+
+        $decisionLabel = strtoupper($decision) === 'DECLINE' ? 'DECLINE' : 'ACCEPT';
+        $systemPrompt = 'You are generating two short, professional texts based on a decision: ' . $decisionLabel . '. '
+            . 'Return JSON with fields "user_text" and "bot_reply". '
+            . '"user_text" should be a short yes/no in the same language as the user message. '
+            . '"bot_reply" should be a short confirmation in the same language. '
+            . 'Do not make assumptions about the user intent. '
+            . 'Do not mix languages.';
+
+        $messages = [
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => trim($input)]
+        ];
+
+        $payload = [
+            'model' => $model,
+            'messages' => $messages,
+            'temperature' => 0.0,
+            'response_format' => ['type' => 'json_object']
+        ];
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->timeout($timeout)
+                ->post($baseUrl . '/chat/completions', $payload);
+        } catch (\Throwable $e) {
+            Log::error('OpenAI escalation texts failed', ['error' => $e->getMessage()]);
+            return [
+                'user_text' => '',
+                'bot_reply' => ''
+            ];
+        }
+
+        if (!$response->successful()) {
+            Log::warning('OpenAI escalation texts failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            return [
+                'user_text' => '',
+                'bot_reply' => ''
+            ];
+        }
+
+        $content = data_get($response->json(), 'choices.0.message.content');
+        $decoded = is_string($content) ? json_decode($content, true) : null;
+
+        if (!is_array($decoded)) {
+            return [
+                'user_text' => '',
+                'bot_reply' => ''
+            ];
+        }
+
+        return [
+            'user_text' => $this->sanitizeReply((string) ($decoded['user_text'] ?? '')),
+            'bot_reply' => $this->sanitizeReply((string) ($decoded['bot_reply'] ?? ''))
+        ];
+    }
+
+    /**
      * @param array<int, ChatbotResponse> $knowledgeEntries
      * @return array<int, array{role: string, content: string}>
      */
@@ -125,12 +404,12 @@ class OpenAiChatService
         Chat $chat,
         string $input,
         array $knowledgeEntries,
-        bool $knowledgeOnly,
-        string $language
+        bool $knowledgeOnly
     ): array
     {
         $historyLimit = (int) config('services.openai.history', 12);
-        $systemPrompt = (string) config(
+        $instructionPrompt = $this->buildInstructionPrompt();
+        $systemPrompt = $instructionPrompt !== '' ? $instructionPrompt : (string) config(
             'services.openai.system_prompt',
             'Du bist der YISU Travel Assistent. Antworte kurz, hilfreich und freundlich.'
         );
@@ -138,21 +417,23 @@ class OpenAiChatService
             $systemPrompt .= ' Antworte ausschließlich mit Informationen aus der Wissensbasis. '
                 . 'Wenn eine Information fehlt, sage das offen.';
         }
-        $systemPrompt .= ' Antworte in der Sprache der letzten Nutzereingabe.';
-        $systemPrompt .= ' Wenn die Wissensbasis in einer anderen Sprache ist, uebersetze sie.';
+        $systemPrompt .= ' Antworte ausschliesslich in der Sprache der letzten Nutzereingabe und mische keine Sprachen.';
+        $systemPrompt .= ' Wenn die Wissensbasis in einer anderen Sprache ist, uebersetze sie in diese Sprache.';
         $systemPrompt .= ' Erfinde keine YISU-Travel-spezifischen Fakten.';
         $systemPrompt .= ' Antworte als JSON-Objekt mit den Feldern "reply" (string), '
             . '"needs_escalation" (boolean) und "escalation_reason" '
-            . '(string: "missing_knowledge", "frustration", "irony", '
-            . '"insufficient_info", "risk_uncertainty", "repetition", '
-            . '"user_request", "none"). '
-            . 'Setze "needs_escalation" auf true, wenn die Wissensbasis keine passende '
-            . 'Information enthaelt, der Nutzer aergerlich/frustriert/ironisch wirkt, '
-            . 'notwendige Informationen fehlen und nicht zuverlaessig per Rueckfrage '
-            . 'zu erhalten sind, die Unsicherheit oder das Risiko der Antwort steigt, '
-            . 'oder der Nutzer sich mehrfach wiederholt. '
-            . 'Wenn der Nutzer explizit einen Mitarbeiter wuenscht, setze '
-            . '"needs_escalation" auf true und "escalation_reason" auf "user_request". '
+            . '(string: "frustration", "repetition", "user_request", "none"). '
+            . 'Setze "needs_escalation" nur auf true, wenn der Nutzer klar '
+            . 'frustriert/veraergert ist, sich mehrfach wiederholt oder explizit '
+            . 'einen Mitarbeiter verlangt. '
+            . 'Bei fehlender Wissensbasis, Unsicherheit, unklaren Angaben oder '
+            . 'Anfragen ausserhalb des Reisebereichs antworte selbststaendig, '
+            . 'stelle Rueckfragen falls sinnvoll, und setze '
+            . '"needs_escalation" auf false und "escalation_reason" auf "none". '
+            . 'Wenn "needs_escalation" true ist, antworte zuerst kurz auf die Nachricht '
+            . 'und stelle danach eine kurze Rueckfrage, ob der Nutzer mit einem '
+            . 'Mitarbeiter sprechen moechte. '
+            . 'Auch bei "escalation_reason" = "user_request" immer um Bestaetigung bitten. '
             . 'Bei einfachen Fragen, Small Talk oder klar beantwortbaren Anliegen '
             . 'antworte normal mit "needs_escalation": false.';
 
@@ -169,12 +450,6 @@ class OpenAiChatService
             ['role' => 'system', 'content' => $systemPrompt],
         ];
 
-        if ($language !== 'auto') {
-            $messages[] = [
-                'role' => 'system',
-                'content' => $this->buildLanguageDirective($language)
-            ];
-        }
         $knowledgeContext = $this->buildKnowledgeContext($knowledgeEntries);
         if ($knowledgeContext !== '') {
             $messages[] = ['role' => 'system', 'content' => $knowledgeContext];
@@ -192,6 +467,43 @@ class OpenAiChatService
         }
 
         return $messages;
+    }
+
+    private function buildInstructionPrompt(): string
+    {
+        try {
+            $instructions = ChatbotInstruction::query()
+                ->orderBy('id')
+                ->get();
+        } catch (\Throwable $e) {
+            Log::warning('Failed to load chatbot instructions', ['error' => $e->getMessage()]);
+            return '';
+        }
+
+        if ($instructions->isEmpty()) {
+            return '';
+        }
+
+        $lines = [];
+        foreach ($instructions as $instruction) {
+            $topic = trim((string) $instruction->topic);
+            $text = trim((string) $instruction->instruction);
+            if ($text === '') {
+                continue;
+            }
+            if ($topic !== '') {
+                $lines[] = '- Thema: ' . $topic;
+                $lines[] = '  Anweisung: ' . $text;
+            } else {
+                $lines[] = '- ' . $text;
+            }
+        }
+
+        if ($lines === []) {
+            return '';
+        }
+
+        return "Admin-Instruktionen (immer befolgen):\n" . implode("\n", $lines);
     }
 
     /**
@@ -385,70 +697,6 @@ class OpenAiChatService
         }
 
         return rtrim(mb_substr($text, 0, $maxChars)) . '...';
-    }
-
-    private function detectLanguage(string $input): string
-    {
-        $normalized = $this->normalizeLanguageText($input);
-
-        $scores = [
-            'de' => 0,
-            'en' => 0,
-            'tr' => 0
-        ];
-
-        $deWords = ['hallo', 'danke', 'bitte', 'oeffnungszeiten', 'reisebuero', 'wie', 'was', 'wer', 'wann', 'wo'];
-        $enWords = ['hello', 'thank', 'please', 'opening', 'hours', 'business', 'what', 'who', 'when', 'where', 'can', 'english'];
-        $trWords = ['merhaba', 'tesekkur', 'lutf', 'saat', 'acik', 'kapali', 'nasil', 'neden', 'nerede', 'kim', 'ingilizce'];
-
-        foreach ($deWords as $word) {
-            if (str_contains($normalized, $word)) {
-                $scores['de']++;
-            }
-        }
-        foreach ($enWords as $word) {
-            if (str_contains($normalized, $word)) {
-                $scores['en']++;
-            }
-        }
-        foreach ($trWords as $word) {
-            if (str_contains($normalized, $word)) {
-                $scores['tr']++;
-            }
-        }
-
-        $max = max($scores);
-        if ($max === 0) {
-            return 'auto';
-        }
-
-        foreach ($scores as $lang => $score) {
-            if ($score === $max) {
-                return $lang;
-            }
-        }
-
-        return 'auto';
-    }
-
-    private function normalizeLanguageText(string $input): string
-    {
-        $text = mb_strtolower($input);
-        $text = str_replace(['ä', 'ö', 'ü', 'ß'], ['ae', 'oe', 'ue', 'ss'], $text);
-        $text = str_replace(['ı', 'ğ', 'ş', 'ç', 'ö', 'ü'], ['i', 'g', 's', 'c', 'o', 'u'], $text);
-
-        return $text;
-    }
-
-    private function buildLanguageDirective(string $language): string
-    {
-        $map = [
-            'de' => 'Antwortsprache: Deutsch.',
-            'en' => 'Answer language: English.',
-            'tr' => 'Cevap dili: Turkce.'
-        ];
-
-        return $map[$language] ?? 'Answer language: English.';
     }
 
     private function fallbackReply(): string

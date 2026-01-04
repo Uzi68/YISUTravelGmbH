@@ -7,6 +7,129 @@
   </div>
 
   <div class="form-container">
+    <div class="section-card instruction-section">
+      <div class="section-header">
+        <h2>Instruktionen (Verhalten)</h2>
+        <p>Steuert Ton, Ablauf und Rueckfragen des Chatbots.</p>
+      </div>
+
+    <mat-form-field class="full-width" appearance="outline">
+      <mat-label>Thema</mat-label>
+      <input matInput
+             [(ngModel)]="newInstruction.topic"
+             placeholder="z.B. 'Reisebuchung'"
+             required>
+      <mat-icon matSuffix>label</mat-icon>
+      <mat-hint>Ein kurzer Titel fuer die Anweisung.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field class="full-width" appearance="outline">
+      <mat-label>Instruktion</mat-label>
+      <textarea matInput
+                [(ngModel)]="newInstruction.instruction"
+                placeholder="z.B. 'Bei einer Reisebuchung stelle zuerst diese 5 Fragen...'"
+                rows="3"
+                required></textarea>
+      <mat-icon matSuffix>assignment</mat-icon>
+      <mat-hint>Gib klare, umsetzbare Anweisungen.</mat-hint>
+    </mat-form-field>
+
+    <div class="action-buttons">
+      <button mat-stroked-button
+              class="clear-button normal-button"
+              (click)="clearInstructionForm()"
+              [disabled]="isInstructionLoading || (!newInstruction.topic && !newInstruction.instruction)">
+        Formular leeren
+      </button>
+
+      <button mat-raised-button
+              class="submit-button"
+              color="primary"
+              (click)="submitInstruction()"
+              [disabled]="!newInstruction.topic || !newInstruction.instruction || isInstructionLoading">
+        {{ isInstructionLoading ? 'Wird gespeichert...' : 'Instruktion speichern' }}
+      </button>
+    </div>
+
+    <div class="response-container instruction-container">
+      <div class="header-container">
+        <div class="header-content">
+          <div class="header-text">
+            <p class="header-subtitle">Instruktionen verwalten</p>
+          </div>
+        </div>
+        <mat-divider class="header-divider"></mat-divider>
+      </div>
+
+      <div *ngFor="let instruction of instructions; trackBy: trackByInstructionId" class="response-item instruction-item" [class.editing]="editingInstruction?.id === instruction.id">
+        <div *ngIf="editingInstruction?.id === instruction.id" class="edit-form instruction-card">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Thema</mat-label>
+            <input matInput [(ngModel)]="editingInstruction!.topic" placeholder="z.B. 'Reisebuchung'" (click)="$event.stopPropagation()">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Instruktion</mat-label>
+            <textarea matInput [(ngModel)]="editingInstruction!.instruction" rows="3" placeholder="z.B. 'Bei einer Reisebuchung stelle zuerst diese 5 Fragen...'"></textarea>
+          </mat-form-field>
+
+          <div class="action-buttons">
+            <button mat-button class="normal-button" (click)="cancelInstructionEdit()">Abbrechen</button>
+            <button mat-raised-button color="primary" class="normal-button" (click)="saveInstructionEdit()">Speichern</button>
+          </div>
+        </div>
+
+        <div *ngIf="editingInstruction?.id !== instruction.id" class="response-content" (click)="startInstructionEdit(instruction)">
+          <p><strong>Thema:</strong> {{ instruction.topic }}</p>
+          <p><strong>Instruktion:</strong> {{ instruction.instruction }}</p>
+        </div>
+
+        <div class="response-actions">
+          <button mat-icon-button color="warn"
+                  (click)="deleteInstruction(instruction.id, $event)">
+            <img src="/livechat/close.svg" alt="Minimize" width="24" height="24" class="black-icon">
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="instructions.length === 0" class="text-center py-4 text-muted">
+        <i class="bi bi-inbox display-4 d-block mb-2"></i>
+        Keine Instruktionen vorhanden
+      </div>
+    </div>
+
+    <div *ngIf="showInstructionSuccess" class="success-message" @fadeIn>
+      <div class="message-content">
+        <div class="message-text">
+          <div class="message-title">Erfolgreich gespeichert!</div>
+          <div class="message-subtitle">Die Instruktion wurde in der Datenbank gespeichert.</div>
+        </div>
+        <button mat-icon-button class="close-btn" (click)="showInstructionSuccess = false" [attr.aria-label]="'Meldung schließen'">
+          <img src="/livechat/close.svg" alt="Minimize" width="24" height="24" class="black-icon">
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="instructionErrorMessage" class="error-message" @fadeIn>
+      <div class="message-content">
+        <mat-icon class="error-icon">error</mat-icon>
+        <div class="message-text">
+          <div class="message-title">Fehler beim Speichern</div>
+          <div class="message-subtitle">{{ instructionErrorMessage }}</div>
+        </div>
+        <button mat-icon-button class="close-btn" (click)="clearInstructionError()" [attr.aria-label]="'Fehlermeldung schließen'">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+    </div>
+
+    <div class="section-card knowledge-section">
+      <div class="section-header">
+        <h2>Wissensbasis (Fakten)</h2>
+        <p>Liefern dem Bot Inhalte und Daten, die er beantworten darf.</p>
+      </div>
+
     <!-- Input Feld -->
     <mat-form-field class="full-width" appearance="outline">
       <mat-label>Titel / Thema</mat-label>
@@ -94,7 +217,7 @@
 
 
 
-    <div class="response-container">
+    <div class="response-container knowledge-container">
 
 
         <!-- Verbesserter Header -->
@@ -202,6 +325,7 @@
           <mat-icon>close</mat-icon>
         </button>
       </div>
+    </div>
     </div>
   </div>
 </div>
