@@ -333,7 +333,7 @@ export class AppointmentManagementComponent implements OnInit {
     if (dayOfWeek === 0) return []; // Sunday - closed
     
     const isSaturday = dayOfWeek === 6;
-    const startTime = '10:30';
+    const startTime = isSaturday ? '10:30' : '10:00';
     const endTime = isSaturday ? '15:00' : '17:30';
     
     const slots: string[] = [];

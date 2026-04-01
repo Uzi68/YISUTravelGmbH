@@ -417,8 +417,6 @@ class OpenAiChatService
             $systemPrompt .= ' Antworte ausschließlich mit Informationen aus der Wissensbasis. '
                 . 'Wenn eine Information fehlt, sage das offen.';
         }
-        $systemPrompt .= ' Antworte ausschliesslich in der Sprache der letzten Nutzereingabe und mische keine Sprachen.';
-        $systemPrompt .= ' Wenn die Wissensbasis in einer anderen Sprache ist, uebersetze sie in diese Sprache.';
         $systemPrompt .= ' Erfinde keine YISU-Travel-spezifischen Fakten.';
         $systemPrompt .= ' Antworte als JSON-Objekt mit den Feldern "reply" (string), '
             . '"needs_escalation" (boolean) und "escalation_reason" '
@@ -462,6 +460,16 @@ class OpenAiChatService
 
         $lastHistory = $history->last();
         $inputTrimmed = trim($input);
+
+        $messages[] = [
+            'role' => 'system',
+            'content' => 'WICHTIG: Antworte ausschliesslich in der Sprache der letzten Nutzereingabe. '
+                . 'Wenn die Nutzereingabe auf Tuerkisch ist, antworte auf Tuerkisch. '
+                . 'Wenn sie auf Deutsch ist, antworte auf Deutsch. '
+                . 'Wenn sie auf Englisch ist, antworte auf Englisch. '
+                . 'Mische niemals Sprachen. Uebersetze Wissensbasis-Inhalte falls noetig.',
+        ];
+
         if (!$lastHistory || $lastHistory->from !== 'user' || trim((string) $lastHistory->text) !== $inputTrimmed) {
             $messages[] = ['role' => 'user', 'content' => $inputTrimmed];
         }

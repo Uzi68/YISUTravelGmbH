@@ -99,7 +99,7 @@ export class AppointmentBookingComponent implements OnInit, AfterViewInit {
   
   // Business hours
   businessHours = {
-    weekdays: { start: '10:30', end: '18:00' },
+    weekdays: { start: '10:00', end: '18:00' },
     saturday: { start: '10:30', end: '15:30' }
   };
 
