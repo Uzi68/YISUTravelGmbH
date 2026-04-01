@@ -37,8 +37,6 @@ body {
   border-radius: 15px; /* Rounded corners */
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* Shadow */
   position: relative; /* For the glowing effect */
-  transform: translateY(20px); /* Initial position for animation */
-  animation: fadeInUp 1s forwards; /* Animation */
 }
 
 .logo-container {
@@ -92,22 +90,7 @@ p {
 
 
 /* Animation */
-@keyframes fadeInUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Scroll-triggered animation */
-.about-us-container {
-  transform: translateY(20px); /* Initial position */
-  animation: none; /* No animation by default */
-}
-
-.about-us-container.scrolled {
-  animation: fadeInUp 1s forwards; /* Trigger animation */
-}
+/* Scroll-triggered animation wurde entfernt – kein JS-Scroll-Trigger aktiv */
 
 /* Responsive Styles */
 @media (max-width: 768px) {

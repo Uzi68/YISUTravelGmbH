@@ -63,10 +63,10 @@ export class HomepageThirdviewComponent implements OnInit, AfterViewInit, OnDest
             target.classList.add('fade-in-up');
             target.style.opacity = '1';
             this.intersectionObserver?.unobserve(entry.target);
-          }, index * 300);
+          }, index * 80);
         }
       });
-    }, { threshold: 0.1 });
+    }, { threshold: 0.15 });
 
     this.boxElements.forEach((box) => {
       this.intersectionObserver?.observe(box.nativeElement as HTMLElement);
