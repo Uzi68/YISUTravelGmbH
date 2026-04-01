@@ -330,7 +330,7 @@ export class TimeSlotBlockingDialog {
     }
     
     const isSaturday = dayOfWeek === 6;
-    const startTime = isSaturday ? '10:30' : '10:00';
+    const startTime = '10:30';
     const endTime = isSaturday ? '15:00' : '17:30';
     
     const slots: string[] = [];
