@@ -1621,7 +1621,8 @@ class ChatbotController extends Controller
                 'close_reason' => $closeReason,  // ✅ Explizit setzen
                 'assigned_to' => null,
                 'assigned_at' => null,
-                'last_agent_activity' => now()
+                'last_agent_activity' => now(),
+                'archived_at' => now(),  // Automatisch archivieren beim Schliessen
             ]);
 
             // ✅ DEBUG: Wurde es gespeichert?
@@ -1744,7 +1745,8 @@ class ChatbotController extends Controller
             'assigned_to' => null,
             'assigned_at' => null,
             'assigned_agent' => null,
-            'last_agent_activity' => null
+            'last_agent_activity' => null,
+            'archived_at' => now(),  // Automatisch archivieren beim Schliessen
         ]);
 
         // System-Message für Chat-Ende

@@ -982,7 +982,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             status: 'in_progress',
             assigned_to: newAgentId,
             assigned_agent: chatData.to_agent_name,
-            isNew: true
+            isNew: true,
+            archived_at: null
           };
 
           this.activeChats = [newChat, ...this.activeChats];
@@ -1194,7 +1195,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           status: chatData.status,
           assigned_to: chatData.assigned_to,
           assigned_agent: chatData.assigned_agent,
-          isNew: true
+          isNew: true,
+          archived_at: null
         };
 
         this.activeChats = [newChat, ...this.activeChats];
@@ -1283,7 +1285,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           status: 'in_progress',
           assigned_to: assignedToId,
           assigned_agent: assignedAgentName,
-          isNew: true
+          isNew: true,
+          archived_at: null
         };
 
         this.activeChats = [newChat, ...this.activeChats];
@@ -1374,6 +1377,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
    */
   private updateChatEverywhere(sessionId: string, updates: Partial<Chat>): void {
     console.log('🔄 updateChatEverywhere called:', { sessionId, updates });
+
+    // Archivierte Chats nicht in aktiver Liste anfassen
+    const isArchived = this.archivedChats.some(c => c.id === sessionId);
+    if (isArchived) {
+      console.log('⏭️ Chat is archived, skipping active list update:', sessionId);
+      return;
+    }
 
     // 1. activeChats aktualisieren
     const activeChatIndex = this.activeChats.findIndex(c => c.id === sessionId);
@@ -1493,22 +1503,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.chatToClose = null;
     this.closeDialogForm.reset();
 
-    // ✅ Chat-Status sofort auf "closed" setzen
+    // ✅ Chat-Status sofort auf "closed" setzen und archivieren
     const chatIndex = this.activeChats.findIndex(c => c.id.toString() === chatToCloseId);
     if (chatIndex !== -1) {
-      this.activeChats[chatIndex] = {
+      const closedChat = {
         ...this.activeChats[chatIndex],
         status: 'closed',
         assigned_to: null,
         assigned_agent: '',
         lastMessage: 'Chat beendet',
-        lastMessageTime: new Date()
+        lastMessageTime: new Date(),
+        archived_at: new Date().toISOString()
       };
 
-      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id.toString() === chatToCloseId);
-      if (filteredIndex !== -1) {
-        this.filteredActiveChats[filteredIndex] = { ...this.activeChats[chatIndex] };
-      }
+      // Aus aktiver Liste entfernen und in Archiv verschieben
+      this.activeChats = this.activeChats.filter(c => c.id.toString() !== chatToCloseId);
+      this.filteredActiveChats = this.filteredActiveChats.filter(c => c.id.toString() !== chatToCloseId);
+      this.archivedChats = [closedChat, ...this.archivedChats];
+      this.archivedChatsCount = this.archivedChats.length;
     }
 
     // ✅ Wenn aktueller Chat geschlossen wird, auswählen aufheben
@@ -1889,7 +1901,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (!chat) return;
 
     this.ngZone.run(() => {
-      // ✅ OPTIMIERT: Verwende updateChatEverywhere statt direkter Mutation
       const closeReason = data.close_reason || data.chat?.close_reason;
       let endMessage = `Chat wurde beendet (${data.ended_by === 'visitor' ? 'vom Benutzer' : 'von Mitarbeiter'})`;
 
@@ -1897,39 +1908,30 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         endMessage = `Chat beendet von Mitarbeiter (Grund: ${closeReason})`;
       }
 
-      // ✅ WICHTIG: KEINE unreadCount Erhöhung hier!
-      // Der Counter wird durch die System-Nachricht erhöht (handleIncomingMessageGlobal)
-      this.updateChatEverywhere(sessionId, {
+      // Chat archivieren: aus aktiver Liste entfernen, in Archiv verschieben
+      const closedChat = {
+        ...chat,
         status: 'closed',
         assigned_to: null,
         assigned_agent: '',
         lastMessage: endMessage,
-        lastMessageTime: new Date()
-      });
+        lastMessageTime: new Date(),
+        archived_at: new Date().toISOString()
+      };
 
-      console.log(`✅ Chat ended event processed - status set to closed for session ${sessionId}`);
+      this.activeChats = this.activeChats.filter(c => c.id !== sessionId);
+      this.filteredActiveChats = this.filteredActiveChats.filter(c => c.id !== sessionId);
 
-      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id === sessionId);
-      if (filteredIndex !== -1) {
-        this.filteredActiveChats[filteredIndex] = { ...chat };
+      // Nur hinzufügen wenn nicht schon im Archiv (verhindert Duplikate bei optimistic update)
+      if (!this.archivedChats.find(c => c.id === sessionId)) {
+        this.archivedChats = [closedChat, ...this.archivedChats];
+        this.archivedChatsCount = this.archivedChats.length;
       }
 
       if (this.selectedChat?.id === sessionId) {
-        // WICHTIG: Nachrichten beibehalten! Nur Status-Felder aktualisieren
-        this.selectedChat = Object.assign({}, this.selectedChat, {
-          status: 'closed',
-          assigned_to: null,
-          assigned_agent: '',
-          lastMessage: endMessage,
-          lastMessageTime: new Date()
-        });
+        this.selectedChat = null;
         this.showToast(endMessage, 'info');
       }
-
-      // WICHTIG: removeClosedChat() NICHT aufrufen!
-
-      // ✅ NEU: Chat-Liste neu sortieren (Event-Message = neue Aktivität)
-      this.sortActiveChats();
 
       this.cdRef.markForCheck();
 
@@ -2895,7 +2897,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       whatsapp_number: wc.whatsapp_number,
       visitor: wc.visitor,
       updated_at: wc.updated_at,
-      created_at: wc.created_at
+      created_at: wc.created_at,
+      archived_at: (wc as any).archived_at || null
     };
   }
 

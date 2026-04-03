@@ -1,4 +1,4 @@
-import {Component, ElementRef, ViewChild} from '@angular/core';
+import {Component, ElementRef, ViewChild, AfterViewChecked} from '@angular/core';
 import {MatFormField, MatHint, MatLabel} from "@angular/material/form-field";
 import {FormsModule} from "@angular/forms";
 import {MatInput} from "@angular/material/input";
@@ -11,7 +11,7 @@ import {
   MatChipRow
 } from "@angular/material/chips";
 import {MatIcon} from "@angular/material/icon";
-import {NgForOf, NgIf} from "@angular/common";
+import {NgForOf, NgIf, NgClass, DatePipe} from "@angular/common";
 import {MatButton, MatIconButton} from "@angular/material/button";
 import {ChatbotService} from "../../../../Services/chatbot-service/chatbot.service";
 import {COMMA, ENTER, SEMICOLON} from "@angular/cdk/keycodes";
@@ -19,11 +19,15 @@ import {
   ChatbotInstruction,
   ChatbotInstructionCreate,
   ChatbotResponse,
-  ChatbotResponseCreate
+  ChatbotResponseCreate,
+  TrainingMessage,
+  TrainingConversation
 } from "../../../../Models/Chatbot";
 import {animate, style, transition, trigger} from "@angular/animations";
 import {MatPaginator, PageEvent} from "@angular/material/paginator";
+import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatDivider} from "@angular/material/divider";
+import {MatTooltip} from "@angular/material/tooltip";
 
 @Component({
   selector: 'app-chatbot-response-insert',
@@ -41,9 +45,13 @@ import {MatDivider} from "@angular/material/divider";
     MatChipGrid,
     MatChipRow,
     NgIf,
+    NgClass,
+    DatePipe,
     MatIconButton,
     MatPaginator,
-    MatDivider
+    MatDivider,
+    MatTooltip,
+    MatProgressSpinner
   ],
   templateUrl: './chatbot-response-insert.component.html',
   styleUrl: './chatbot-response-insert.component.css',
@@ -59,9 +67,25 @@ import {MatDivider} from "@angular/material/divider";
     ])
   ]
 })
-export class ChatbotResponseInsertComponent {
+export class ChatbotResponseInsertComponent implements AfterViewChecked {
 
   @ViewChild('keywordInput') keywordInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('chatMessagesContainer') chatMessagesContainer!: ElementRef;
+
+  // Tab control
+  activeTab: 'chat' | 'wissensbasis' = 'chat';
+
+  // Training chat state
+  trainingMessages: TrainingMessage[] = [];
+  trainingInput = '';
+  isTrainingLoading = false;
+  private shouldScrollToBottom = false;
+
+  // Conversation history (ChatGPT-style)
+  conversations: TrainingConversation[] = [];
+  currentConversationId: number | null = null;
+  showSidebar = true;
+  loadingConversations = false;
 
   // Array vom Model
   getResponses: ChatbotResponse[] = [];
@@ -136,6 +160,7 @@ export class ChatbotResponseInsertComponent {
 ngOnInit() {
   this.loadResponses();
   this.loadInstructions();
+  this.loadConversations();
 }
 
   startEdit(response: ChatbotResponse) {
@@ -387,16 +412,146 @@ clearInstructionForm(): void {
   deleteInstruction(id: number, event: Event) {
     event.stopPropagation();
 
-    if (confirm('Moechten Sie diese Instruktion wirklich loeschen?')) {
+    if (confirm('Möchten Sie diese Instruktion wirklich löschen?')) {
       this.chatbotService.deleteInstruction(id).subscribe({
         next: () => {
           this.instructions = this.instructions.filter(i => i.id !== id);
         },
         error: (err) => {
-          console.error('Fehler beim Loeschen:', err);
+          console.error('Fehler beim Löschen:', err);
         }
       });
     }
+  }
+
+  // ========== Training Chat ==========
+
+  ngAfterViewChecked(): void {
+    if (this.shouldScrollToBottom) {
+      this.scrollToBottom();
+      this.shouldScrollToBottom = false;
+    }
+  }
+
+  switchTab(tab: 'chat' | 'wissensbasis'): void {
+    this.activeTab = tab;
+    if (tab === 'chat') {
+      this.loadConversations();
+    } else {
+      this.loadResponses();
+      this.loadInstructions();
+    }
+  }
+
+  // Conversation management
+  loadConversations(): void {
+    this.loadingConversations = true;
+    this.chatbotService.getTrainingConversations().subscribe({
+      next: (res: any) => {
+        this.conversations = res.conversations || [];
+        this.loadingConversations = false;
+      },
+      error: () => {
+        this.loadingConversations = false;
+      }
+    });
+  }
+
+  startNewConversation(): void {
+    this.currentConversationId = null;
+    this.trainingMessages = [];
+    this.trainingInput = '';
+  }
+
+  openConversation(conv: TrainingConversation): void {
+    this.currentConversationId = conv.id;
+    this.isTrainingLoading = true;
+    this.chatbotService.getTrainingConversation(conv.id).subscribe({
+      next: (res: any) => {
+        this.trainingMessages = (res.messages || []).map((m: any) => ({
+          role: m.role,
+          content: m.content,
+          savedItems: m.savedItems || [],
+          timestamp: m.timestamp ? new Date(m.timestamp) : new Date()
+        }));
+        this.isTrainingLoading = false;
+        this.shouldScrollToBottom = true;
+      },
+      error: () => {
+        this.isTrainingLoading = false;
+      }
+    });
+  }
+
+  deleteConversation(conv: TrainingConversation, event: Event): void {
+    event.stopPropagation();
+    if (!confirm('Dieses Training-Gespräch löschen?')) return;
+
+    this.chatbotService.deleteTrainingConversation(conv.id).subscribe({
+      next: () => {
+        this.conversations = this.conversations.filter(c => c.id !== conv.id);
+        if (this.currentConversationId === conv.id) {
+          this.startNewConversation();
+        }
+      }
+    });
+  }
+
+  sendTrainingMessage(): void {
+    const message = this.trainingInput.trim();
+    if (!message || this.isTrainingLoading) return;
+
+    this.trainingMessages.push({
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    });
+
+    this.trainingInput = '';
+    this.isTrainingLoading = true;
+    this.shouldScrollToBottom = true;
+
+    this.chatbotService.sendTrainingMessage({
+      message,
+      conversation_id: this.currentConversationId
+    }).subscribe({
+      next: (response: any) => {
+        this.isTrainingLoading = false;
+
+        // Set conversation ID from first response
+        if (!this.currentConversationId && response.conversation_id) {
+          this.currentConversationId = response.conversation_id;
+          this.loadConversations();
+        }
+
+        this.trainingMessages.push({
+          role: 'assistant',
+          content: response.reply,
+          savedItems: response.saved_items || [],
+          timestamp: new Date()
+        });
+        this.shouldScrollToBottom = true;
+      },
+      error: (err: any) => {
+        this.isTrainingLoading = false;
+        console.error('Training chat error:', err);
+        this.trainingMessages.push({
+          role: 'assistant',
+          content: 'Es gab einen Fehler bei der Verarbeitung. Bitte versuche es erneut.',
+          timestamp: new Date()
+        });
+        this.shouldScrollToBottom = true;
+      }
+    });
+  }
+
+  private scrollToBottom(): void {
+    try {
+      if (this.chatMessagesContainer) {
+        const el = this.chatMessagesContainer.nativeElement;
+        el.scrollTop = el.scrollHeight;
+      }
+    } catch (err) {}
   }
 
 }

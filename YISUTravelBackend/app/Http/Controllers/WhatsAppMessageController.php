@@ -375,6 +375,7 @@ class WhatsAppMessageController extends Controller
     {
         try {
             $chats = Chat::whatsApp()
+                ->notArchived()
                 ->with([
                     'visitor',
                     'assignedTo:id,name',

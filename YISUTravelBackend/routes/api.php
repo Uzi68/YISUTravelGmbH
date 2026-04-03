@@ -12,6 +12,7 @@ use App\Http\Controllers\MessagePusherController;
 use App\Http\Controllers\MessageAttachmentController;
 use App\Http\Controllers\HomepageStatisticsController;
 use App\Http\Controllers\WhatsAppWebhookController;
+use App\Http\Controllers\TrainingChatController;
 use App\Http\Controllers\WhatsAppMessageController;
 use App\Http\Controllers\OfferController;
 use App\Http\Controllers\AppointmentController;
@@ -137,6 +138,16 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/staff/{id}', [UserManagementController::class, 'updateStaffUser']);
         Route::delete('/staff/{id}', [UserManagementController::class, 'deleteStaffUser']);
     });
+
+    // YISA Training Chat (Admin only)
+    Route::post('/admin/train-chat', [TrainingChatController::class, 'handle'])
+        ->middleware('role:Admin');
+    Route::get('/admin/training-conversations', [TrainingChatController::class, 'getConversations'])
+        ->middleware('role:Admin');
+    Route::get('/admin/training-conversations/{id}', [TrainingChatController::class, 'getConversation'])
+        ->middleware('role:Admin');
+    Route::delete('/admin/training-conversations/{id}', [TrainingChatController::class, 'deleteConversation'])
+        ->middleware('role:Admin');
 
     // Close chat
     Route::post('/chat/{chat}/close', [ChatbotController::class, 'closeChat'])

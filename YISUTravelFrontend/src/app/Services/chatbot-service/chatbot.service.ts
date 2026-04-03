@@ -154,6 +154,30 @@ export class ChatbotService {
     });
   }
 
+  sendTrainingMessage(request: { message: string; conversation_id?: number | null }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/admin/train-chat`, request, {
+      withCredentials: true
+    });
+  }
+
+  getTrainingConversations(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/admin/training-conversations`, {
+      withCredentials: true
+    });
+  }
+
+  getTrainingConversation(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/admin/training-conversations/${id}`, {
+      withCredentials: true
+    });
+  }
+
+  deleteTrainingConversation(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/admin/training-conversations/${id}`, {
+      withCredentials: true
+    });
+  }
+
   transferChat(chatId: string, agentId: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/chat/${chatId}/transfer`, {
       agent_id: agentId
