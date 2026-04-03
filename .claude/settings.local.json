@@ -13,7 +13,9 @@
       "Bash(xargs grep:*)",
       "Bash(grep -A 10 \"create_messages\\\\|Schema::create\\('messages'\" \"/c/Users/uezey/Desktop/Personal Stuff/Programming/Web Development/Claude/YISUTravelBackend/database/migrations\"/*.php)",
       "Bash(xargs ls:*)",
-      "Bash(npx ng:*)"
+      "Bash(npx ng:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

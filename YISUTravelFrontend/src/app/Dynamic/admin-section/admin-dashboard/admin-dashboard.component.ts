@@ -42,6 +42,8 @@ import { AppointmentManagementComponent } from '../appointment-management/appoin
 import { Router } from '@angular/router';
 import {ThemeService} from '../../../Services/theme-service/theme.service';
 import { StaffPushNotificationService } from '../../../Services/push-notification/staff-push-notification.service';
+import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -2549,6 +2551,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       window.removeEventListener('popstate', this.popStateHandler);
       this.popStateHandler = undefined;
     }
+    if (Capacitor.isNativePlatform()) {
+      App.removeAllListeners();
+    }
     this.destroy$.next();
     this.destroy$.complete();
     this.cleanupPusherSubscriptions();
@@ -2627,15 +2632,31 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       }
 
       this.ngZone.run(() => {
-        this.selectedChat = null;
         this.pendingChatId = null;
         this.isDeepLinkOpening = false;
         this.chatHistoryStatePushed = false;
-        this.cdRef.markForCheck();
+        this.deselectChat();
       });
     };
 
     window.addEventListener('popstate', this.popStateHandler);
+
+    // Capacitor Hardware Back Button (Android)
+    if (Capacitor.isNativePlatform()) {
+      App.addListener('backButton', () => {
+        this.ngZone.run(() => {
+          if (this.selectedChat) {
+            this.deselectChat();
+            // Verhindere App-Exit: History-Eintrag entfernen falls vorhanden
+            if (this.chatHistoryStatePushed) {
+              window.history.forward();
+              this.chatHistoryStatePushed = false;
+            }
+          }
+          // Kein selectedChat → normales Verhalten (App minimieren)
+        });
+      });
+    }
   }
 
   private pushChatHistoryState(): void {
