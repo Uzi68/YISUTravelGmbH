@@ -286,7 +286,7 @@
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -377,8 +377,17 @@ body.dark-mode .error-message .message-title {
 }
 
 /* ========== Tab Bar ========== */
+.back-to-dashboard {
+  color: var(--yisu-secondary);
+  width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  flex-shrink: 0;
+}
+
 .tab-bar {
   display: flex;
+  align-items: center;
   gap: 4px;
   margin-bottom: 16px;
   background: var(--yisu-bg-card);
@@ -401,7 +410,7 @@ body.dark-mode .error-message .message-title {
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--yisu-text-light);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .tab-button:hover { background: rgba(0, 0, 0, 0.04); }
@@ -442,17 +451,23 @@ body.dark-mode .error-message .message-title {
   border-bottom: 1px solid var(--yisu-border-light);
 }
 
-.new-chat-btn {
-  background: var(--yisu-secondary) !important;
-  color: #fff !important;
-  width: 32px;
-  height: 32px;
-  display: flex;
+/* Alle Icon-Buttons einheitlich zentrieren */
+.chat-layout ::ng-deep .mat-mdc-icon-button {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.new-chat-btn mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.new-chat-btn {
+  background: var(--yisu-secondary) !important;
+  color: #fff !important;
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+}
+
+.new-chat-btn mat-icon { font-size: 20px; width: 20px; height: 20px; }
 
 .sidebar-title {
   flex: 1;
@@ -464,7 +479,12 @@ body.dark-mode .error-message .message-title {
 .chat-sidebar.collapsed .sidebar-title,
 .chat-sidebar.collapsed .new-chat-btn { display: none; }
 
-.toggle-sidebar-btn { color: var(--yisu-text-light); }
+.toggle-sidebar-btn {
+  color: var(--yisu-text-light);
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+}
 
 .conversation-list {
   flex: 1;
@@ -520,13 +540,16 @@ body.dark-mode .error-message .message-title {
 .conv-delete {
   opacity: 0;
   transition: opacity 0.15s;
-  width: 28px;
-  height: 28px;
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  color: var(--yisu-text-light);
+  flex-shrink: 0;
 }
 
-.conv-delete mat-icon { font-size: 16px; width: 16px; height: 16px; }
-.conversation-item:hover .conv-delete { opacity: 0.6; }
-.conv-delete:hover { opacity: 1 !important; }
+.conv-delete mat-icon { font-size: 17px; width: 17px; height: 17px; }
+.conversation-item:hover .conv-delete { opacity: 0.5; }
+.conv-delete:hover { opacity: 1 !important; color: #ef4444 !important; }
 
 /* Chat Main Area */
 .chat-main {
@@ -599,7 +622,7 @@ body.dark-mode .error-message .message-title {
   cursor: pointer;
   font-size: 0.82rem;
   color: var(--yisu-text-dark);
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   background: var(--yisu-bg-card);
 }
 
@@ -760,6 +783,18 @@ body.dark-mode .error-message .message-title {
   opacity: 0.7;
 }
 
+/* Mobile Chat Header (nur auf Mobile sichtbar) */
+.mobile-header {
+  display: none;
+}
+
+.mobile-header button {
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  color: var(--yisu-secondary);
+}
+
 /* ========== Dark Mode ========== */
 body.dark-mode .training-page .tab-bar { background: var(--yisu-bg-section); border-color: var(--yisu-border-dark); }
 body.dark-mode .tab-button { color: var(--yisu-text-light); }
@@ -787,20 +822,68 @@ body.dark-mode .saved-indicator { background: rgba(16, 185, 129, 0.08); border-c
 
 /* ========== Responsive ========== */
 @media (max-width: 768px) {
-  .training-page { padding: 8px; }
+  .training-page { padding: 4px; }
   .tab-button span { display: none; }
+  .tab-bar { margin-bottom: 6px; }
 
-  .chat-layout { height: calc(100vh - 120px); }
+  /* Chat nimmt gesamten verfügbaren Platz */
+  .chat-layout {
+    height: calc(100vh - 90px);
+    border-radius: 8px;
+  }
 
-  .chat-sidebar { width: 0; min-width: 0; border-right: none; position: absolute; z-index: 10; height: 100%; }
-  .chat-sidebar:not(.collapsed) { width: 260px; min-width: 260px; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15); }
+  /* Sidebar auf Mobile: komplett unsichtbar wenn collapsed */
+  .chat-sidebar {
+    display: none;
+  }
 
-  .message-row { padding: 14px 16px; }
-  .welcome-examples { flex-direction: column; }
+  .chat-sidebar:not(.collapsed) {
+    display: flex;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    min-width: 100%;
+    height: 100%;
+    z-index: 10;
+    background: var(--yisu-bg-card);
+  }
+
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--yisu-border-light);
+    background: var(--yisu-bg-card);
+  }
+
+  .mobile-header span {
+    flex: 1;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--yisu-text-dark);
+  }
+
+  /* Delete-Button auf Mobile immer sichtbar (kein Hover auf Touch) */
+  .conv-delete { opacity: 0.4 !important; }
+
+  .welcome-screen { padding: 24px 16px; }
+  .welcome-title { font-size: 1.2rem; }
+  .welcome-subtitle { font-size: 0.82rem; padding: 0 8px; }
+  .welcome-examples { flex-direction: column; width: 100%; }
   .example-chip { justify-content: center; }
+
+  .message-row { padding: 12px 14px; }
+  .chat-input-area { padding: 8px 10px; }
+  .input-hint { font-size: 0.65rem; margin-top: 4px; }
 }
 
 @media (max-width: 480px) {
-  .chat-input-area { padding: 10px 12px; }
-  .message-row { gap: 10px; }
+  .message-row { gap: 8px; }
+  .message-avatar { width: 28px; height: 28px; }
+  .message-avatar mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  .message-text { font-size: 0.85rem; }
+  .welcome-icon { width: 48px; height: 48px; }
+  .welcome-icon mat-icon { font-size: 24px; width: 24px; height: 24px; }
 }

@@ -81,6 +81,8 @@ body {
 .mat-drawer {
   position: fixed !important;
   z-index: 3000 !important;
+  will-change: transform;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Ensure Material Icons render correctly */
@@ -452,7 +454,7 @@ button[type="submit"],
   border-radius: 8px !important;
   font-weight: 500 !important;
   padding: 0.75rem 1.5rem !important;
-  transition: all 0.3s ease !important;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease !important;
   box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35) !important;
   cursor: pointer !important;
 }

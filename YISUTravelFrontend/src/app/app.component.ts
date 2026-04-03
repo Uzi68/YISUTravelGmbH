@@ -58,7 +58,7 @@ export class AppComponent implements OnInit, OnDestroy {
       )
       .subscribe((event: NavigationEnd) => {
         // Update admin dashboard route flag
-        this.isAdminDashboardRoute = event.url.includes('/admin-dashboard');
+        this.isAdminDashboardRoute = event.url.includes('/admin-dashboard') || event.url.includes('/admin/');
         
         // Handle scrolling - skip initial navigation to prevent double-load effect
         const window = this.windowRef.nativeWindow;

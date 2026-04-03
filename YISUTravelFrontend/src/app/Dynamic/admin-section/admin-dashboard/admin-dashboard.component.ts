@@ -82,16 +82,16 @@ import { StaffPushNotificationService } from '../../../Services/push-notificatio
     trigger('slideInOut', [
       transition(':enter', [
         style({ transform: 'translateX(-100%)' }),
-        animate('300ms ease-out', style({ transform: 'translateX(0)' }))
+        animate('200ms cubic-bezier(0.25, 0.1, 0.25, 1)', style({ transform: 'translateX(0)' }))
       ]),
       transition(':leave', [
-        animate('300ms ease-in', style({ transform: 'translateX(-100%)' }))
+        animate('150ms cubic-bezier(0.25, 0.1, 0.25, 1)', style({ transform: 'translateX(-100%)' }))
       ])
     ]),
     trigger('messageAnimation', [
       transition(':enter', [
-        style({ opacity: 0, transform: 'translateY(20px)' }),
-        animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+        style({ opacity: 0, transform: 'translateY(10px)' }),
+        animate('200ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
       ])
     ])
   ]
@@ -131,6 +131,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private visitorEmailCache = new Map<string, string>();
   closeDialogForm: FormGroup;
   selectedChat: Chat | null = null;
+  isDeselectingChat = false;
   selectedChatForEscalation: Chat | null = null;
   escalationMessage = '';
   currentAgent = {
@@ -3217,6 +3218,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
 
+
+  deselectChat(): void {
+    if (this.isDeselectingChat) return;
+    this.isDeselectingChat = true;
+    this.cdRef.markForCheck();
+    // Sidebar-Animation abwarten (200ms), dann DOM aufräumen
+    setTimeout(() => {
+      this.selectedChat = null;
+      this.isDeselectingChat = false;
+      this.cdRef.markForCheck();
+    }, 220);
+  }
 
   selectChat(chat: Chat): void {
     this.ngZone.run(() => {

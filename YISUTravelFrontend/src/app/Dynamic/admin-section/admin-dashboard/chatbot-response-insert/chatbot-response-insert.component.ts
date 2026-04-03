@@ -27,6 +27,7 @@ import {animate, style, transition, trigger} from "@angular/animations";
 import {MatPaginator, PageEvent} from "@angular/material/paginator";
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatDivider} from "@angular/material/divider";
+import {RouterLink} from "@angular/router";
 import {MatTooltip} from "@angular/material/tooltip";
 
 @Component({
@@ -51,18 +52,19 @@ import {MatTooltip} from "@angular/material/tooltip";
     MatPaginator,
     MatDivider,
     MatTooltip,
-    MatProgressSpinner
+    MatProgressSpinner,
+    RouterLink
   ],
   templateUrl: './chatbot-response-insert.component.html',
   styleUrl: './chatbot-response-insert.component.css',
   animations: [
     trigger('fadeIn', [
       transition(':enter', [
-        style({ opacity: 0, transform: 'translateY(-15px) scale(0.95)' }),
-        animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0) scale(1)' }))
+        style({ opacity: 0, transform: 'translateY(-10px)' }),
+        animate('200ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
       ]),
       transition(':leave', [
-        animate('200ms ease-in', style({ opacity: 0, transform: 'translateY(-10px) scale(0.98)' }))
+        animate('150ms ease-in', style({ opacity: 0, transform: 'translateY(-8px)' }))
       ])
     ])
   ]
@@ -84,7 +86,7 @@ export class ChatbotResponseInsertComponent implements AfterViewChecked {
   // Conversation history (ChatGPT-style)
   conversations: TrainingConversation[] = [];
   currentConversationId: number | null = null;
-  showSidebar = true;
+  showSidebar = window.innerWidth > 768;
   loadingConversations = false;
 
   // Array vom Model
@@ -461,11 +463,13 @@ clearInstructionForm(): void {
     this.currentConversationId = null;
     this.trainingMessages = [];
     this.trainingInput = '';
+    if (window.innerWidth <= 768) this.showSidebar = false;
   }
 
   openConversation(conv: TrainingConversation): void {
     this.currentConversationId = conv.id;
     this.isTrainingLoading = true;
+    if (window.innerWidth <= 768) this.showSidebar = false;
     this.chatbotService.getTrainingConversation(conv.id).subscribe({
       next: (res: any) => {
         this.trainingMessages = (res.messages || []).map((m: any) => ({

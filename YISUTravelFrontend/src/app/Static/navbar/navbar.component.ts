@@ -100,7 +100,7 @@ export class NavbarComponent implements OnDestroy {
     this.routerSub = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
-        this.isAdminDashboardRoute = event.url.includes('/admin-dashboard');
+        this.isAdminDashboardRoute = event.url.includes('/admin-dashboard') || event.url.includes('/admin/');
       });
   }
 
@@ -229,13 +229,13 @@ export class NavbarComponent implements OnDestroy {
   @ViewChild('darkModeSwitch', {read: ElementRef})
   set darkModeSwitch(element: ElementRef | undefined) {
     this.darkModeSwitchRef = element;
-    setTimeout(() => this.applySwitchIcons(element), 0);
+    queueMicrotask(() => this.applySwitchIcons(element));
   }
 
   @ViewChild('darkModeSwitchMobile', {read: ElementRef})
   set darkModeSwitchMobile(element: ElementRef | undefined) {
     this.darkModeSwitchMobileRef = element;
-    setTimeout(() => this.applySwitchIcons(element), 0);
+    queueMicrotask(() => this.applySwitchIcons(element));
   }
 
 

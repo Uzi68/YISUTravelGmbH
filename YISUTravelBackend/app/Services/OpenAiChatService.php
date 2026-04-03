@@ -13,6 +13,53 @@ use Illuminate\Support\Facades\Log;
 class OpenAiChatService
 {
     /**
+     * HTTP-Aufruf an OpenAI mit automatischen Retries bei transienten Fehlern.
+     */
+    private function callOpenAiWithRetry(string $apiKey, string $url, array $payload, int $timeout, string $context = 'OpenAI'): ?\Illuminate\Http\Client\Response
+    {
+        $maxRetries = 2;
+        $response = null;
+
+        for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $response = Http::withToken($apiKey)
+                    ->timeout($timeout)
+                    ->post($url, $payload);
+
+                if ($response->successful()) {
+                    return $response;
+                }
+
+                if (in_array($response->status(), [400, 401, 403])) {
+                    Log::warning("{$context} request failed (non-retryable)", [
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                    ]);
+                    return null;
+                }
+
+                Log::warning("{$context} request failed, retrying", [
+                    'attempt' => $attempt + 1,
+                    'status' => $response->status(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning("{$context} request exception, retrying", [
+                    'attempt' => $attempt + 1,
+                    'error' => $e->getMessage(),
+                ]);
+                $response = null;
+            }
+
+            if ($attempt < $maxRetries) {
+                usleep(500_000);
+            }
+        }
+
+        Log::error("{$context} request failed after all retries");
+        return null;
+    }
+
+    /**
      * @return array{reply: string, knowledge_hit: bool, needs_escalation: bool, escalation_reason: string}
      */
     public function generateReply(Chat $chat, string $input): array
@@ -63,25 +110,8 @@ class OpenAiChatService
             $payload['response_format'] = ['type' => 'json_object'];
         }
 
-        try {
-            $response = Http::withToken($apiKey)
-                ->timeout($timeout)
-                ->post($baseUrl . '/chat/completions', $payload);
-        } catch (\Throwable $e) {
-            Log::error('OpenAI request failed', ['error' => $e->getMessage()]);
-            return [
-                'reply' => $this->fallbackReply(),
-                'knowledge_hit' => $knowledgeHit,
-                'needs_escalation' => false,
-                'escalation_reason' => 'none'
-            ];
-        }
-
-        if (!$response->successful()) {
-            Log::warning('OpenAI request failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+        $response = $this->callOpenAiWithRetry($apiKey, $baseUrl . '/chat/completions', $payload, $timeout, 'OpenAI chat');
+        if (!$response) {
             return [
                 'reply' => $this->fallbackReply(),
                 'knowledge_hit' => $knowledgeHit,
@@ -169,23 +199,8 @@ class OpenAiChatService
             'response_format' => ['type' => 'json_object']
         ];
 
-        try {
-            $response = Http::withToken($apiKey)
-                ->timeout($timeout)
-                ->post($baseUrl . '/chat/completions', $payload);
-        } catch (\Throwable $e) {
-            Log::error('OpenAI escalation decision failed', ['error' => $e->getMessage()]);
-            return [
-                'decision' => 'unknown',
-                'reply' => ''
-            ];
-        }
-
-        if (!$response->successful()) {
-            Log::warning('OpenAI escalation decision failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+        $response = $this->callOpenAiWithRetry($apiKey, $baseUrl . '/chat/completions', $payload, $timeout, 'OpenAI escalation decision');
+        if (!$response) {
             return [
                 'decision' => 'unknown',
                 'reply' => ''
@@ -248,20 +263,8 @@ class OpenAiChatService
             'temperature' => 0.2
         ];
 
-        try {
-            $response = Http::withToken($apiKey)
-                ->timeout($timeout)
-                ->post($baseUrl . '/chat/completions', $payload);
-        } catch (\Throwable $e) {
-            Log::error('OpenAI escalation reply failed', ['error' => $e->getMessage()]);
-            return '';
-        }
-
-        if (!$response->successful()) {
-            Log::warning('OpenAI escalation reply failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+        $response = $this->callOpenAiWithRetry($apiKey, $baseUrl . '/chat/completions', $payload, $timeout, 'OpenAI escalation reply');
+        if (!$response) {
             return '';
         }
 
@@ -297,20 +300,8 @@ class OpenAiChatService
             'temperature' => 0.2
         ];
 
-        try {
-            $response = Http::withToken($apiKey)
-                ->timeout($timeout)
-                ->post($baseUrl . '/chat/completions', $payload);
-        } catch (\Throwable $e) {
-            Log::error('OpenAI escalation prompt failed', ['error' => $e->getMessage()]);
-            return '';
-        }
-
-        if (!$response->successful()) {
-            Log::warning('OpenAI escalation prompt failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+        $response = $this->callOpenAiWithRetry($apiKey, $baseUrl . '/chat/completions', $payload, $timeout, 'OpenAI escalation prompt');
+        if (!$response) {
             return '';
         }
 
@@ -357,23 +348,8 @@ class OpenAiChatService
             'response_format' => ['type' => 'json_object']
         ];
 
-        try {
-            $response = Http::withToken($apiKey)
-                ->timeout($timeout)
-                ->post($baseUrl . '/chat/completions', $payload);
-        } catch (\Throwable $e) {
-            Log::error('OpenAI escalation texts failed', ['error' => $e->getMessage()]);
-            return [
-                'user_text' => '',
-                'bot_reply' => ''
-            ];
-        }
-
-        if (!$response->successful()) {
-            Log::warning('OpenAI escalation texts failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+        $response = $this->callOpenAiWithRetry($apiKey, $baseUrl . '/chat/completions', $payload, $timeout, 'OpenAI escalation texts');
+        if (!$response) {
             return [
                 'user_text' => '',
                 'bot_reply' => ''
@@ -421,18 +397,26 @@ class OpenAiChatService
         $systemPrompt .= ' Antworte als JSON-Objekt mit den Feldern "reply" (string), '
             . '"needs_escalation" (boolean) und "escalation_reason" '
             . '(string: "frustration", "repetition", "user_request", "none"). '
-            . 'Setze "needs_escalation" nur auf true, wenn der Nutzer klar '
-            . 'frustriert/veraergert ist, sich mehrfach wiederholt oder explizit '
-            . 'einen Mitarbeiter verlangt. '
-            . 'Bei fehlender Wissensbasis, Unsicherheit, unklaren Angaben oder '
-            . 'Anfragen ausserhalb des Reisebereichs antworte selbststaendig, '
-            . 'stelle Rueckfragen falls sinnvoll, und setze '
-            . '"needs_escalation" auf false und "escalation_reason" auf "none". '
+            . 'Bei Anfragen die NICHTS mit YISU Travel, Reisen, Buchungen, Terminen '
+            . 'oder dem Unternehmen zu tun haben (z.B. Allgemeinwissen, Mathe, Politik, etc.) '
+            . 'lehne hoeflich ab und weise darauf hin, dass du nur fuer YISU Travel Anfragen '
+            . 'zur Verfuegung stehst. Biete an, bei reisebezogenen Fragen zu helfen. '
+            . 'Setze dabei "needs_escalation" auf false. '
+            . 'WICHTIG zur Eskalation: Eskaliere so SELTEN wie moeglich. '
+            . 'Versuche IMMER das Anliegen selbst zu loesen, auch bei Beschwerden oder Problemen. '
+            . 'Setze "needs_escalation" NUR auf true wenn: '
+            . '(1) der Nutzer EXPLIZIT nach einem Mitarbeiter fragt, '
+            . '(2) der Nutzer SEHR stark frustriert ist (mehrfach veraergert, Grossbuchstaben, Beschimpfungen), '
+            . 'oder (3) es sich um einen echten Notfall handelt (z.B. gestrandeter Reisender, verpasster Flug). '
+            . 'Bei normalen Beschwerden, einfachen Problemen, Unzufriedenheit oder Rueckfragen: '
+            . 'loese das Problem selbst, entschuldige dich, biete Loesungen an — NICHT eskalieren. '
+            . 'Auch bei "escalation_reason" = "user_request" immer um Bestaetigung bitten. '
             . 'Wenn "needs_escalation" true ist, antworte zuerst kurz auf die Nachricht '
             . 'und stelle danach eine kurze Rueckfrage, ob der Nutzer mit einem '
             . 'Mitarbeiter sprechen moechte. '
-            . 'Auch bei "escalation_reason" = "user_request" immer um Bestaetigung bitten. '
-            . 'Bei einfachen Fragen, Small Talk oder klar beantwortbaren Anliegen '
+            . 'Bei fehlender Wissensbasis zu YISU-Travel-relevanten Themen, '
+            . 'stelle Rueckfragen falls sinnvoll und antworte bestmoeglich. '
+            . 'Bei einfachen Fragen oder klar beantwortbaren Anliegen '
             . 'antworte normal mit "needs_escalation": false.';
 
         $historySources = $knowledgeOnly ? ['user'] : ['user', 'bot'];

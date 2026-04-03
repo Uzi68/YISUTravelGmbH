@@ -1,7 +1,10 @@
 <div class="training-page">
 
-  <!-- Tab Bar -->
+  <!-- Tab Bar mit integriertem Zurück-Button -->
   <div class="tab-bar">
+    <button mat-icon-button routerLink="/admin-dashboard" class="back-to-dashboard" matTooltip="Zurück zum Dashboard">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
     <button class="tab-button" [class.active]="activeTab === 'chat'" (click)="switchTab('chat')">
       <mat-icon>chat</mat-icon>
       <span>Training Chat</span>
@@ -55,6 +58,16 @@
 
     <!-- Chat Area -->
     <div class="chat-main">
+      <!-- Mobile: History Button -->
+      <div class="mobile-header">
+        <button mat-icon-button (click)="showSidebar = true" matTooltip="Verlauf">
+          <mat-icon>history</mat-icon>
+        </button>
+        <span>YISA Training</span>
+        <button mat-icon-button (click)="startNewConversation()" matTooltip="Neues Gespräch">
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
       <div class="chat-messages" #chatMessagesContainer>
 
         <!-- Welcome Message (only when no messages) -->

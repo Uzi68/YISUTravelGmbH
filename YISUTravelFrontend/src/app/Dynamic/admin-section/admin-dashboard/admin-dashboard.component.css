@@ -50,7 +50,7 @@
   border: 1px solid var(--yisu-border-light);
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 300px;
   box-shadow: var(--yisu-shadow-sm);
   position: relative;
@@ -155,7 +155,7 @@
   color: var(--yisu-primary) !important;
   flex-shrink: 0;
   opacity: 0.6;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .attachment-card:hover .download-icon {
@@ -204,7 +204,7 @@
   cursor: pointer;
   margin-top: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .image-preview:hover {
@@ -236,7 +236,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease, background-color 0.3s ease;
   backdrop-filter: blur(0px);
 }
 
@@ -270,7 +270,7 @@
   border-right: 1px solid var(--yisu-border-light);
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease;
+  transition: transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
   overflow: hidden;
 }
 
@@ -316,8 +316,7 @@
   -webkit-backdrop-filter: blur(8px);
   --mdc-icon-button-icon-color: currentColor;
   --mdc-icon-button-ink-color: transparent;
-  transition: background 0.2s ease, border-color 0.2s ease,
-    box-shadow 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
   --mdc-icon-button-state-layer-size: 44px;
 }
 
@@ -546,7 +545,7 @@ body.dark-mode .section-header {
   align-items: center;
   padding: 16px 20px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
   position: relative;
   border-bottom: 1px solid var(--yisu-border-light);
   background: transparent;
@@ -966,7 +965,7 @@ body.dark-mode .profile-status .status-dot {
   color: var(--yisu-secondary);
   background: rgba(21, 101, 192, 0.08);
   border: 1px solid var(--yisu-border-medium);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
   cursor: pointer;
   overflow: hidden;
   box-shadow: var(--yisu-shadow-sm);
@@ -1719,7 +1718,7 @@ mat-slide-toggle {
   border: 1px solid var(--yisu-border-light);
   border-radius: 8px;
   padding: 0 12px;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .action-btn:hover {
@@ -2233,7 +2232,7 @@ body.dark-mode .bot-status-info,
   font-size: 0.95rem;
   color: var(--yisu-text-dark);
   max-height: 120px;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 body.dark-mode .input-container textarea {
@@ -2542,6 +2541,8 @@ body.dark-mode .empty-content p {
     height: 100%;
     z-index: 10;
     background: #f5f9ff;
+    will-change: transform;
+    -webkit-overflow-scrolling: touch;
   }
 
   .chat-sidebar.hidden {
@@ -2841,7 +2842,7 @@ body.dark-mode .permission-description {
   background: var(--yisu-bg-card);
   border-radius: 10px;
   margin-bottom: 10px;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
   border: 1px solid var(--yisu-border-light);
 }
 
@@ -2913,7 +2914,7 @@ body.dark-mode .permission-note span {
   font-weight: 500;
   border-radius: 8px;
   text-transform: none;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .decline-button {
@@ -3098,7 +3099,7 @@ body.dark-mode .message-type-indicator .type-icon,
 }
 
 .attach-button {
-  transition: all 0.22s ease;
+  transition: background-color 0.22s ease, transform 0.22s ease;
   border-radius: 50%;
 }
 
@@ -3238,7 +3239,7 @@ body.dark-mode .attachment-buttons .attach-button.mat-mdc-icon-button:active {
   border-radius: 20px;
   max-width: 320px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.25s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
   margin-top: 8px;
 }
 
@@ -3259,7 +3260,7 @@ body.dark-mode .attachment-buttons .attach-button.mat-mdc-icon-button:active {
   justify-content: center;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
   box-shadow: var(--yisu-shadow-sm);
 }
 .audio-player-card .play-button:hover {
@@ -3293,7 +3294,7 @@ body.dark-mode .attachment-buttons .attach-button.mat-mdc-icon-button:active {
   border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .audio-waveform:hover {
@@ -3321,7 +3322,7 @@ body.dark-mode .attachment-buttons .attach-button.mat-mdc-icon-button:active {
   flex: 1;
   background: rgba(25, 118, 210, 0.3);
   border-radius: 2px;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
 .waveform-bars .bar:nth-child(1) { height: 30%; }
@@ -3363,7 +3364,7 @@ body.dark-mode .attachment-buttons .attach-button.mat-mdc-icon-button:active {
   height: 32px;
   flex-shrink: 0;
   color: var(--yisu-primary) !important;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .audio-player-card .download-button:hover {

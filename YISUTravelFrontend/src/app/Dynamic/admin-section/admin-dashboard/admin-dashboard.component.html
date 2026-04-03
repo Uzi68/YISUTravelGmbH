@@ -8,7 +8,7 @@
   <!-- Notification Banner - ENTFERNT: Redundant mit Permission Dialog -->
 
   <!-- Sidebar -->
-  <div class="chat-sidebar" [class.hidden]="selectedChat || isDeepLinkOpening" @slideInOut>
+  <div class="chat-sidebar" [class.hidden]="(selectedChat && !isDeselectingChat) || isDeepLinkOpening" @slideInOut>
     <div class="sidebar-header">
       <div class="header-content">
         <h2>{{ showArchivedChats ? 'Archiv' : 'Live Support' }}</h2>
@@ -354,7 +354,7 @@
   <div class="chat-main" *ngIf="selectedChat; else noChatSelected">
     <div class="chat-header">
       <!-- Zurück -->
-      <button mat-icon-button class="back-btn" (click)="selectedChat = null">
+      <button mat-icon-button class="back-btn" (click)="deselectChat()">
         <mat-icon>arrow_back</mat-icon>
       </button>
 
