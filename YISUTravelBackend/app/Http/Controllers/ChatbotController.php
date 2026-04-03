@@ -861,6 +861,7 @@ class ChatbotController extends Controller
     private function buildActiveChatQuery(User $user)
     {
         return Chat::query()
+            ->notArchived()
             ->with([
                 'messages' => function ($messageQuery) use ($user) {
                     $messageQuery->with([
@@ -949,6 +950,7 @@ class ChatbotController extends Controller
             'channel' => $chat->channel ?? 'website', // ✅ WICHTIG: Channel hinzufügen
             'whatsapp_number' => $chat->whatsapp_number ?? null, // ✅ WhatsApp-Nummer falls vorhanden
             'last_activity' => $chat->last_activity ? $chat->last_activity->toIso8601String() : null, // ✅ Zuletzt-Online-Status
+            'archived_at' => $chat->archived_at ? $chat->archived_at->toIso8601String() : null,
             'assigned_to' => $chat->assigned_to,
             'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
             'messages' => $chat->messages->sortBy('created_at')->map(function ($message) {
@@ -1875,6 +1877,7 @@ class ChatbotController extends Controller
         }
 
         $chats = Chat::with(['messages.attachments', 'user', 'assignedTo', 'visitor'])
+            ->notArchived()
             ->orderBy('updated_at', 'desc')
             ->get()
             ->map(function ($chat) {
@@ -1925,6 +1928,7 @@ class ChatbotController extends Controller
                     'status' => $chat->status,
                     'channel' => $chat->channel ?? 'website',
                     'whatsapp_number' => $chat->whatsapp_number ?? null,
+                    'archived_at' => $chat->archived_at ? $chat->archived_at->toIso8601String() : null,
                     'assigned_to' => $chat->assigned_to,
                     'assigned_agent' => $chat->assignedTo ? $chat->assignedTo->name : null,
                     'messages' => $chat->messages->map(function ($message) {
@@ -2437,6 +2441,84 @@ class ChatbotController extends Controller
             ]);
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Chat archivieren (nur geschlossene Chats)
+     */
+    public function archiveChat(Chat $chat)
+    {
+        if (!in_array($chat->status, ['closed', 'closed_by_user', 'closed_by_agent'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nur geschlossene Chats können archiviert werden.'
+            ], 422);
+        }
+
+        $chat->update(['archived_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Chat wurde archiviert.',
+            'archived_at' => $chat->archived_at->toIso8601String()
+        ]);
+    }
+
+    /**
+     * Chat aus dem Archiv entfernen
+     */
+    public function unarchiveChat(Chat $chat)
+    {
+        $chat->update(['archived_at' => null]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Chat wurde aus dem Archiv entfernt.'
+        ]);
+    }
+
+    /**
+     * Alle archivierten Chats abrufen
+     */
+    public function getArchivedChats()
+    {
+        $user = Auth::user();
+
+        $chats = Chat::query()
+            ->archived()
+            ->with([
+                'messages' => function ($messageQuery) use ($user) {
+                    $messageQuery->with([
+                        'attachments',
+                        'reads' => function ($readQuery) use ($user) {
+                            $readQuery
+                                ->where('user_id', $user->id)
+                                ->select('id', 'message_id', 'user_id');
+                        },
+                    ])->orderBy('created_at');
+                },
+                'user:id,name,avatar',
+                'assignedTo:id,name',
+                'visitor:id,first_name,last_name,email,phone,whatsapp_number',
+                'escalationPrompts.sentByAgent',
+            ])
+            ->withCount(['messages as unread_count' => function ($messageQuery) use ($user) {
+                $messageQuery
+                    ->where('from', '!=', 'agent')
+                    ->whereDoesntHave('reads', function ($readQuery) use ($user) {
+                        $readQuery->where('user_id', $user->id);
+                    });
+            }])
+            ->orderBy('archived_at', 'desc')
+            ->get()
+            ->map(function ($chat) {
+                return $this->formatChatForDashboard($chat);
+            });
+
+        return response()->json([
+            'success' => true,
+            'chats' => $chats
+        ]);
     }
 
 }

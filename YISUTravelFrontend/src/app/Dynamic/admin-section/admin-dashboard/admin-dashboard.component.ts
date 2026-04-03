@@ -205,6 +205,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   filteredAdminChats: any[] = [];
   //Alle Chats für den Admin anzeigen lassen
   allAdminChats: any[] = [];
+
+  // Archivierte Chats
+  archivedChats: Chat[] = [];
+  showArchivedChats = false;
+  archivedChatsCount = 0;
+  loadingArchivedChats = false;
   transferForm: FormGroup;
 
   // ✅ WhatsApp Integration Properties
@@ -500,7 +506,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       const matchesStatus = this.filterStatus === 'all' || chat.status === this.filterStatus;
       const matchesChannel = this.matchesSelectedChannel(chat.channel);
 
-      return matchesSearch && matchesStatus && matchesChannel;
+      const isNotArchived = !chat.archived_at;
+      return matchesSearch && matchesStatus && matchesChannel && isNotArchived;
     });
 
     if (this.isAdmin && this.showAllChats) {
@@ -511,8 +518,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         const matchesStatus = this.filterStatus === 'all' || chat.status === this.filterStatus;
         const matchesTime = this.matchesSelectedTimeRange(chat.last_message_time);
         const matchesChannel = this.matchesSelectedChannel(chat.channel);
+        const isNotArchived = !chat.archived_at;
 
-        return matchesSearch && matchesStatus && matchesTime && matchesChannel;
+        return matchesSearch && matchesStatus && matchesTime && matchesChannel && isNotArchived;
       });
     }
 
@@ -704,7 +712,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()), // ✅ Sortiere nach Timestamp (chronologisch)
       status: chat.status,
       assigned_agent: chat.assigned_agent,
-      isNew: false
+      isNew: false,
+      archived_at: chat.archived_at || null
     };
 
     this.selectChat(selectedChat);
@@ -2811,6 +2820,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     this.hydrateVisitorDetails(chats);
     this.tryOpenPendingChat();
+    this.loadArchivedChats();
   }
 
   private scheduleChatReloadRetry(): void {
@@ -2896,6 +2906,86 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.openCloseChatDialog(this.selectedChat);
   }
 
+  // ========== Archivierung ==========
+
+  closeArchivedView(): void {
+    this.showArchivedChats = false;
+    this.selectedChat = null;
+    this.cdRef.markForCheck();
+  }
+
+  loadArchivedChats(): void {
+    this.loadingArchivedChats = true;
+    this.chatbotService.getArchivedChats().subscribe({
+      next: (response: any) => {
+        const chats = response?.chats || [];
+        this.archivedChats = chats.map((chat: any) => this.buildChatFromResponse(chat));
+        this.archivedChatsCount = this.archivedChats.length;
+        this.loadingArchivedChats = false;
+        this.cdRef.markForCheck();
+      },
+      error: (err: any) => {
+        console.error('Fehler beim Laden der archivierten Chats:', err);
+        this.loadingArchivedChats = false;
+        this.cdRef.markForCheck();
+      }
+    });
+  }
+
+  archiveChatAction(chat: Chat): void {
+    this.chatbotService.archiveChat(chat.chatId).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          chat.archived_at = response.archived_at;
+
+          // Aus aktiver Liste entfernen
+          this.activeChats = this.activeChats.filter(c => c.id !== chat.id);
+
+          // Zu archivierten hinzufuegen
+          this.archivedChats = [chat, ...this.archivedChats];
+          this.archivedChatsCount = this.archivedChats.length;
+
+          // Selection zuruecksetzen wenn archivierter Chat ausgewaehlt war
+          if (this.selectedChat?.id === chat.id) {
+            this.selectedChat = null;
+          }
+
+          this.applyChatFilters();
+          this.cdRef.markForCheck();
+          this.showToast('Chat wurde archiviert', 'success');
+        }
+      },
+      error: (err: any) => {
+        console.error('Fehler beim Archivieren:', err);
+        this.showToast('Fehler beim Archivieren des Chats', 'error');
+      }
+    });
+  }
+
+  unarchiveChatAction(chat: Chat): void {
+    this.chatbotService.unarchiveChat(chat.chatId).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          chat.archived_at = null;
+
+          // Aus archivierter Liste entfernen
+          this.archivedChats = this.archivedChats.filter(c => c.id !== chat.id);
+          this.archivedChatsCount = this.archivedChats.length;
+
+          // Zurueck in aktive Liste
+          this.activeChats = [chat, ...this.activeChats];
+          this.sortActiveChats();
+          this.applyChatFilters();
+          this.cdRef.markForCheck();
+          this.showToast('Chat aus Archiv entfernt', 'success');
+        }
+      },
+      error: (err: any) => {
+        console.error('Fehler beim Entarchivieren:', err);
+        this.showToast('Fehler beim Entfernen aus dem Archiv', 'error');
+      }
+    });
+  }
 
   private updatePusherSubscriptions() {
     this.cleanupPusherSubscriptions();
@@ -4624,7 +4714,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         last_name: chat.visitor.last_name,
         email: chat.visitor.email || '',
         phone: chat.visitor.phone || ''
-      } : undefined
+      } : undefined,
+      archived_at: chat.archived_at || null
     };
   }
 
@@ -4762,6 +4853,7 @@ interface Chat {
   };
   updated_at?: string;
   created_at?: string;
+  archived_at?: string | null;
 }
 
 interface Message {

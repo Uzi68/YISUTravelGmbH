@@ -3485,3 +3485,191 @@ body.dark-mode .staff-management-header h2 {
   align-items: center;
   gap: 8px;
 }
+
+/* ========== Archivierte Chats ========== */
+
+/* Leiste (geschlossen + offen) */
+.archived-chats-entry {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  cursor: pointer;
+  gap: 10px;
+  border-bottom: 1px solid var(--yisu-border-light);
+  background: var(--yisu-bg-card);
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.archived-chats-entry:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.archived-chats-entry .archive-icon {
+  color: var(--yisu-secondary);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.archived-chats-entry .archive-label {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--yisu-secondary);
+  letter-spacing: 0.01em;
+}
+
+.archived-chats-entry .chevron-icon {
+  color: var(--yisu-text-light);
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+/* Aktiver Zustand (Archiv geoeffnet) */
+.archived-chats-entry.active {
+  background: rgba(100, 116, 139, 0.1);
+  border-bottom: none;
+  border-left: 4px solid var(--yisu-secondary);
+  padding-left: 16px;
+}
+
+.archived-chats-entry.active .archive-icon {
+  color: var(--yisu-secondary);
+}
+
+.archived-chats-entry.active .archive-label {
+  color: var(--yisu-secondary);
+  font-weight: 600;
+}
+
+.archived-chats-entry.active .archive-label::after {
+  content: ' — Tippe um zurückzukehren';
+  font-weight: 400;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.archived-chats-entry.active:hover {
+  background: rgba(100, 116, 139, 0.15);
+}
+
+.archived-count {
+  background: var(--yisu-secondary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.archived-chats-entry.active .archived-count {
+  background: var(--yisu-secondary);
+}
+
+/* Vollansicht */
+.archived-full-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  background: var(--yisu-bg-main);
+}
+
+.archived-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.chat-item.archived {
+  opacity: 0.9;
+}
+
+.chat-item.archived:hover {
+  opacity: 1;
+}
+
+.unarchive-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  color: var(--yisu-secondary);
+}
+
+.chat-item.archived:hover .unarchive-btn {
+  opacity: 1;
+}
+
+/* Archivieren-Button im Chat-Bereich */
+.archive-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--yisu-secondary);
+  border-color: var(--yisu-border-light);
+  white-space: nowrap;
+}
+
+.archive-btn mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.unarchive-btn-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--yisu-secondary);
+  border-color: var(--yisu-border-light);
+  white-space: nowrap;
+}
+
+.unarchive-btn-inline mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+/* Dark Mode */
+body.dark-mode .archived-chats-entry {
+  background: var(--yisu-bg-section);
+  border-bottom-color: var(--yisu-border-dark);
+}
+
+body.dark-mode .archived-chats-entry:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+body.dark-mode .archived-chats-entry .archive-label {
+  color: var(--yisu-text-light);
+}
+
+body.dark-mode .archived-chats-entry.active {
+  background: rgba(148, 163, 184, 0.1);
+  border-left-color: var(--yisu-secondary);
+}
+
+body.dark-mode .archived-chats-entry.active .archive-label {
+  color: var(--yisu-secondary);
+}
+
+body.dark-mode .archived-chats-entry.active:hover {
+  background: rgba(148, 163, 184, 0.15);
+}
+
+body.dark-mode .archived-full-view {
+  background: var(--yisu-bg-main);
+}
+
+body.dark-mode .archive-btn,
+body.dark-mode .unarchive-btn-inline {
+  color: var(--yisu-text-light);
+  border-color: var(--yisu-border-dark);
+}

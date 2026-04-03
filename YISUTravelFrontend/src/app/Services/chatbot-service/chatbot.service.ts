@@ -136,6 +136,24 @@ export class ChatbotService {
     });
   }
 
+  archiveChat(chatId: number | string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/chat/${chatId}/archive`, {}, {
+      withCredentials: true
+    });
+  }
+
+  unarchiveChat(chatId: number | string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/chat/${chatId}/unarchive`, {}, {
+      withCredentials: true
+    });
+  }
+
+  getArchivedChats(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/chats/archived`, {
+      withCredentials: true
+    });
+  }
+
   transferChat(chatId: string, agentId: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/chat/${chatId}/transfer`, {
       agent_id: agentId

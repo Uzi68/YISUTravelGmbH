@@ -142,6 +142,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/chat/{chat}/close', [ChatbotController::class, 'closeChat'])
         ->middleware('role:Admin|Agent');
 
+    // Archive / Unarchive chat
+    Route::post('/chat/{chat}/archive', [ChatbotController::class, 'archiveChat'])
+        ->middleware('role:Admin|Agent');
+    Route::post('/chat/{chat}/unarchive', [ChatbotController::class, 'unarchiveChat'])
+        ->middleware('role:Admin|Agent');
+    Route::get('/chats/archived', [ChatbotController::class, 'getArchivedChats'])
+        ->middleware('role:Admin|Agent');
+
     // Transfer chat
     Route::post('/chat/{chat}/transfer', [ChatbotController::class, 'transferChat'])
         ->middleware('role:Admin');
