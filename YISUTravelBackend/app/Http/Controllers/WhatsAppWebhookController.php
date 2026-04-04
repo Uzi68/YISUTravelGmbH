@@ -344,6 +344,28 @@ class WhatsAppWebhookController extends Controller
                 }
                 break;
 
+            case 'sticker':
+                $content['text'] = '[Sticker]';
+                $content['media'] = $messageData['sticker'] ?? null;
+                break;
+
+            case 'reaction':
+                $emoji = $messageData['reaction']['emoji'] ?? '';
+                $content['text'] = $emoji !== '' ? $emoji : '[Reaktion entfernt]';
+                break;
+
+            case 'order':
+                $content['text'] = '[Bestellung eingegangen]';
+                break;
+
+            case 'system':
+                $content['text'] = $messageData['system']['body'] ?? '[Systemnachricht]';
+                break;
+
+            case 'unsupported':
+                $content['text'] = '[Nachricht konnte nicht angezeigt werden]';
+                break;
+
             default:
                 $content['text'] = '[Nicht unterstützter Nachrichtentyp: ' . $type . ']';
                 break;
