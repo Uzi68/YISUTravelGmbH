@@ -76,12 +76,9 @@ export class StaffPushNotificationService {
     });
 
     PushNotifications.addListener('pushNotificationActionPerformed', (event: ActionPerformed) => {
-      console.log('[Push] Notification action:', event.notification);
       const payload = event.notification?.data as Record<string, unknown> | undefined;
-      console.log('[Push] Notification data:', payload);
       const identifier = payload?.['session_id'] ?? payload?.['chat_id'];
       const chatId = identifier ? String(identifier) : null;
-      console.log('[Push] Resolved chat id:', chatId);
 
       if (chatId) {
         this.storePendingChatIdentifier(chatId);
