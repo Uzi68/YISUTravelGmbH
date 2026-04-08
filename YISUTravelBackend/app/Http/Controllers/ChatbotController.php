@@ -75,8 +75,12 @@ class ChatbotController extends Controller
             }
         }
 
+        // Kanal erkennen: App-Nutzer haben Bearer-Token ohne Cookie
+        $isMobileApp = $request->bearerToken() !== null && !$request->hasCookie('laravel_session');
+        $channel = $isMobileApp ? 'app' : 'website';
+
         $visitorAttributes = [
-            'channel' => 'website',
+            'channel' => $channel,
             'agb_accepted' => true,
             'agb_accepted_at' => now(),
             'agb_version' => '1.0'
@@ -112,13 +116,13 @@ class ChatbotController extends Controller
                 'visitor_id' => $visitor->id,
                 'visitor_session_id' => $sessionId,
                 'status' => 'bot',
-                'channel' => 'website'
+                'channel' => $channel,
             ]);
         } else {
             $existingChat->user_id = $user->id;
             $existingChat->visitor_id = $visitor->id;
             $existingChat->visitor_session_id = $sessionId;
-            $existingChat->channel = $existingChat->channel ?: 'website';
+            $existingChat->channel = $existingChat->channel ?: $channel;
             $existingChat->save();
         }
 
@@ -370,6 +374,18 @@ class ChatbotController extends Controller
             }
         }
 
+        // Visitor nachträglich verknüpfen falls Chat bereits existiert aber visitor_id fehlt
+        if ($chat && !$chat->visitor_id) {
+            $existingVisitor = Visitor::where('session_id', $sessionId)->first();
+            if ($existingVisitor) {
+                $chat->update([
+                    'visitor_id' => $existingVisitor->id,
+                    'channel'    => $existingVisitor->channel,
+                ]);
+                $chat->refresh();
+            }
+        }
+
         // Wenn Chat bereits eskaliert wurde (aber nicht closed), Nachricht direkt weiterleiten
         if ($chat && in_array($chat->status, ['human', 'in_progress', 'assigned'])) {
             $userMessage = Message::create([
@@ -414,19 +430,34 @@ class ChatbotController extends Controller
 
         $validated = $request->validate(['message' => 'required|string']);
         $originalInput = trim($validated['message']);
+
+        // Visitor anhand Session-ID nachschlagen (z.B. registrierter App-Nutzer)
+        $knownVisitor = Visitor::where('session_id', $sessionId)->first();
+        $resolvedVisitorId = $knownVisitor?->id ?? $previousVisitorId;
+        $resolvedChannel   = $knownVisitor?->channel ?? 'website';
+
         // Chat-Sitzung laden oder erstellen
         $chat = Chat::firstOrCreate(
             ['session_id' => $sessionId],
             [
-                'user_id' => null,
-                'visitor_id' => $previousVisitorId,
-                'visitor_session_id' => $sessionId,
-                'state' => self::STATE_IDLE,
-                'context' => json_encode([]),
-                'status' => 'bot',
-                'channel' => 'website'
+                'user_id'           => null,
+                'visitor_id'        => $resolvedVisitorId,
+                'visitor_session_id'=> $sessionId,
+                'state'             => self::STATE_IDLE,
+                'context'           => json_encode([]),
+                'status'            => 'bot',
+                'channel'           => $resolvedChannel,
             ]
         );
+
+        // Bestehenden Chat nachträglich mit Visitor verknüpfen falls noch null
+        if (!$chat->wasRecentlyCreated && !$chat->visitor_id && $resolvedVisitorId) {
+            $chat->update([
+                'visitor_id' => $resolvedVisitorId,
+                'channel'    => $resolvedChannel,
+            ]);
+            $chat->refresh();
+        }
 
         // Nachrichten speichern
         $userMessage = Message::create([
@@ -875,7 +906,7 @@ class ChatbotController extends Controller
                 },
                 'user:id,name,avatar',
                 'assignedTo:id,name',
-                'visitor:id,first_name,last_name,email,phone,whatsapp_number',
+                'visitor:id,session_id,first_name,last_name,email,phone,whatsapp_number',
                 'escalationPrompts.sentByAgent',
             ])
             ->withCount(['messages as unread_count' => function ($messageQuery) use ($user) {
@@ -901,12 +932,22 @@ class ChatbotController extends Controller
         $customerFirstName = 'Anonymous';
         $customerLastName = '';
 
-        if ($chat->visitor) {
+        // Visitor über Relationship laden; Fallback auf visitor_session_id falls visitor_id fehlt
+        $visitor = $chat->visitor;
+        if (!$visitor && $chat->visitor_session_id) {
+            $visitor = \App\Models\Visitor::where('session_id', $chat->visitor_session_id)->first();
+            if ($visitor) {
+                // visitor_id retroaktiv setzen damit zukünftige Abfragen direkt treffen
+                $chat->updateQuietly(['visitor_id' => $visitor->id]);
+            }
+        }
+
+        if ($visitor) {
             // Visitor existiert - prüfe ob er echte Namen hat
-            if ($chat->visitor->first_name && $chat->visitor->first_name !== 'WhatsApp') {
+            if ($visitor->first_name && $visitor->first_name !== 'WhatsApp') {
                 // Echter Name vom Visitor
-                $customerFirstName = $chat->visitor->first_name;
-                $customerLastName = $chat->visitor->last_name ?? '';
+                $customerFirstName = $visitor->first_name;
+                $customerLastName = $visitor->last_name ?? '';
             } elseif ($chat->channel === 'whatsapp') {
                 // WhatsApp Visitor ohne echten Namen
                 $customerFirstName = 'WhatsApp';
@@ -2501,7 +2542,7 @@ class ChatbotController extends Controller
                 },
                 'user:id,name,avatar',
                 'assignedTo:id,name',
-                'visitor:id,first_name,last_name,email,phone,whatsapp_number',
+                'visitor:id,session_id,first_name,last_name,email,phone,whatsapp_number',
                 'escalationPrompts.sentByAgent',
             ])
             ->withCount(['messages as unread_count' => function ($messageQuery) use ($user) {

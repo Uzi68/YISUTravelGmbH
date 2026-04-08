@@ -24,6 +24,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\MobileAuthController;
 use App\Http\Controllers\PushSubscriptionController;
 use Pusher\Pusher;
 
@@ -37,6 +38,20 @@ Route::post('/password/reset', [AuthController::class, 'resetPassword']);
 
 // Customer registration (public)
 Route::post('/customer/register', [CustomerController::class, 'register']);
+
+// Mobile App Auth (kein Passwort, Token-basiert)
+Route::prefix('mobile')->group(function () {
+    Route::post('/register', [MobileAuthController::class, 'register']);
+    Route::post('/login',    [MobileAuthController::class, 'login']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me',           [MobileAuthController::class, 'me']);
+        Route::patch('/me',         [MobileAuthController::class, 'update']);
+        Route::get('/chat-history', [MobileAuthController::class, 'chatHistory']);
+        Route::get('/sessions',          [MobileAuthController::class, 'sessions']);
+        Route::post('/sessions',         [MobileAuthController::class, 'createSession']);
+        Route::delete('/sessions/{sessionId}', [MobileAuthController::class, 'deleteSession']);
+    });
+});
 
 //Überprüfe ob der Nutzer Authentifiziert ist
 Route::get('/check-auth', function (Request $request) {
@@ -62,8 +77,8 @@ Route::middleware('auth')->get('/user-role', function (Request $request) {
 
 Route::get('/chats/updates', [ChatbotController::class, 'getUpdatedChats'])->middleware('auth');
 
-//Chatbot
-Route::post('/chatbot/input', [ChatbotController::class, 'handleInput']);
+//Chatbot (auth:sanctum damit Bearer-Token für Mobile App funktioniert)
+Route::post('/chatbot/input', [ChatbotController::class, 'handleInput'])->middleware('auth:sanctum');
 
 Route::post('/chatbot/test-input', function (Request $request) {
     // Simuliere eine einfache Antwort

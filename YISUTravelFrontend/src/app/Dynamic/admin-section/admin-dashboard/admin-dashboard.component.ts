@@ -1354,6 +1354,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // 👤 Visitor/Customer Name Update (from mobile app profile edit)
+    if (data.type === 'visitor_updated') {
+      const sessionId = data.session_id;
+      if (sessionId) {
+        this.updateChatEverywhere(sessionId, {
+          customer_name: data.customer_name,
+          customer_first_name: data.customer_first_name,
+          customer_last_name: data.customer_last_name,
+        } as any);
+        this.cdRef.markForCheck();
+      }
+      return;
+    }
+
     // ✅ Standard: Unbekannter Event-Type
     console.warn('Unhandled chat update type:', data.type, data);
   }
