@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { View, Text, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { loadAuth } from '../store/authStore';
+import { loadAuth, saveAuth } from '../store/authStore';
 import { getMe } from '../services/api';
-import { saveAuth } from '../store/authStore';
+import { initNotifications } from '../services/notifications';
 import { RootStackParamList } from '../../App';
 
 type Props = {
@@ -26,6 +26,7 @@ export default function SplashScreen({ navigation }: Props) {
         const res = await getMe();
         const { user, session_id } = res.data;
         await saveAuth(auth.token, session_id ?? auth.sessionId ?? '', user);
+        initNotifications(); // Fire-and-forget — blockiert nicht den App-Start
         navigation.replace('ChatList');
       } catch {
         navigation.replace('Onboarding');

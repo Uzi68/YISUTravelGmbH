@@ -53,6 +53,13 @@ export const createSession = () =>
 export const deleteSession = (sessionId: string) =>
   api.delete(`/mobile/sessions/${sessionId}`);
 
+export const registerPushToken = (data: {
+  token: string;
+  device_id?: string;
+  device_name?: string;
+  platform?: string;
+}) => api.post('/mobile/push-token', data);
+
 // ─── Chat ──────────────────────────────────────────────────────────────────
 
 export const sendMessage = (message: string) =>

@@ -1281,6 +1281,19 @@ class ChatbotController extends Controller
             // Broadcasting
             $this->broadcastMessageWithRetry($message, $sessionId, $assignmentData);
 
+            // Push-Notification an mobilen App-Nutzer wenn Mitarbeiter schreibt
+            if ($validated['isAgent']) {
+                try {
+                    $chat->loadMissing('visitor');
+                    $this->pushNotifications->notifyMobileUserAboutAgentMessage($chat, $message);
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to dispatch mobile push notification', [
+                        'chat_id' => $chat->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => [

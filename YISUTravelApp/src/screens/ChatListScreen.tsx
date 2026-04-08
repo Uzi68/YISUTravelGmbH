@@ -216,19 +216,30 @@ export default function ChatListScreen({ navigation }: Props) {
           text: 'Löschen',
           style: 'destructive',
           onPress: async () => {
-            // Sofort lokal merken — verhindert Wiedererscheinen bei useFocusEffect-Reload
+            // Lokal sofort entfernen für responsive UI
             deletedIds.current.add(session.session_id);
             setSessions((prev) => prev.filter((s) => s.session_id !== session.session_id));
+
             try {
               await deleteSession(session.session_id);
-            } catch {
-              // Backend-Fehler: lokal bereits entfernt, deletedIds hält es raus
-            }
 
-            // Falls gelöschte Session die aktive war, SecureStore leeren
-            const currentId = await SecureStore.getItemAsync('session_id');
-            if (currentId === session.session_id) {
-              await SecureStore.deleteItemAsync('session_id');
+              // Erfolg: Falls gelöschte Session die aktive war, SecureStore leeren
+              const currentId = await SecureStore.getItemAsync('session_id');
+              if (currentId === session.session_id) {
+                await SecureStore.deleteItemAsync('session_id');
+              }
+            } catch {
+              // Backend-Fehler: Session wiederherstellen
+              deletedIds.current.delete(session.session_id);
+              setSessions((prev) => {
+                if (prev.find((s) => s.session_id === session.session_id)) return prev;
+                return [session, ...prev].sort((a, b) => {
+                  const aTime = a.last_message_at ?? a.created_at;
+                  const bTime = b.last_message_at ?? b.created_at;
+                  return bTime.localeCompare(aTime);
+                });
+              });
+              Alert.alert('Fehler', 'Chat konnte nicht gelöscht werden. Bitte versuche es erneut.');
             }
           },
         },

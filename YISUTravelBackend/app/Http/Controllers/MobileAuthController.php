@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\AllChatsUpdate;
 use App\Models\Chat;
+use App\Models\PushSubscription;
 use App\Models\User;
 use App\Models\Visitor;
 use Illuminate\Http\JsonResponse;
@@ -362,6 +363,45 @@ class MobileAuthController extends Controller
         ]);
 
         return response()->json(['session_id' => $sessionId], 201);
+    }
+
+    /**
+     * Registriert oder aktualisiert den FCM Push-Token des eingeloggten App-Nutzers.
+     *
+     * POST /api/mobile/push-token
+     */
+    public function registerPushToken(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'token'       => 'required|string',
+            'device_id'   => 'nullable|string|max:191',
+            'device_name' => 'nullable|string|max:191',
+            'platform'    => 'nullable|string|max:50',
+        ]);
+
+        // Alte Tokens für dieses Gerät deaktivieren
+        if (!empty($validated['device_id'])) {
+            PushSubscription::where('device_id', $validated['device_id'])
+                ->where('user_id', $user->id)
+                ->where('token', '!=', $validated['token'])
+                ->update(['is_active' => false]);
+        }
+
+        PushSubscription::updateOrCreate(
+            ['token' => $validated['token']],
+            [
+                'user_id'     => $user->id,
+                'device_id'   => $validated['device_id'] ?? null,
+                'device_name' => $validated['device_name'] ?? null,
+                'platform'    => $validated['platform'] ?? 'android',
+                'last_seen_at' => now(),
+                'is_active'   => true,
+            ]
+        );
+
+        return response()->json(['success' => true]);
     }
 
     /**

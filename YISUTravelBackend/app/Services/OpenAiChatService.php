@@ -445,18 +445,20 @@ class OpenAiChatService
         $lastHistory = $history->last();
         $inputTrimmed = trim($input);
 
-        $messages[] = [
-            'role' => 'system',
-            'content' => 'WICHTIG: Antworte ausschliesslich in der Sprache der letzten Nutzereingabe. '
-                . 'Wenn die Nutzereingabe auf Tuerkisch ist, antworte auf Tuerkisch. '
-                . 'Wenn sie auf Deutsch ist, antworte auf Deutsch. '
-                . 'Wenn sie auf Englisch ist, antworte auf Englisch. '
-                . 'Mische niemals Sprachen. Uebersetze Wissensbasis-Inhalte falls noetig.',
-        ];
-
         if (!$lastHistory || $lastHistory->from !== 'user' || trim((string) $lastHistory->text) !== $inputTrimmed) {
             $messages[] = ['role' => 'user', 'content' => $inputTrimmed];
         }
+
+        $messages[] = [
+            'role' => 'system',
+            'content' => 'KRITISCH: Deine Antwort MUSS in exakt derselben Sprache verfasst sein '
+                . 'wie die soeben gesendete Nutzernachricht direkt oben. '
+                . 'Wenn die letzte Nachricht auf Deutsch ist -> antworte auf Deutsch. '
+                . 'Wenn die letzte Nachricht auf Tuerkisch ist -> antworte auf Tuerkisch. '
+                . 'Wenn die letzte Nachricht auf Englisch ist -> antworte auf Englisch. '
+                . 'Ignoriere dabei die Sprache aller vorherigen Nachrichten im Verlauf. '
+                . 'Uebersetze Wissensbasisinhalte bei Bedarf. Mische niemals Sprachen.',
+        ];
 
         return $messages;
     }
