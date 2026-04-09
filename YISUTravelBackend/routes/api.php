@@ -117,7 +117,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::post('/chatbot/send-message', [ChatbotController::class, 'sendAgentMessage']);
-Route::post('/chat/{sessionId}/typing', [ChatbotController::class, 'sendTypingIndicator'])->middleware('auth');
+Route::post('/chat/{sessionId}/typing', [ChatbotController::class, 'sendTypingIndicator']);
 // Pusher
 Route::post('messages', [MessagePusherController::class, 'message']);
 

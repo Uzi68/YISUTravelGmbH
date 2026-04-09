@@ -4026,7 +4026,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const sessionId = String(this.selectedChat.id);
     if (this.typingDebounce) clearTimeout(this.typingDebounce);
     this.typingDebounce = setTimeout(() => {
-      this.chatbotService.sendTypingIndicator(sessionId).subscribe({ error: () => {} });
+      this.chatbotService.sendTypingIndicator(sessionId).subscribe({
+        next: () => console.log('[Typing] sent for', sessionId),
+        error: (e) => console.error('[Typing] error', e),
+      });
     }, 300);
   }
 

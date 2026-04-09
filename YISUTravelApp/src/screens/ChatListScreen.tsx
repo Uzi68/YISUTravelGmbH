@@ -15,6 +15,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
 import { getSessions, createSession, getChatHistory, deleteSession } from '../services/api';
+import { subscribeToChat } from '../services/pusherClient';
 import { RootStackParamList } from '../../App';
 
 // Farben direkt definieren — kein Import aus App.tsx (vermeidet Circular Import)
@@ -125,6 +126,7 @@ export default function ChatListScreen({ navigation }: Props) {
   const [creating, setCreating] = useState(false);
   // Lokal gelöschte Sessions merken — filtert Backend-Ergebnisse auch nach useFocusEffect
   const deletedIds = useRef<Set<string>>(new Set());
+  const subscriptionsRef = useRef<Map<string, () => void>>(new Map());
 
   const loadSessions = useCallback(async () => {
     // Versuch 1: Backend-Endpoint
@@ -191,6 +193,50 @@ export default function ChatListScreen({ navigation }: Props) {
       loadSessions();
     }, [loadSessions]),
   );
+
+  // Echtzeit-Updates: Pusher-Subscription für jede Session
+  const sessionIds = sessions.map((s) => s.session_id).join(',');
+  useEffect(() => {
+    const currentIds = new Set(sessions.map((s) => s.session_id));
+
+    // Unsubscribe entfernte Sessions
+    subscriptionsRef.current.forEach((unsub, id) => {
+      if (!currentIds.has(id)) {
+        unsub();
+        subscriptionsRef.current.delete(id);
+      }
+    });
+
+    // Subscribe neue Sessions
+    sessions.forEach((session) => {
+      if (subscriptionsRef.current.has(session.session_id)) return;
+
+      const unsub = subscribeToChat(session.session_id, (data) => {
+        const msg = data.message;
+        if (!msg) return;
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.session_id === session.session_id
+              ? {
+                  ...s,
+                  last_message:      msg.text       ?? s.last_message,
+                  last_message_from: msg.from       ?? s.last_message_from,
+                  last_message_at:   msg.created_at ?? s.last_message_at,
+                  message_count:     s.message_count + 1,
+                }
+              : s,
+          ),
+        );
+      });
+
+      subscriptionsRef.current.set(session.session_id, unsub);
+    });
+
+    return () => {
+      subscriptionsRef.current.forEach((unsub) => unsub());
+      subscriptionsRef.current.clear();
+    };
+  }, [sessionIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);

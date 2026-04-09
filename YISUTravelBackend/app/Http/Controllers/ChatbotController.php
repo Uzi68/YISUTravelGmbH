@@ -1051,7 +1051,7 @@ class ChatbotController extends Controller
         );
 
         $pusher->trigger('chat.' . $sessionId, 'agent.typing', [
-            'agent' => $request->user()?->name ?? 'Agent',
+            'agent' => $request->input('agent', 'Agent'),
         ]);
 
         return response()->json(['ok' => true]);

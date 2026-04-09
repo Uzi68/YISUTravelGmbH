@@ -38,6 +38,7 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [chatId, setChatId] = useState<number | null>(null);
+  const [chatEnded, setChatEnded] = useState(false);
   const listRef = useRef<FlatList>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
@@ -50,6 +51,7 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
       try {
         const res = await getChatHistory(sessionId);
         setChatId(res.data?.chat_id ?? null);
+        if (res.data?.chat_status === 'closed') setChatEnded(true);
         const rawHistory: any[] = res.data?.messages ?? (Array.isArray(res.data) ? res.data : []);
         const history: Message[] = rawHistory.map((m: any) => ({
           id: uid(),
@@ -78,6 +80,11 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
     const unsubscribe = subscribeToChat(
       sessionId,
       (data) => {
+        // Chat vom Agenten beendet → Eingabe sperren
+        if (data.chat_ended === true || data.status === 'closed') {
+          setChatEnded(true);
+        }
+
         const msgData = data.message && typeof data.message === 'object' ? data.message : data;
         const from = toStr(msgData.from ?? msgData.sender ?? 'bot') as Message['from'];
         const text = toStr(msgData.text ?? '');
@@ -324,28 +331,36 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
           ListFooterComponent={isTyping ? <TypingIndicator /> : null}
         />
 
-        <View style={styles.inputRow}>
-          <TouchableOpacity style={styles.attachBtn} onPress={handleAttach}>
-            <Text style={styles.attachIcon}>📎</Text>
-          </TouchableOpacity>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Nachricht an YISA..."
-            placeholderTextColor="#8ab4c8"
-            value={input}
-            onChangeText={setInput}
-            multiline
-            maxLength={2000}
-            returnKeyType="default"
-          />
-          <TouchableOpacity
-            style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]}
-            onPress={handleSend}
-            disabled={!input.trim() || sending}
-          >
-            <Text style={styles.sendIcon}>➤</Text>
-          </TouchableOpacity>
-        </View>
+        {chatEnded ? (
+          <View style={styles.chatEndedBanner}>
+            <Text style={styles.chatEndedText}>
+              Dieser Chat wurde beendet. Drücke + für einen neuen Chat.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.inputRow}>
+            <TouchableOpacity style={styles.attachBtn} onPress={handleAttach}>
+              <Text style={styles.attachIcon}>📎</Text>
+            </TouchableOpacity>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Nachricht an YISA..."
+              placeholderTextColor="#8ab4c8"
+              value={input}
+              onChangeText={setInput}
+              multiline
+              maxLength={2000}
+              returnKeyType="default"
+            />
+            <TouchableOpacity
+              style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]}
+              onPress={handleSend}
+              disabled={!input.trim() || sending}
+            >
+              <Text style={styles.sendIcon}>➤</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -422,4 +437,18 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: { backgroundColor: '#b0c8e8' },
   sendIcon: { color: '#fff', fontSize: 18, marginLeft: 2 },
+
+  chatEndedBanner: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: '#f1f5f9',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e0f2fe',
+    alignItems: 'center',
+  },
+  chatEndedText: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+  },
 });

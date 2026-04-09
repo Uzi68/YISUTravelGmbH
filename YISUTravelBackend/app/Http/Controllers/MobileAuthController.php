@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Events\AllChatsUpdate;
-use App\Events\ChatEnded;
 use App\Events\ChatStatusChanged;
 use App\Models\Chat;
 use App\Models\ChatRequest;
@@ -306,8 +305,9 @@ class MobileAuthController extends Controller
             });
 
         return response()->json([
-            'messages' => $messages,
-            'chat_id'  => $chat->id,
+            'messages'    => $messages,
+            'chat_id'     => $chat->id,
+            'chat_status' => $chat->status,
         ]);
     }
 
@@ -463,11 +463,11 @@ class MobileAuthController extends Controller
                     'assigned_at' => null,
                     'assigned_agent' => null,
                     'last_agent_activity' => null,
-                    'archived_at' => now(),
+                    // archived_at bewusst NICHT gesetzt — Admin archiviert manuell
                 ]);
 
-                broadcast(new ChatEnded($chat, 'visitor', $assignedAgent?->name))->toOthers();
-
+                // Kein ChatEnded-Event (das würde auto-archivieren im Dashboard)
+                // Nur AllChatsUpdate → Status auf 'closed' in aktiver Liste, ohne Archivierung
                 event(new AllChatsUpdate([
                     'type' => 'chat_ended_by_visitor',
                     'chat' => [
