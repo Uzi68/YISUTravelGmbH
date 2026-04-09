@@ -50,6 +50,7 @@ Route::prefix('mobile')->group(function () {
         Route::get('/sessions',                [MobileAuthController::class, 'sessions']);
         Route::post('/sessions',               [MobileAuthController::class, 'createSession']);
         Route::delete('/sessions/{sessionId}', [MobileAuthController::class, 'deleteSession']);
+        Route::post('/sessions/{sessionId}/read',  [MobileAuthController::class, 'markSessionAsRead']);
         Route::post('/push-token',             [MobileAuthController::class, 'registerPushToken']);
     });
 });

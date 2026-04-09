@@ -6,9 +6,11 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
-import MessageBubble, { Message } from '../components/MessageBubble';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import MessageBubble, { Message, Attachment } from '../components/MessageBubble';
 import TypingIndicator from '../components/TypingIndicator';
-import { sendMessage, getChatHistory } from '../services/api';
+import { sendMessage, getChatHistory, markSessionAsRead, uploadAttachment } from '../services/api';
 import { subscribeToChat } from '../services/pusherClient';
 import { RootStackParamList } from '../../App';
 
@@ -35,20 +37,26 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [chatId, setChatId] = useState<number | null>(null);
   const listRef = useRef<FlatList>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
-  // Chat-History laden
+  // Chat-History laden + als gelesen markieren
   useEffect(() => {
     (async () => {
+      // Als gelesen markieren (silent — kein Fehler anzeigen)
+      markSessionAsRead(sessionId).catch(() => {});
+
       try {
         const res = await getChatHistory(sessionId);
+        setChatId(res.data?.chat_id ?? null);
         const rawHistory: any[] = res.data?.messages ?? (Array.isArray(res.data) ? res.data : []);
         const history: Message[] = rawHistory.map((m: any) => ({
           id: uid(),
           from: (m?.from ?? m?.sender ?? 'bot') as Message['from'],
           text: toStr(m?.text ?? m?.message ?? ''),
           timestamp: m?.created_at ? new Date(m.created_at) : new Date(),
+          attachment: m?.attachment ?? undefined,
         }));
         setMessages(history);
       } catch (err: any) {
@@ -70,14 +78,17 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
     const unsubscribe = subscribeToChat(
       sessionId,
       (data) => {
-        // Pusher sendet: { event, message: { id, text, from, created_at, ... } }
         const msgData = data.message && typeof data.message === 'object' ? data.message : data;
         const from = toStr(msgData.from ?? msgData.sender ?? 'bot') as Message['from'];
         const text = toStr(msgData.text ?? '');
-        if (!text || from === 'user') return;
+        // Fix: auch Attachment-only Nachrichten (kein Text) durchlassen
+        if ((!text && !msgData.attachment) || from === 'user') return;
 
         setIsTyping(false);
         clearTimeout(typingTimeout);
+
+        // Neue Nachricht sofort als gelesen markieren (User ist im Chat)
+        markSessionAsRead(sessionId).catch(() => {});
 
         setMessages((prev) => {
           const filtered = prev.filter((m) => !m.isOptimistic || m.from === 'user');
@@ -88,6 +99,7 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
               from,
               text,
               timestamp: msgData.created_at ? new Date(msgData.created_at) : new Date(),
+              attachment: msgData.attachment ?? undefined,
             },
           ];
         });
@@ -126,12 +138,16 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
     try {
       const res = await sendMessage(text);
 
+      // chat_id aus Response speichern falls noch nicht bekannt
+      if (res.data?.chat_id && !chatId) {
+        setChatId(res.data.chat_id);
+      }
+
       const newSessionId = res.data?.session_id || res.data?.new_session_id;
       if (newSessionId && newSessionId !== sessionId) {
         await SecureStore.setItemAsync('session_id', newSessionId);
       }
       // Bot-Antwort kommt ausschließlich via Pusher — HTTP-Response ignorieren.
-      // Das verhindert doppelte Nachrichten, da Pusher schneller als HTTP ist.
     } catch (err: any) {
       setIsTyping(false);
       const status = err?.response?.status ?? 'kein Status';
@@ -143,7 +159,116 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
     } finally {
       setSending(false);
     }
-  }, [input, sending, sessionId]);
+  }, [input, sending, sessionId, chatId]);
+
+  const sendAttachment = useCallback(async (uri: string, name: string, type: string) => {
+    if (chatId === null) return;
+
+    const optimisticId = uid();
+    const optimisticAttachment: Attachment = {
+      id: -1,
+      file_name: name,
+      file_type: type.startsWith('image/') ? 'image' : 'other',
+      file_size: 0,
+      download_url: uri,
+    };
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: optimisticId,
+        from: 'user',
+        text: '',
+        timestamp: new Date(),
+        isOptimistic: true,
+        attachment: optimisticAttachment,
+      },
+    ]);
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
+
+    const formData = new FormData();
+    formData.append('file', { uri, name, type } as any);
+    formData.append('chat_id', String(chatId));
+    formData.append('session_id', sessionId);
+    formData.append('from', 'user');
+
+    try {
+      const res = await uploadAttachment(formData);
+      const confirmed: Attachment = res.data.attachment;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === optimisticId ? { ...m, isOptimistic: false, attachment: confirmed } : m
+        )
+      );
+    } catch (err: any) {
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Unbekannt';
+      Alert.alert('Upload-Fehler', msg);
+    }
+  }, [chatId, sessionId]);
+
+  const handleAttach = useCallback(async () => {
+    if (chatId === null) return;
+
+    Alert.alert(
+      'Anhang senden',
+      '',
+      [
+        {
+          text: 'Bild aus Galerie',
+          onPress: async () => {
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              quality: 0.85,
+              allowsEditing: false,
+            });
+            if (!result.canceled && result.assets[0]) {
+              const asset = result.assets[0];
+              await sendAttachment(
+                asset.uri,
+                asset.fileName ?? `image_${Date.now()}.jpg`,
+                asset.mimeType ?? 'image/jpeg',
+              );
+            }
+          },
+        },
+        {
+          text: 'Kamera',
+          onPress: async () => {
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              quality: 0.85,
+            });
+            if (!result.canceled && result.assets[0]) {
+              const asset = result.assets[0];
+              await sendAttachment(
+                asset.uri,
+                asset.fileName ?? `photo_${Date.now()}.jpg`,
+                asset.mimeType ?? 'image/jpeg',
+              );
+            }
+          },
+        },
+        {
+          text: 'Datei',
+          onPress: async () => {
+            const result = await DocumentPicker.getDocumentAsync({
+              copyToCacheDirectory: true,
+            });
+            if (!result.canceled && result.assets[0]) {
+              const asset = result.assets[0];
+              await sendAttachment(
+                asset.uri,
+                asset.name,
+                asset.mimeType ?? 'application/octet-stream',
+              );
+            }
+          },
+        },
+        { text: 'Abbrechen', style: 'cancel' },
+      ]
+    );
+  }, [chatId, sendAttachment]);
 
   if (loading) {
     return (
@@ -184,6 +309,11 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
         />
 
         <View style={styles.inputRow}>
+          {chatId !== null && (
+            <TouchableOpacity style={styles.attachBtn} onPress={handleAttach}>
+              <Text style={styles.attachIcon}>📎</Text>
+            </TouchableOpacity>
+          )}
           <TextInput
             style={styles.textInput}
             placeholder="Nachricht an YISA..."
@@ -245,6 +375,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e0f2fe',
+  },
+  attachBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+  },
+  attachIcon: {
+    fontSize: 22,
   },
   textInput: {
     flex: 1,

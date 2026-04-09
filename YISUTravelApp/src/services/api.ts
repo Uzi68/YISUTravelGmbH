@@ -53,6 +53,9 @@ export const createSession = () =>
 export const deleteSession = (sessionId: string) =>
   api.delete(`/mobile/sessions/${sessionId}`);
 
+export const markSessionAsRead = (sessionId: string) =>
+  api.post(`/mobile/sessions/${sessionId}/read`);
+
 export const registerPushToken = (data: {
   token: string;
   device_id?: string;
@@ -67,5 +70,10 @@ export const sendMessage = (message: string) =>
 
 export const getChatHistory = (sessionId?: string) =>
   api.get('/mobile/chat-history' + (sessionId ? `?session_id=${sessionId}` : ''));
+
+export const uploadAttachment = (formData: FormData) =>
+  api.post('/attachments/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 
 export default api;

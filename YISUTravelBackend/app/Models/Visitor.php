@@ -19,7 +19,8 @@ class Visitor extends Model
         'channel',
         'agb_accepted',
         'agb_accepted_at',
-        'agb_version'
+        'agb_version',
+        'last_read_at',
     ];
 
     public function chats()

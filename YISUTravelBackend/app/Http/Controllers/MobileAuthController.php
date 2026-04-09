@@ -4,6 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Events\AllChatsUpdate;
 use App\Models\Chat;
+use App\Models\ChatRequest;
+use App\Models\ChatTransfer;
+use App\Models\Escalation;
+use App\Models\EscalationPrompt;
+use App\Models\MessageAttachment;
 use App\Models\PushSubscription;
 use App\Models\User;
 use App\Models\Visitor;
@@ -279,17 +284,29 @@ class MobileAuthController extends Controller
         }
 
         $messages = $chat->messages()
+            ->with('attachments')
             ->orderBy('created_at', 'asc')
             ->get()
             ->map(function ($m) {
+                $attachment = $m->attachments->first();
                 return [
                     'from'       => $m->from,
                     'text'       => $m->text,
                     'created_at' => $m->created_at,
+                    'attachment' => $attachment ? [
+                        'id'           => $attachment->id,
+                        'file_name'    => $attachment->file_name,
+                        'file_type'    => $attachment->file_type,
+                        'file_size'    => $attachment->file_size,
+                        'download_url' => url('api/attachments/' . $attachment->id . '/download'),
+                    ] : null,
                 ];
             });
 
-        return response()->json(['messages' => $messages]);
+        return response()->json([
+            'messages' => $messages,
+            'chat_id'  => $chat->id,
+        ]);
     }
 
     /**
@@ -319,7 +336,14 @@ class MobileAuthController extends Controller
                 ->first();
 
             $lastMessage = $chat?->messages->first();
-            $messageCount = $chat ? $chat->messages()->count() : 0;
+            $messageCount = 0;
+            if ($chat) {
+                $query = $chat->messages();
+                if ($visitor->last_read_at) {
+                    $query = $query->where('created_at', '>', $visitor->last_read_at);
+                }
+                $messageCount = $query->count();
+            }
 
             return [
                 'session_id'        => $visitor->session_id,
@@ -422,9 +446,20 @@ class MobileAuthController extends Controller
             return response()->json(['error' => 'Session nicht gefunden'], 404);
         }
 
-        // Chat und alle Nachrichten löschen
+        // Chat und alle verknüpften Datensätze löschen
         $chat = Chat::where('session_id', $sessionId)->first();
         if ($chat) {
+            // Nachrichten-Anhänge löschen
+            $messageIds = $chat->messages()->pluck('id');
+            if ($messageIds->isNotEmpty()) {
+                MessageAttachment::whereIn('message_id', $messageIds)->delete();
+            }
+
+            // Alle verknüpften Datensätze in korrekter Reihenfolge löschen
+            $chat->escalationPrompts()->delete();
+            $chat->escalations()->delete();
+            ChatTransfer::where('chat_id', $chat->id)->delete();
+            ChatRequest::where('chat_id', $chat->id)->delete();
             $chat->messages()->delete();
             $chat->delete();
         }
@@ -432,6 +467,29 @@ class MobileAuthController extends Controller
         $visitor->delete();
 
         return response()->json(['message' => 'Session gelöscht'], 200);
+    }
+
+    /**
+     * Markiert alle Nachrichten einer Session als gelesen.
+     *
+     * POST /api/mobile/sessions/{sessionId}/read
+     */
+    public function markSessionAsRead(Request $request, string $sessionId): JsonResponse
+    {
+        $user = $request->user();
+
+        $visitor = Visitor::where('phone', $user->phone)
+            ->where('channel', 'app')
+            ->where('session_id', $sessionId)
+            ->first();
+
+        if (!$visitor) {
+            return response()->json(['message' => 'Session nicht gefunden'], 404);
+        }
+
+        $visitor->update(['last_read_at' => now()]);
+
+        return response()->json(['message' => 'Als gelesen markiert']);
     }
 
     private function userResponse(User $user): array
