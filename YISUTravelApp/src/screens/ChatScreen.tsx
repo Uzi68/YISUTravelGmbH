@@ -133,23 +133,23 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
       { id: optimisticId, from: 'user', text, timestamp: new Date() },
     ]);
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
-    setIsTyping(true);
 
     try {
       const res = await sendMessage(text);
-
-      // chat_id aus Response speichern falls noch nicht bekannt
-      if (res.data?.chat_id && !chatId) {
-        setChatId(res.data.chat_id);
-      }
 
       const newSessionId = res.data?.session_id || res.data?.new_session_id;
       if (newSessionId && newSessionId !== sessionId) {
         await SecureStore.setItemAsync('session_id', newSessionId);
       }
       // Bot-Antwort kommt ausschließlich via Pusher — HTTP-Response ignorieren.
+
+      // chat_id nachladen falls noch unbekannt (erster Nachricht im neuen Chat)
+      if (!chatId) {
+        getChatHistory(sessionId).then((r) => {
+          if (r.data?.chat_id) setChatId(r.data.chat_id);
+        }).catch(() => {});
+      }
     } catch (err: any) {
-      setIsTyping(false);
       const status = err?.response?.status ?? 'kein Status';
       const msg = err?.response?.data?.message ?? err?.message ?? 'Unbekannt';
       Alert.alert('Fehler', `Status: ${status}\n${msg}`);
@@ -158,12 +158,11 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
       );
     } finally {
       setSending(false);
+      setIsTyping(false);
     }
   }, [input, sending, sessionId, chatId]);
 
-  const sendAttachment = useCallback(async (uri: string, name: string, type: string) => {
-    if (chatId === null) return;
-
+  const sendAttachment = useCallback(async (uri: string, name: string, type: string, resolvedChatId: number) => {
     const optimisticId = uid();
     const optimisticAttachment: Attachment = {
       id: -1,
@@ -188,7 +187,7 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
 
     const formData = new FormData();
     formData.append('file', { uri, name, type } as any);
-    formData.append('chat_id', String(chatId));
+    formData.append('chat_id', String(resolvedChatId));
     formData.append('session_id', sessionId);
     formData.append('from', 'user');
 
@@ -205,10 +204,24 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Unbekannt';
       Alert.alert('Upload-Fehler', msg);
     }
-  }, [chatId, sessionId]);
+  }, [sessionId]);
 
   const handleAttach = useCallback(async () => {
-    if (chatId === null) return;
+    let activeChatId = chatId;
+
+    // chatId lazy nachladen falls noch unbekannt
+    if (activeChatId === null) {
+      try {
+        const r = await getChatHistory(sessionId);
+        activeChatId = r.data?.chat_id ?? null;
+        if (activeChatId) setChatId(activeChatId);
+      } catch { /* ignorieren */ }
+    }
+
+    if (activeChatId === null) {
+      Alert.alert('Hinweis', 'Bitte sende zuerst eine Textnachricht, dann kannst du Anhänge hinzufügen.');
+      return;
+    }
 
     Alert.alert(
       'Anhang senden',
@@ -228,6 +241,7 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
                 asset.uri,
                 asset.fileName ?? `image_${Date.now()}.jpg`,
                 asset.mimeType ?? 'image/jpeg',
+                activeChatId!,
               );
             }
           },
@@ -245,6 +259,7 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
                 asset.uri,
                 asset.fileName ?? `photo_${Date.now()}.jpg`,
                 asset.mimeType ?? 'image/jpeg',
+                activeChatId!,
               );
             }
           },
@@ -261,6 +276,7 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
                 asset.uri,
                 asset.name,
                 asset.mimeType ?? 'application/octet-stream',
+                activeChatId!,
               );
             }
           },
@@ -309,11 +325,9 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
         />
 
         <View style={styles.inputRow}>
-          {chatId !== null && (
-            <TouchableOpacity style={styles.attachBtn} onPress={handleAttach}>
-              <Text style={styles.attachIcon}>📎</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity style={styles.attachBtn} onPress={handleAttach}>
+            <Text style={styles.attachIcon}>📎</Text>
+          </TouchableOpacity>
           <TextInput
             style={styles.textInput}
             placeholder="Nachricht an YISA..."

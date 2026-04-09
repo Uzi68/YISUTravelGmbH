@@ -1037,6 +1037,27 @@ class ChatbotController extends Controller
 
 
     /**
+     * Sendet ein agent.typing Event über Pusher an die mobile App.
+     *
+     * POST /api/chat/{sessionId}/typing
+     */
+    public function sendTypingIndicator(Request $request, string $sessionId): \Illuminate\Http\JsonResponse
+    {
+        $pusher = new \Pusher\Pusher(
+            config('broadcasting.connections.pusher.key'),
+            config('broadcasting.connections.pusher.secret'),
+            config('broadcasting.connections.pusher.app_id'),
+            config('broadcasting.connections.pusher.options')
+        );
+
+        $pusher->trigger('chat.' . $sessionId, 'agent.typing', [
+            'agent' => $request->user()?->name ?? 'Agent',
+        ]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
      * Send a message as an agent - KORRIGIERT MIT ATTACHMENT SUPPORT
      */
     public function sendAgentMessage(Request $request)

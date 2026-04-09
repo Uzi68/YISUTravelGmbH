@@ -1554,15 +1554,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         console.log('✅ Response:', response);
 
         if (!response.success) {
-          // ✅ Bei Fehler: Änderungen rückgängig machen
-          this.revertChatClose(chatToCloseId, originalChatState, chatToCloseCopy);
-          this.showError('Chat konnte nicht beendet werden');
+          if (response.status === 'not_found') {
+            // Chat existiert nicht mehr auf dem Backend — optimistic update war korrekt
+            this.showToast('Chat ist nicht mehr vorhanden', 'info');
+          } else {
+            // Echter Fehler: Änderungen rückgängig machen
+            this.revertChatClose(chatToCloseId, originalChatState, chatToCloseCopy);
+            this.showError('Chat konnte nicht beendet werden');
+          }
         }
-        // ✅ Bei Erfolg: Toast bereits angezeigt, Pusher-Event kommt zur Bestätigung
+        // Bei Erfolg: Toast bereits angezeigt, Pusher-Event kommt zur Bestätigung
       },
       error: (err) => {
         console.error('❌ Error:', err);
-        // ✅ Bei Fehler: Änderungen rückgängig machen
+        // Bei HTTP-Fehler: Änderungen rückgängig machen
         this.revertChatClose(chatToCloseId, originalChatState, chatToCloseCopy);
         this.showError('Chat konnte nicht beendet werden');
       }
@@ -1581,24 +1586,34 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   // ✅ Helper-Methode um Chat-Close-Änderungen rückgängig zu machen
   private revertChatClose(chatId: string, originalState: { chat: Chat | null, selectedChat: Chat | null }, originalChatToClose: Chat): void {
-    // ✅ Dialog wieder öffnen
+    // Dialog wieder öffnen
     this.chatToClose = originalChatToClose;
     this.showCloseChatDialog.set(true);
 
-    // ✅ Chat-Status wiederherstellen
+    // Chat aus archivedChats entfernen (wurde durch optimistic update hinzugefügt)
+    this.archivedChats = this.archivedChats.filter(c => c.id.toString() !== chatId);
+    this.archivedChatsCount = this.archivedChats.length;
+
+    // Chat-Status in activeChats wiederherstellen
     if (originalState.chat) {
       const chatIndex = this.activeChats.findIndex(c => c.id.toString() === chatId);
       if (chatIndex !== -1) {
+        // Chat noch in der Liste — aktualisieren
         this.activeChats[chatIndex] = originalState.chat;
+      } else {
+        // Chat wurde durch optimistic update entfernt — wieder hinzufügen
+        this.activeChats = [originalState.chat, ...this.activeChats];
+      }
 
-        const filteredIndex = this.filteredActiveChats.findIndex(c => c.id.toString() === chatId);
-        if (filteredIndex !== -1) {
-          this.filteredActiveChats[filteredIndex] = originalState.chat;
-        }
+      const filteredIndex = this.filteredActiveChats.findIndex(c => c.id.toString() === chatId);
+      if (filteredIndex !== -1) {
+        this.filteredActiveChats[filteredIndex] = originalState.chat;
+      } else {
+        this.filteredActiveChats = [originalState.chat, ...this.filteredActiveChats];
       }
     }
 
-    // ✅ Selected Chat wiederherstellen
+    // Selected Chat wiederherstellen
     if (originalState.selectedChat) {
       this.selectedChat = originalState.selectedChat;
     }
@@ -4002,6 +4017,17 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.cdRef.markForCheck();
+  }
+
+  private typingDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  onAgentTyping(): void {
+    if (!this.selectedChat) return;
+    const sessionId = String(this.selectedChat.id);
+    if (this.typingDebounce) clearTimeout(this.typingDebounce);
+    this.typingDebounce = setTimeout(() => {
+      this.chatbotService.sendTypingIndicator(sessionId).subscribe({ error: () => {} });
+    }, 300);
   }
 
 // Neue Methode für Keyboard-Events hinzufügen:

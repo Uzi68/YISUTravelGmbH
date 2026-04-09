@@ -691,7 +691,8 @@
             #messageInput
             rows="2"
             [maxLength]="1000"
-            (keydown)="onKeyDown($event, messageInput)"></textarea>
+            (keydown)="onKeyDown($event, messageInput)"
+            (input)="onAgentTyping()"></textarea>
           <div class="char-counter">
             {{ messageInput.value.length || 0 }}/1000
           </div>

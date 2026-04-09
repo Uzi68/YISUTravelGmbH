@@ -266,6 +266,12 @@ export class ChatbotService {
     });
   }
 
+  sendTypingIndicator(sessionId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/chat/${sessionId}/typing`, {}, {
+      withCredentials: true,
+    });
+  }
+
   private getLocalStorageItem(key: string): string | null {
     if (isPlatformBrowser(this.platformId)) {
       return localStorage.getItem(key);

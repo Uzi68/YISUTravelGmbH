@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Events\AllChatsUpdate;
+use App\Events\ChatEnded;
+use App\Events\ChatStatusChanged;
 use App\Models\Chat;
 use App\Models\ChatRequest;
 use App\Models\ChatTransfer;
@@ -449,6 +451,48 @@ class MobileAuthController extends Controller
         // Chat und alle verknüpften Datensätze löschen
         $chat = Chat::where('session_id', $sessionId)->first();
         if ($chat) {
+            // Admin-Dashboard via Pusher benachrichtigen, bevor die Daten gelöscht werden
+            if ($chat->status !== 'closed') {
+                $assignedAgent = $chat->assignedTo;
+                $wasAssigned = (bool) $chat->assigned_to;
+
+                $chat->update([
+                    'status' => 'closed',
+                    'closed_at' => now(),
+                    'assigned_to' => null,
+                    'assigned_at' => null,
+                    'assigned_agent' => null,
+                    'last_agent_activity' => null,
+                    'archived_at' => now(),
+                ]);
+
+                broadcast(new ChatEnded($chat, 'visitor', $assignedAgent?->name))->toOthers();
+
+                event(new AllChatsUpdate([
+                    'type' => 'chat_ended_by_visitor',
+                    'chat' => [
+                        'session_id' => $chat->session_id,
+                        'chat_id' => $chat->id,
+                        'status' => 'closed',
+                        'channel' => $chat->channel ?? 'website',
+                        'customer_first_name' => $visitor->first_name ?? 'Anonymous',
+                        'customer_last_name' => $visitor->last_name ?? '',
+                        'last_message' => 'Chat vom Nutzer gelöscht',
+                        'last_message_time' => now(),
+                        'ended_by' => 'visitor',
+                        'previous_agent' => $assignedAgent?->name,
+                        'chat_closed' => true,
+                        'remove_from_list' => true,
+                    ]
+                ]));
+
+                broadcast(new ChatStatusChanged(
+                    $chat,
+                    $wasAssigned ? 'in_progress' : 'bot',
+                    'closed'
+                ))->toOthers();
+            }
+
             // Nachrichten-Anhänge löschen
             $messageIds = $chat->messages()->pluck('id');
             if ($messageIds->isNotEmpty()) {
