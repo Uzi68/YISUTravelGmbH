@@ -70,13 +70,16 @@ class ChatTransferred implements ShouldBroadcast
         }
 
         return [
-            'chat_id' => $this->chat->id,
-            'session_id' => $this->chat->session_id,
-            'from_agent_id' => $this->fromAgent->id,
+            'chat_id'         => $this->chat->id,
+            'session_id'      => $this->chat->session_id,
+            'from_agent_id'   => $this->fromAgent->id,
             'from_agent_name' => $this->fromAgent->name,
-            'to_agent_id' => $this->toAgent->id,
-            'to_agent_name' => $this->toAgent->name,
-            'transferred_at' => now(),
+            'to_agent_id'     => $this->toAgent->id,
+            'to_agent_name'   => $this->toAgent->name,
+            'agent_avatar'    => $this->toAgent->profile_image_url
+                ? url($this->toAgent->profile_image_url)
+                : ($this->toAgent->avatar ? url($this->toAgent->avatar) : null),
+            'transferred_at'  => now(),
             // ✅ NEU: Kundendaten für Notifications
             'customer_first_name' => $customerFirstName,
             'customer_last_name' => $customerLastName,

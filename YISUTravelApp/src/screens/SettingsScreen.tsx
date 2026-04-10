@@ -6,7 +6,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getMe, updateMe } from '../services/api';
 import { clearAuth, updateStoredUser, AuthUser } from '../store/authStore';
-import { RootStackParamList } from '../../App';
+import { RootStackParamList } from '../types/navigation';
 import { disconnectPusher } from '../services/pusherClient';
 
 type Props = {

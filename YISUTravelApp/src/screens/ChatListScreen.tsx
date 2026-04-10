@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
 import { getSessions, createSession, getChatHistory, deleteSession } from '../services/api';
 import { subscribeToChat } from '../services/pusherClient';
-import { RootStackParamList } from '../../App';
+import { RootStackParamList } from '../types/navigation';
 
 // Farben direkt definieren — kein Import aus App.tsx (vermeidet Circular Import)
 const BRAND_DARK = '#0f4c81';
@@ -31,11 +31,14 @@ type Props = {
 
 interface ChatSession {
   session_id: string;
+  status: string;
   last_message: string | null;
   last_message_from: string | null;
   last_message_at: string | null;
   created_at: string;
   message_count: number;
+  assigned_agent_name: string | null;
+  assigned_agent_avatar: string | null;
 }
 
 function formatTime(dateStr: string | null): string {
@@ -81,29 +84,48 @@ function SessionItem({
   onPress: (session: ChatSession) => void;
   onLongPress: (session: ChatSession) => void;
 }) {
+  const isClosed = session.status === 'closed';
   const timeLabel = formatTime(session.last_message_at ?? session.created_at);
   const preview = session.last_message ?? 'Noch keine Nachrichten';
+  const agentName = session.assigned_agent_name;
+  const agentAvatar = session.assigned_agent_avatar;
+  const displayName = agentName ?? 'YISA';
 
   return (
     <TouchableOpacity
-      style={styles.sessionRow}
+      style={[styles.sessionRow, isClosed && styles.sessionRowClosed]}
       onPress={() => onPress(session)}
       onLongPress={() => onLongPress(session)}
       delayLongPress={400}
       activeOpacity={0.7}
     >
-      <View style={styles.avatarOuter}>
-        <Image source={YISA_AVATAR} style={styles.sessionAvatar} />
+      <View style={[styles.avatarOuter, isClosed && { opacity: 0.45 }]}>
+        {agentName && agentAvatar ? (
+          <Image source={{ uri: agentAvatar }} style={styles.sessionAvatar} />
+        ) : agentName ? (
+          <View style={[styles.sessionAvatar, styles.initialsCircle]}>
+            <Text style={styles.initialsText}>{agentName[0].toUpperCase()}</Text>
+          </View>
+        ) : (
+          <Image source={YISA_AVATAR} style={styles.sessionAvatar} />
+        )}
       </View>
       <View style={styles.sessionMiddle}>
-        <Text style={styles.sessionName}>YISA</Text>
-        <Text style={styles.sessionPreview} numberOfLines={1} ellipsizeMode="tail">
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 3 }}>
+          <Text style={[styles.sessionName, isClosed && styles.sessionNameClosed]}>{displayName}</Text>
+          {isClosed && (
+            <View style={styles.closedBadge}>
+              <Text style={styles.closedBadgeText}>Beendet</Text>
+            </View>
+          )}
+        </View>
+        <Text style={[styles.sessionPreview, isClosed && styles.sessionPreviewClosed]} numberOfLines={1} ellipsizeMode="tail">
           {preview}
         </Text>
       </View>
       <View style={styles.sessionRight}>
         <Text style={styles.sessionTime}>{timeLabel}</Text>
-        {session.message_count > 0 && (
+        {!isClosed && session.message_count > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
               {session.message_count > 99 ? '99+' : session.message_count}
@@ -137,12 +159,15 @@ export default function ChatListScreen({ navigation }: Props) {
         const mapped: ChatSession[] = raw
           .filter((s: any) => !deletedIds.current.has(s.session_id))
           .map((s: any) => ({
-            session_id:        s.session_id,
-            last_message:      s.last_message ?? null,
-            last_message_from: s.last_message_from ?? null,
-            last_message_at:   s.last_message_at ?? null,
-            created_at:        s.created_at,
-            message_count:     s.message_count ?? 0,
+            session_id:            s.session_id,
+            status:                s.status ?? 'active',
+            last_message:          s.last_message ?? null,
+            last_message_from:     s.last_message_from ?? null,
+            last_message_at:       s.last_message_at ?? null,
+            created_at:            s.created_at,
+            message_count:         s.message_count ?? 0,
+            assigned_agent_name:   s.assigned_agent_name ?? null,
+            assigned_agent_avatar: s.assigned_agent_avatar ?? null,
           }));
         setSessions(mapped);
         return;
@@ -158,22 +183,28 @@ export default function ChatListScreen({ navigation }: Props) {
       const msgs: any[] = histRes.data?.messages ?? [];
       const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
       setSessions([{
-        session_id:        sid,
-        last_message:      lastMsg?.text ?? null,
-        last_message_from: lastMsg?.from ?? null,
-        last_message_at:   lastMsg?.created_at ?? null,
-        created_at:        new Date().toISOString(),
-        message_count:     msgs.length,
+        session_id:            sid,
+        status:                histRes.data?.chat_status ?? 'active',
+        last_message:          lastMsg?.text ?? null,
+        last_message_from:     lastMsg?.from ?? null,
+        last_message_at:       lastMsg?.created_at ?? null,
+        created_at:            new Date().toISOString(),
+        message_count:         msgs.length,
+        assigned_agent_name:   histRes.data?.assigned_agent_name ?? null,
+        assigned_agent_avatar: histRes.data?.assigned_agent_avatar ?? null,
       }]);
     } catch {
       // Zumindest die Session anzeigen, auch ohne History
       setSessions([{
-        session_id:        sid,
-        last_message:      null,
-        last_message_from: null,
-        last_message_at:   null,
-        created_at:        new Date().toISOString(),
-        message_count:     0,
+        session_id:            sid,
+        status:                'active',
+        last_message:          null,
+        last_message_from:     null,
+        last_message_at:       null,
+        created_at:            new Date().toISOString(),
+        message_count:         0,
+        assigned_agent_name:   null,
+        assigned_agent_avatar: null,
       }]);
     }
   }, []);
@@ -211,23 +242,49 @@ export default function ChatListScreen({ navigation }: Props) {
     sessions.forEach((session) => {
       if (subscriptionsRef.current.has(session.session_id)) return;
 
-      const unsub = subscribeToChat(session.session_id, (data) => {
-        const msg = data.message;
-        if (!msg) return;
-        setSessions((prev) =>
-          prev.map((s) =>
-            s.session_id === session.session_id
-              ? {
-                  ...s,
-                  last_message:      msg.text       ?? s.last_message,
-                  last_message_from: msg.from       ?? s.last_message_from,
-                  last_message_at:   msg.created_at ?? s.last_message_at,
-                  message_count:     s.message_count + 1,
-                }
-              : s,
-          ),
-        );
-      });
+      const unsub = subscribeToChat(
+        session.session_id,
+        (data) => {
+          // Chat beendet → Status in der Liste aktualisieren
+          if (data.chat_ended === true || data.status === 'closed') {
+            setSessions((prev) =>
+              prev.map((s) =>
+                s.session_id === session.session_id ? { ...s, status: 'closed', message_count: 0 } : s,
+              ),
+            );
+            return;
+          }
+          const msg = data.message;
+          if (!msg) return;
+          setSessions((prev) =>
+            prev.map((s) =>
+              s.session_id === session.session_id
+                ? {
+                    ...s,
+                    last_message:      msg.text       ?? s.last_message,
+                    last_message_from: msg.from       ?? s.last_message_from,
+                    last_message_at:   msg.created_at ?? s.last_message_at,
+                    message_count:     s.message_count + 1,
+                  }
+                : s,
+            ),
+          );
+        },
+        undefined,
+        (data) => {
+          setSessions((prev) =>
+            prev.map((s) =>
+              s.session_id === session.session_id
+                ? {
+                    ...s,
+                    assigned_agent_name:   data.unassigned ? null : (data.agent_name ?? s.assigned_agent_name),
+                    assigned_agent_avatar: data.unassigned ? null : (data.agent_avatar ?? s.assigned_agent_avatar),
+                  }
+                : s,
+            ),
+          );
+        },
+      );
 
       subscriptionsRef.current.set(session.session_id, unsub);
     });
@@ -320,12 +377,15 @@ export default function ChatListScreen({ navigation }: Props) {
     setSessions((prev) => {
       if (prev.find((s) => s.session_id === targetSessionId)) return prev;
       return [{
-        session_id:        targetSessionId!,
-        last_message:      null,
-        last_message_from: null,
-        last_message_at:   null,
-        created_at:        new Date().toISOString(),
-        message_count:     0,
+        session_id:            targetSessionId!,
+        status:                'active',
+        last_message:          null,
+        last_message_from:     null,
+        last_message_at:       null,
+        created_at:            new Date().toISOString(),
+        message_count:         0,
+        assigned_agent_name:   null,
+        assigned_agent_avatar: null,
       }, ...prev];
     });
 
@@ -398,6 +458,28 @@ const styles = StyleSheet.create({
   },
 
   // Session row
+  sessionRowClosed: {
+    backgroundColor: '#f8fafc',
+  },
+  sessionNameClosed: {
+    color: '#94a3b8',
+    fontWeight: '600',
+  },
+  sessionPreviewClosed: {
+    color: '#94a3b8',
+  },
+  closedBadge: {
+    marginLeft: 6,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  closedBadgeText: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: '600',
+  },
   sessionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -459,6 +541,18 @@ const styles = StyleSheet.create({
   badgeText: {
     color: '#fff',
     fontSize: 11,
+    fontWeight: '700',
+  },
+
+  // Agent Initials Fallback
+  initialsCircle: {
+    backgroundColor: BRAND_MID,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initialsText: {
+    color: '#fff',
+    fontSize: 20,
     fontWeight: '700',
   },
 

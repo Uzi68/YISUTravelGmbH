@@ -42,12 +42,13 @@ class ChatAssigned implements ShouldBroadcast
     public function broadcastWith()
     {
         return [
-            'chat_id' => $this->chat->id,
-            'session_id' => $this->chat->session_id,
-            'assigned_to' => $this->agent->id,
-            'agent_name' => $this->agent->name,
-            'status' => $this->chat->status,
-            'assigned_at' => $this->chat->assigned_at
+            'chat_id'      => $this->chat->id,
+            'session_id'   => $this->chat->session_id,
+            'assigned_to'  => $this->agent->id,
+            'agent_name'   => $this->agent->name,
+            'agent_avatar' => $this->agent->profile_image_url ? url($this->agent->profile_image_url) : ($this->agent->avatar ? url($this->agent->avatar) : null),
+            'status'       => $this->chat->status,
+            'assigned_at'  => $this->chat->assigned_at,
         ];
     }
 }

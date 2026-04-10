@@ -7,7 +7,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { loginUser, registerUser } from '../services/api';
 import { saveAuth } from '../store/authStore';
-import { RootStackParamList } from '../../App';
+import { RootStackParamList } from '../types/navigation';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;

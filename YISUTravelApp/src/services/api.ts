@@ -53,6 +53,9 @@ export const createSession = () =>
 export const deleteSession = (sessionId: string) =>
   api.delete(`/mobile/sessions/${sessionId}`);
 
+export const closeSession = (sessionId: string) =>
+  api.delete(`/mobile/sessions/${sessionId}`);
+
 export const markSessionAsRead = (sessionId: string) =>
   api.post(`/mobile/sessions/${sessionId}/read`);
 

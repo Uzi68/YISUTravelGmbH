@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface StaffUser {
@@ -132,6 +132,8 @@ export class UserManagementService {
   }
 
   // Profile Image Methods
+  readonly profileImageChanged$ = new Subject<string | null>();
+
   uploadProfileImage(formData: FormData): Observable<{ profile_image_url: string }> {
     return this.http.post<{ profile_image_url: string }>(`${this.apiUrl}/profile/upload-image`, formData, { withCredentials: true });
   }

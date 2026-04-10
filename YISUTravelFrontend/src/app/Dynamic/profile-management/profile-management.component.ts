@@ -303,6 +303,7 @@ export class ProfileManagementComponent implements OnInit {
       next: (response) => {
         this.loading = false;
         this.profileImageUrl = response.profile_image_url;
+        this.userManagementService.profileImageChanged$.next(response.profile_image_url);
         this.snackBar.open('Profilbild erfolgreich hochgeladen!', 'Schließen', {
           duration: 3000,
           horizontalPosition: 'center',
@@ -330,6 +331,7 @@ export class ProfileManagementComponent implements OnInit {
         this.loading = false;
         this.profileImageUrl = null;
         this.selectedFile = null;
+        this.userManagementService.profileImageChanged$.next(null);
         this.snackBar.open('Profilbild entfernt!', 'Schließen', {
           duration: 3000,
           horizontalPosition: 'center',

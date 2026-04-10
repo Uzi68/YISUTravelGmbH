@@ -61,6 +61,7 @@ export class ChatUiComponent implements AfterViewInit {
   // ✅ Assignment Status Tracking
   chatAssignmentStatus = signal<any>(null);
   assignedAgentName = signal<string>('');
+  assignedAgentAvatar = signal<string>('');
 
 
   private pusherSubscription?: { stop: () => void };
@@ -627,6 +628,7 @@ export class ChatUiComponent implements AfterViewInit {
               assigned_agent_name: data.agent_name
             });
             this.assignedAgentName.set(data.agent_name || '');
+            this.assignedAgentAvatar.set(data.agent_avatar || '');
             this.showAgentConnection.set(true);
 
             // ✅ Set chat ID from assignment
@@ -676,6 +678,7 @@ export class ChatUiComponent implements AfterViewInit {
           this.debugLog('🔄 Chat transferred event:', data);
           this.ngZone.run(() => {
             this.assignedAgentName.set(data.to_agent_name || '');
+            this.assignedAgentAvatar.set(data.agent_avatar || '');
             // ✅ ENTFERNT: Lokale Transfer-Nachricht nicht mehr hinzufügen
             // Das Backend sendet bereits eine vollständige Transfer-Nachricht via Pusher
 
@@ -718,6 +721,7 @@ export class ChatUiComponent implements AfterViewInit {
             this.isEscalated.set(false);
             this.showAgentConnection.set(false);
             this.assignedAgentName.set('');
+            this.assignedAgentAvatar.set('');
             this.chatAssignmentStatus.set(null);
 
             if (data.ended_by === 'agent') {
@@ -847,9 +851,10 @@ export class ChatUiComponent implements AfterViewInit {
         
         if (response.success && response.assigned_agent_name) {
           this.ngZone.run(() => {
-            // ✅ Agent-Namen setzen
+            // ✅ Agent-Namen und Avatar setzen
             this.assignedAgentName.set(response.assigned_agent_name);
-            
+            this.assignedAgentAvatar.set(response.assigned_agent_avatar || '');
+
             // ✅ Banner anzeigen
             this.showAgentConnection.set(true);
             
@@ -1146,6 +1151,7 @@ export class ChatUiComponent implements AfterViewInit {
     localStorage.removeItem('current_chat_id');
     this.chatAssignmentStatus.set(null);
     this.assignedAgentName.set('');
+            this.assignedAgentAvatar.set('');
     this.unreadMessages.set(0);
 
     this.chatbotService.endChatByUser().subscribe({
@@ -1631,6 +1637,7 @@ export class ChatUiComponent implements AfterViewInit {
           this.isEscalated.set(false);
           this.showAgentConnection.set(false);
           this.assignedAgentName.set('');
+            this.assignedAgentAvatar.set('');
           this.chatAssignmentStatus.set(null);
 
           // Nachricht ist bereits vollständig mit Grund
@@ -1699,6 +1706,7 @@ export class ChatUiComponent implements AfterViewInit {
         this.isEscalated.set(false);
         this.showAgentConnection.set(false);
         this.assignedAgentName.set('');
+            this.assignedAgentAvatar.set('');
         this.chatAssignmentStatus.set(null);
         return;
       }
@@ -1719,6 +1727,7 @@ export class ChatUiComponent implements AfterViewInit {
         });
 
         this.assignedAgentName.set('');
+            this.assignedAgentAvatar.set('');
         this.showAgentConnection.set(false);
         this.chatStatus.set('human');
 
@@ -1815,6 +1824,7 @@ export class ChatUiComponent implements AfterViewInit {
             });
           } else if (data.assigned_to === null) {
             this.assignedAgentName.set('');
+            this.assignedAgentAvatar.set('');
             this.showAgentConnection.set(false);
             this.debugLog('Assignment removed');
           }

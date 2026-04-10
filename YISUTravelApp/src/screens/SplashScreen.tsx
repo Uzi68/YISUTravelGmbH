@@ -4,7 +4,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { loadAuth, saveAuth } from '../store/authStore';
 import { getMe } from '../services/api';
 import { initNotifications } from '../services/notifications';
-import { RootStackParamList } from '../../App';
+import { RootStackParamList } from '../types/navigation';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Splash'>;

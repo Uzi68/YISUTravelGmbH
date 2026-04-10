@@ -3,13 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\AllChatsUpdate;
-use App\Events\ChatStatusChanged;
 use App\Models\Chat;
-use App\Models\ChatRequest;
-use App\Models\ChatTransfer;
-use App\Models\Escalation;
-use App\Models\EscalationPrompt;
-use App\Models\MessageAttachment;
 use App\Models\PushSubscription;
 use App\Models\User;
 use App\Models\Visitor;
@@ -278,7 +272,7 @@ class MobileAuthController extends Controller
             return response()->json(['messages' => []]);
         }
 
-        $chat = Chat::where('session_id', $sessionId)->first();
+        $chat = Chat::where('session_id', $sessionId)->with('assignedTo')->first();
 
         if (!$chat) {
             return response()->json(['messages' => []]);
@@ -305,9 +299,13 @@ class MobileAuthController extends Controller
             });
 
         return response()->json([
-            'messages'    => $messages,
-            'chat_id'     => $chat->id,
-            'chat_status' => $chat->status,
+            'messages'             => $messages,
+            'chat_id'              => $chat->id,
+            'chat_status'          => $chat->status,
+            'assigned_agent_name'   => $chat->assignedTo?->name ?? null,
+            'assigned_agent_avatar' => $chat->assignedTo?->profile_image_url
+                ? url($chat->assignedTo->profile_image_url)
+                : ($chat->assignedTo?->avatar ? url($chat->assignedTo->avatar) : null),
         ]);
     }
 
@@ -334,12 +332,12 @@ class MobileAuthController extends Controller
             $chat = Chat::where('session_id', $visitor->session_id)
                 ->with(['messages' => function ($q) {
                     $q->orderBy('created_at', 'desc')->limit(1);
-                }])
+                }, 'assignedTo'])
                 ->first();
 
             $lastMessage = $chat?->messages->first();
             $messageCount = 0;
-            if ($chat) {
+            if ($chat && $chat->status !== 'closed') {
                 $query = $chat->messages();
                 if ($visitor->last_read_at) {
                     $query = $query->where('created_at', '>', $visitor->last_read_at);
@@ -348,15 +346,20 @@ class MobileAuthController extends Controller
             }
 
             return [
-                'session_id'        => $visitor->session_id,
-                'last_message'      => $lastMessage?->text ?? null,
-                'last_message_from' => $lastMessage?->from ?? null,
-                'last_message_at'   => $lastMessage?->created_at ?? null,
-                'created_at'        => $visitor->created_at,
-                'message_count'     => $messageCount,
+                'session_id'             => $visitor->session_id,
+                'status'                 => $chat?->status ?? 'active',
+                'last_message'           => $lastMessage?->text ?? null,
+                'last_message_from'      => $lastMessage?->from ?? null,
+                'last_message_at'        => $lastMessage?->created_at ?? null,
+                'created_at'             => $visitor->created_at,
+                'message_count'          => $messageCount,
+                'assigned_agent_name'    => $chat?->assignedTo?->name ?? null,
+                'assigned_agent_avatar'  => $chat?->assignedTo?->profile_image_url
+                    ? url($chat->assignedTo->profile_image_url)
+                    : ($chat?->assignedTo?->avatar ? url($chat->assignedTo->avatar) : null),
             ];
         })
-        // Sortierung: Sessions mit Nachrichten zuerst, dann nach letzter Aktivität
+        ->filter()
         ->sortByDesc(function ($s) {
             return $s['last_message_at'] ?? $s['created_at'];
         })
@@ -482,33 +485,13 @@ class MobileAuthController extends Controller
                         'ended_by' => 'visitor',
                         'previous_agent' => $assignedAgent?->name,
                         'chat_closed' => true,
-                        'remove_from_list' => true,
                     ]
                 ]));
-
-                broadcast(new ChatStatusChanged(
-                    $chat,
-                    $wasAssigned ? 'in_progress' : 'bot',
-                    'closed'
-                ))->toOthers();
             }
 
-            // Nachrichten-Anhänge löschen
-            $messageIds = $chat->messages()->pluck('id');
-            if ($messageIds->isNotEmpty()) {
-                MessageAttachment::whereIn('message_id', $messageIds)->delete();
-            }
-
-            // Alle verknüpften Datensätze in korrekter Reihenfolge löschen
-            $chat->escalationPrompts()->delete();
-            $chat->escalations()->delete();
-            ChatTransfer::where('chat_id', $chat->id)->delete();
-            ChatRequest::where('chat_id', $chat->id)->delete();
-            $chat->messages()->delete();
-            $chat->delete();
+            // Daten bleiben in der DB — Admin kann den Chat noch archivieren.
+            // Physische Löschung erfolgt nicht mehr hier.
         }
-
-        $visitor->delete();
 
         return response()->json(['message' => 'Session gelöscht'], 200);
     }

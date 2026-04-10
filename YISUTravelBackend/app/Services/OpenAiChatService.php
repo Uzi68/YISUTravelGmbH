@@ -449,13 +449,24 @@ class OpenAiChatService
             $messages[] = ['role' => 'user', 'content' => $inputTrimmed];
         }
 
+        $detectedLanguage = $this->detectLanguage($inputTrimmed);
+        if ($detectedLanguage !== null) {
+            $langInstruction = 'STRICT LANGUAGE RULE: The user\'s current message is written in '
+                . $detectedLanguage . '. You MUST respond ONLY in ' . $detectedLanguage
+                . '. Do NOT use German, English, or any other language — even if the chat history '
+                . 'or knowledge base uses a different language. Translate knowledge base content '
+                . 'to ' . $detectedLanguage . ' if necessary. Never mix languages.';
+        } else {
+            $langInstruction = 'STRICT LANGUAGE RULE: Detect the language of the user\'s most recent message '
+                . 'shown above and respond ONLY in that exact language. '
+                . 'Ignore the language of previous messages, the system prompt, and the knowledge base. '
+                . 'Translate knowledge base content to match the user\'s language if needed. '
+                . 'Never mix languages.';
+        }
+
         $messages[] = [
             'role' => 'system',
-            'content' => 'WICHTIG: Antworte ausschliesslich in der Sprache der letzten Nutzereingabe. '
-                . 'Wenn die Nutzereingabe auf Tuerkisch ist, antworte auf Tuerkisch. '
-                . 'Wenn sie auf Deutsch ist, antworte auf Deutsch. '
-                . 'Wenn sie auf Englisch ist, antworte auf Englisch. '
-                . 'Mische niemals Sprachen. Uebersetze Wissensbasis-Inhalte falls noetig.',
+            'content' => $langInstruction,
         ];
 
         return $messages;
@@ -658,6 +669,27 @@ class OpenAiChatService
         }
 
         return $score;
+    }
+
+    private function detectLanguage(string $input): ?string
+    {
+        // Turkish-specific letters not present in German
+        if (preg_match('/[şŞğĞıİ]/u', $input)) return 'Turkish';
+
+        // Arabic script
+        if (preg_match('/[\x{0600}-\x{06FF}]/u', $input)) return 'Arabic';
+
+        // Russian / Cyrillic
+        if (preg_match('/[\x{0400}-\x{04FF}]/u', $input)) return 'Russian';
+
+        // CJK (Chinese/Japanese/Korean)
+        if (preg_match('/[\x{4E00}-\x{9FFF}\x{3040}-\x{30FF}\x{AC00}-\x{D7AF}]/u', $input)) return 'Chinese/Japanese/Korean';
+
+        // German-specific (ß is only in German)
+        if (preg_match('/ß/u', $input)) return 'German';
+
+        // Cannot determine with confidence — let the AI decide from the text
+        return null;
     }
 
     /**

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import {
   View, FlatList, StyleSheet, KeyboardAvoidingView, Platform,
-  TextInput, TouchableOpacity, Text, ActivityIndicator, Alert, SafeAreaView,
+  TextInput, TouchableOpacity, Text, ActivityIndicator, Alert, SafeAreaView, Image,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -10,9 +10,10 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import MessageBubble, { Message, Attachment } from '../components/MessageBubble';
 import TypingIndicator from '../components/TypingIndicator';
-import { sendMessage, getChatHistory, markSessionAsRead, uploadAttachment } from '../services/api';
+import { sendMessage, getChatHistory, markSessionAsRead, uploadAttachment, closeSession } from '../services/api';
 import { subscribeToChat } from '../services/pusherClient';
-import { RootStackParamList } from '../../App';
+import { RootStackParamList } from '../types/navigation';
+import { ChatHeaderTitle } from '../components/ChatHeaderTitle';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Chat'>;
@@ -29,7 +30,7 @@ const toStr = (v: any): string => {
   return String(v);
 };
 
-export default function ChatScreen({ navigation: _navigation, route }: Props) {
+export default function ChatScreen({ navigation, route }: Props) {
   const sessionId = route.params.sessionId;
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -39,6 +40,7 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
   const [sending, setSending] = useState(false);
   const [chatId, setChatId] = useState<number | null>(null);
   const [chatEnded, setChatEnded] = useState(false);
+  const [assignedAgent, setAssignedAgent] = useState<{ name: string; avatar: string | null } | null>(null);
   const listRef = useRef<FlatList>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
@@ -52,6 +54,9 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
         const res = await getChatHistory(sessionId);
         setChatId(res.data?.chat_id ?? null);
         if (res.data?.chat_status === 'closed') setChatEnded(true);
+        if (res.data?.assigned_agent_name) {
+          setAssignedAgent({ name: res.data.assigned_agent_name, avatar: res.data.assigned_agent_avatar ?? null });
+        }
         const rawHistory: any[] = res.data?.messages ?? (Array.isArray(res.data) ? res.data : []);
         const history: Message[] = rawHistory.map((m: any) => ({
           id: uid(),
@@ -80,9 +85,10 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
     const unsubscribe = subscribeToChat(
       sessionId,
       (data) => {
-        // Chat vom Agenten beendet → Eingabe sperren
+        // Chat beendet → Eingabe sperren + Agent-Banner entfernen
         if (data.chat_ended === true || data.status === 'closed') {
           setChatEnded(true);
+          setAssignedAgent(null);
         }
 
         const msgData = data.message && typeof data.message === 'object' ? data.message : data;
@@ -117,7 +123,14 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
         setIsTyping(true);
         clearTimeout(typingTimeout);
         typingTimeout = setTimeout(() => setIsTyping(false), 5000);
-      }
+      },
+      (data) => {
+        if (data.unassigned || (!data.agent_name && data.assigned_to === null)) {
+          setAssignedAgent(null);
+        } else if (data.agent_name) {
+          setAssignedAgent({ name: data.agent_name, avatar: data.agent_avatar ?? null });
+        }
+      },
     );
 
     unsubscribeRef.current = unsubscribe;
@@ -126,6 +139,57 @@ export default function ChatScreen({ navigation: _navigation, route }: Props) {
       unsubscribe();
     };
   }, [sessionId]);
+
+  const handleEndChat = useCallback(() => {
+    Alert.alert(
+      'Chat beenden',
+      'Möchtest du diesen Chat wirklich beenden?',
+      [
+        { text: 'Abbrechen', style: 'cancel' },
+        {
+          text: 'Beenden',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await closeSession(sessionId);
+              setChatEnded(true);
+            } catch {
+              Alert.alert('Fehler', 'Chat konnte nicht beendet werden.');
+            }
+          },
+        },
+      ],
+    );
+  }, [sessionId]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <ChatHeaderTitle
+          onPress={() => navigation.navigate('ChatInfo', { sessionId })}
+          agentName={assignedAgent?.name ?? null}
+          agentAvatar={assignedAgent?.avatar ?? null}
+        />
+      ),
+    });
+  }, [navigation, sessionId, assignedAgent]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {!chatEnded && (
+            <TouchableOpacity onPress={handleEndChat} style={styles.headerBtn}>
+              <Text style={styles.headerEndIcon}>✕</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.headerBtn}>
+            <Text style={styles.headerSettingsIcon}>⚙</Text>
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [navigation, chatEnded, handleEndChat]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
@@ -371,6 +435,7 @@ const styles = StyleSheet.create({
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0f9ff' },
   list: { paddingVertical: 16, paddingBottom: 8 },
 
+
   emptyWrapper: {
     alignItems: 'center',
     paddingTop: 60,
@@ -437,6 +502,10 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: { backgroundColor: '#b0c8e8' },
   sendIcon: { color: '#fff', fontSize: 18, marginLeft: 2 },
+
+  headerBtn: { padding: 6 },
+  headerEndIcon: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  headerSettingsIcon: { color: '#fff', fontSize: 20 },
 
   chatEndedBanner: {
     paddingHorizontal: 20,

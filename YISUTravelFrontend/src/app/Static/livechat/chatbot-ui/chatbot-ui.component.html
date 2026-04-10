@@ -64,7 +64,11 @@
       @if (showAgentConnection() && assignedAgentName()) {
         <div class="chat-status-indicator stable-connection" [@fadeInOut]>
           <div class="status-message">
-            <mat-icon>support_agent</mat-icon>
+            @if (assignedAgentAvatar()) {
+              <img [src]="assignedAgentAvatar()" class="agent-avatar-small" alt="Agent">
+            } @else {
+              <mat-icon>support_agent</mat-icon>
+            }
             <span>Sie sind mit {{ assignedAgentName() }} verbunden</span>
           </div>
         </div>

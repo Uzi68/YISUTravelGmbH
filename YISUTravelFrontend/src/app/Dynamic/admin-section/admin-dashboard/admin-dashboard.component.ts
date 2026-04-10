@@ -335,6 +335,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.loadProfileImage();
     });
 
+    // ✅ Profilbild-Updates aus Profile-Management empfangen
+    this.userManagementService.profileImageChanged$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(url => {
+        this.currentAgent.profile_image_url = url ?? '';
+      });
 
     this.loadChatRequests();
 

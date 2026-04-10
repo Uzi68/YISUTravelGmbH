@@ -13,29 +13,35 @@ let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 const subscribers = new Map<string, ((data: any) => void)[]>();
 
 function connect() {
-  if (ws && ws.readyState === WebSocket.OPEN) return;
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
 
-  ws = new WebSocket(WS_URL);
+  const socket = new WebSocket(WS_URL);
+  ws = socket;
 
-  ws.onopen = () => {
+  socket.onopen = () => {
+    // Stale socket — a newer connection took over
+    if (ws !== socket) { socket.close(); return; }
+
     // Alle aktiven Subscriptions wiederherstellen
     subscribers.forEach((_, channel) => {
-      ws?.send(JSON.stringify({
-        event: 'pusher:subscribe',
-        data: { channel },
-      }));
+      try {
+        socket.send(JSON.stringify({
+          event: 'pusher:subscribe',
+          data: { channel },
+        }));
+      } catch { /* ignore */ }
     });
 
     // Ping alle 30s um Verbindung aufrechtzuerhalten
     if (pingInterval) clearInterval(pingInterval);
     pingInterval = setInterval(() => {
-      if (ws?.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+      if (socket.readyState === WebSocket.OPEN) {
+        try { socket.send(JSON.stringify({ event: 'pusher:ping', data: {} })); } catch { /* ignore */ }
       }
     }, 30000);
   };
 
-  ws.onmessage = (e) => {
+  socket.onmessage = (e) => {
     try {
       const msg = JSON.parse(e.data);
       const event = msg.event;
@@ -57,14 +63,15 @@ function connect() {
     } catch { /* Parse-Fehler ignorieren */ }
   };
 
-  ws.onclose = () => {
+  socket.onclose = () => {
+    if (ws !== socket) return; // stale socket — ignore
     if (pingInterval) clearInterval(pingInterval);
     // Automatisch neu verbinden nach 3s
     reconnectTimeout = setTimeout(connect, 3000);
   };
 
-  ws.onerror = () => {
-    ws?.close();
+  socket.onerror = () => {
+    try { socket.close(); } catch { /* ignore */ }
   };
 }
 
@@ -72,6 +79,7 @@ export function subscribeToChat(
   sessionId: string,
   onMessage: (data: any) => void,
   onTyping?: (data: any) => void,
+  onAssigned?: (data: any) => void,
 ) {
   const channel = `chat.${sessionId}`;
 
@@ -81,6 +89,11 @@ export function subscribeToChat(
       onMessage(data);
     } else if (onTyping && (event === 'bot.typing' || event === 'agent.typing')) {
       onTyping(data);
+    } else if (onAssigned && (event === 'chat.assigned' || event === 'assignment.updated')) {
+      onAssigned(data);
+    } else if (onAssigned && event === 'chat.transferred') {
+      // to_agent_name → agent_name normalisieren
+      onAssigned({ ...data, agent_name: data.to_agent_name, agent_avatar: data.agent_avatar });
     }
   };
 
@@ -102,10 +115,12 @@ export function subscribeToChat(
     const updated = current.filter((h) => h !== handler);
     if (updated.length === 0) {
       subscribers.delete(channel);
-      ws?.send(JSON.stringify({
-        event: 'pusher:unsubscribe',
-        data: { channel },
-      }));
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          event: 'pusher:unsubscribe',
+          data: { channel },
+        }));
+      }
     } else {
       subscribers.set(channel, updated);
     }
