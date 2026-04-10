@@ -43,13 +43,16 @@ class ChatAssignmentUpdated implements ShouldBroadcast
     public function broadcastWith()
     {
         return [
-            'session_id' => $this->chat->session_id,
-            'chat_id' => $this->chat->id,
-            'assigned_to' => $this->chat->assigned_to,
-            'agent_name' => $this->newAgent ? $this->newAgent->name : null,
+            'session_id'   => $this->chat->session_id,
+            'chat_id'      => $this->chat->id,
+            'assigned_to'  => $this->chat->assigned_to,
+            'agent_name'   => $this->newAgent ? $this->newAgent->name : null,
+            'agent_avatar' => $this->newAgent
+                ? ($this->newAgent->profile_image_url ? url($this->newAgent->profile_image_url) : ($this->newAgent->avatar ? url($this->newAgent->avatar) : null))
+                : null,
             'previous_agent' => $this->previousAgent ? $this->previousAgent->name : null,
-            'status' => $this->chat->status,
-            'unassigned' => $this->chat->assigned_to === null
+            'status'       => $this->chat->status,
+            'unassigned'   => $this->chat->assigned_to === null,
         ];
     }
 }

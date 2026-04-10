@@ -2087,6 +2087,14 @@ input.error {
   font-weight: 600;
 }
 
+.agent-avatar-small {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .status-message mat-icon {
   font-size: 18px;
   width: 18px;

@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angular/core';
-import { provideRouter, withEnabledBlockingInitialNavigation } from '@angular/router';
+import { PreloadAllModules, provideRouter, withPreloading } from '@angular/router';
 
 import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -11,7 +11,7 @@ import {authInterceptor} from "./Services/AuthService/auth.interceptor";
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }), 
-    provideRouter(routes, withEnabledBlockingInitialNavigation()), 
+    provideRouter(routes, withPreloading(PreloadAllModules)),
     provideAnimationsAsync(),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])), 
     provideClientHydration()

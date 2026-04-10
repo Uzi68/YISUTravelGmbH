@@ -4,7 +4,12 @@ import {BehaviorSubject, Observable, tap, throwError} from "rxjs";
 import {catchError, map} from "rxjs/operators";
 import { isPlatformBrowser } from "@angular/common";
 import {Visitor} from "../../Models/Visitor";
-import {ChatbotResponse, ChatbotResponseCreate} from "../../Models/Chatbot";
+import {
+  ChatbotInstruction,
+  ChatbotInstructionCreate,
+  ChatbotResponse,
+  ChatbotResponseCreate
+} from "../../Models/Chatbot";
 import {ApiResponse} from "../../Models/apiresponse.model";
 import {environment} from "../../../environments/environment";
 
@@ -131,6 +136,48 @@ export class ChatbotService {
     });
   }
 
+  archiveChat(chatId: number | string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/chat/${chatId}/archive`, {}, {
+      withCredentials: true
+    });
+  }
+
+  unarchiveChat(chatId: number | string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/chat/${chatId}/unarchive`, {}, {
+      withCredentials: true
+    });
+  }
+
+  getArchivedChats(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/chats/archived`, {
+      withCredentials: true
+    });
+  }
+
+  sendTrainingMessage(request: { message: string; conversation_id?: number | null }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/admin/train-chat`, request, {
+      withCredentials: true
+    });
+  }
+
+  getTrainingConversations(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/admin/training-conversations`, {
+      withCredentials: true
+    });
+  }
+
+  getTrainingConversation(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/admin/training-conversations/${id}`, {
+      withCredentials: true
+    });
+  }
+
+  deleteTrainingConversation(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/admin/training-conversations/${id}`, {
+      withCredentials: true
+    });
+  }
+
   transferChat(chatId: string, agentId: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/chat/${chatId}/transfer`, {
       agent_id: agentId
@@ -216,6 +263,12 @@ export class ChatbotService {
         'Content-Type': 'application/json',
         'X-Session-ID': sessionId
       })
+    });
+  }
+
+  sendTypingIndicator(sessionId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/chat/${sessionId}/typing`, {}, {
+      withCredentials: true,
     });
   }
 
@@ -306,6 +359,40 @@ export class ChatbotService {
     return this.http.put<ApiResponse<ChatbotResponse>>(
       `${this.apiUrl}/update-chatbotresponse/${id}`,
       response,
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data)
+    );
+  }
+
+  insertInstruction(instruction: ChatbotInstructionCreate): Observable<ChatbotInstruction> {
+    return this.http.post<ApiResponse<ChatbotInstruction>>(
+      `${this.apiUrl}/insert-chatbotinstruction`,
+      instruction,
+      { withCredentials: true }
+    ).pipe(
+      map(res => res.data)
+    );
+  }
+
+  getInstructions(): Observable<ChatbotInstruction[]> {
+    return this.http.get<ChatbotInstruction[]>(
+      `${this.apiUrl}/get-chatbotinstructions`,
+      { withCredentials: true }
+    );
+  }
+
+  deleteInstruction(id: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.apiUrl}/delete-chatbotinstruction/${id}`,
+      { withCredentials: true }
+    );
+  }
+
+  updateInstruction(id: number, instruction: ChatbotInstruction): Observable<ChatbotInstruction> {
+    return this.http.put<ApiResponse<ChatbotInstruction>>(
+      `${this.apiUrl}/update-chatbotinstruction/${id}`,
+      instruction,
       { withCredentials: true }
     ).pipe(
       map(res => res.data)

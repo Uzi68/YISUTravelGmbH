@@ -8,10 +8,10 @@
   <!-- Notification Banner - ENTFERNT: Redundant mit Permission Dialog -->
 
   <!-- Sidebar -->
-  <div class="chat-sidebar" [class.hidden]="selectedChat || isDeepLinkOpening" @slideInOut>
+  <div class="chat-sidebar" [class.hidden]="(selectedChat && !isDeselectingChat) || isDeepLinkOpening" @slideInOut>
     <div class="sidebar-header">
       <div class="header-content">
-        <h2>Live Support</h2>
+        <h2>{{ showArchivedChats ? 'Archiv' : 'Live Support' }}</h2>
         <div class="header-actions">
           <button
             mat-icon-button
@@ -83,8 +83,67 @@
     </div>
 
     <div class="chat-list-container">
+
+      <!-- Archivierte Chats Leiste (immer sichtbar, Toggle) -->
+      <div class="archived-chats-entry" *ngIf="archivedChatsCount > 0"
+           [class.active]="showArchivedChats"
+           (click)="showArchivedChats ? closeArchivedView() : showArchivedChats = true">
+        <mat-icon class="archive-icon">{{ showArchivedChats ? 'arrow_back' : 'archive' }}</mat-icon>
+        <span class="archive-label">Archivierte Chats</span>
+        <span class="archived-count">{{ archivedChatsCount }}</span>
+        <mat-icon class="chevron-icon" *ngIf="!showArchivedChats">chevron_right</mat-icon>
+      </div>
+
+      <!-- ========== Archivierte Chats VOLLANSICHT ========== -->
+      <div class="archived-full-view" *ngIf="showArchivedChats">
+
+        <div *ngIf="loadingArchivedChats" class="archived-loading">
+          <mat-spinner diameter="24"></mat-spinner>
+        </div>
+
+        <div *ngIf="!loadingArchivedChats && archivedChats.length === 0" class="no-chats">
+          <mat-icon>archive</mat-icon>
+          <span>Keine archivierten Chats</span>
+        </div>
+
+        <div *ngFor="let chat of archivedChats; trackBy: trackByChatId"
+             class="chat-item archived"
+             [class.active]="selectedChat?.id === chat.id"
+             (click)="selectChat(chat)">
+
+          <div class="avatar-container" [ngClass]="{'whatsapp-avatar': isWhatsAppChat(chat)}">
+            <img [src]="chat.customerAvatar || 'assets/default-avatar.svg'">
+          </div>
+
+          <div class="chat-info">
+            <div class="chat-name-row">
+              <span class="chat-name">{{ chat.customerName || 'Anonymer Benutzer' }}</span>
+              <span class="channel-badge whatsapp" *ngIf="isWhatsAppChat(chat)" matTooltip="WhatsApp Chat">
+                <mat-icon>chat</mat-icon>
+              </span>
+            </div>
+            <div class="chat-preview">{{ chat.lastMessage | truncate:25 }}</div>
+            <div class="chat-status-container">
+              <div class="chat-status-badge status-closed">Archiviert</div>
+            </div>
+          </div>
+
+          <div class="chat-meta">
+            <div class="chat-time">{{ chat.lastMessageTime | date:'dd.MM HH:mm' }}</div>
+            <button mat-icon-button
+                    class="unarchive-btn"
+                    (click)="unarchiveChatAction(chat); $event.stopPropagation()"
+                    matTooltip="Aus Archiv entfernen">
+              <mat-icon>unarchive</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== Normale Chat-Liste (versteckt wenn Archiv offen) ========== -->
+
       <!-- Aktive Chats (standard Ansicht) -->
-      <div class="chat-list-section" *ngIf="!showAllChats || !isAdmin">
+      <div class="chat-list-section" *ngIf="!showArchivedChats && (!showAllChats || !isAdmin)">
         <div *ngFor="let chat of filteredActiveChats; trackBy: trackByChatId"
              class="chat-item"
              [class.active]="selectedChat?.id === chat.id"
@@ -159,7 +218,7 @@
       </div>
 
       <!-- Admin-Chats (erweiterte Ansicht) -->
-      <div class="chat-list-section" *ngIf="isAdmin && showAllChats">
+      <div class="chat-list-section" *ngIf="!showArchivedChats && isAdmin && showAllChats">
         <div class="section-header">
           <span>Alle Chats</span>
           <mat-spinner *ngIf="loadingAdminChats" diameter="20" class="loading-spinner"></mat-spinner>
@@ -295,7 +354,7 @@
   <div class="chat-main" *ngIf="selectedChat; else noChatSelected">
     <div class="chat-header">
       <!-- Zurück -->
-      <button mat-icon-button class="back-btn" (click)="selectedChat = null">
+      <button mat-icon-button class="back-btn" (click)="deselectChat()">
         <mat-icon>arrow_back</mat-icon>
       </button>
 
@@ -586,6 +645,22 @@
           <mat-icon>block</mat-icon>
           <span>Dieser Chat wurde beendet</span>
         </div>
+        <button *ngIf="!selectedChat.archived_at"
+                mat-stroked-button
+                class="archive-btn"
+                (click)="archiveChatAction(selectedChat)"
+                matTooltip="Chat archivieren">
+          <mat-icon>archive</mat-icon>
+          Archivieren
+        </button>
+        <button *ngIf="selectedChat.archived_at"
+                mat-stroked-button
+                class="unarchive-btn-inline"
+                (click)="unarchiveChatAction(selectedChat)"
+                matTooltip="Aus Archiv entfernen">
+          <mat-icon>unarchive</mat-icon>
+          Aus Archiv entfernen
+        </button>
       </div>
 
       <!-- Input Container -->
@@ -616,7 +691,8 @@
             #messageInput
             rows="2"
             [maxLength]="1000"
-            (keydown)="onKeyDown($event, messageInput)"></textarea>
+            (keydown)="onKeyDown($event, messageInput)"
+            (input)="onAgentTyping()"></textarea>
           <div class="char-counter">
             {{ messageInput.value.length || 0 }}/1000
           </div>

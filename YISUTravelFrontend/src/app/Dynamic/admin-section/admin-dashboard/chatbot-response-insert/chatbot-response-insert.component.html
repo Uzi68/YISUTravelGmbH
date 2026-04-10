@@ -1,151 +1,324 @@
-<div class="container">
-  <div class="header">
-    <div class="header-icon">
+<div class="training-page">
 
-    </div>
-    <h1>Chatbot Wissensbasis</h1>
+  <!-- Tab Bar mit integriertem Zurück-Button -->
+  <div class="tab-bar">
+    <button mat-icon-button routerLink="/admin-dashboard" class="back-to-dashboard" matTooltip="Zurück zum Dashboard">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <button class="tab-button" [class.active]="activeTab === 'chat'" (click)="switchTab('chat')">
+      <mat-icon>chat</mat-icon>
+      <span>Training Chat</span>
+    </button>
+    <button class="tab-button" [class.active]="activeTab === 'wissensbasis'" (click)="switchTab('wissensbasis')">
+      <mat-icon>school</mat-icon>
+      <span>Wissensbasis & Instruktionen</span>
+    </button>
   </div>
 
-  <div class="form-container">
-    <!-- Input Feld -->
+  <!-- ========== TAB 1: Training Chat (ChatGPT-Style) ========== -->
+  <div *ngIf="activeTab === 'chat'" class="chat-layout">
+
+    <!-- Sidebar (Conversation History) -->
+    <div class="chat-sidebar" [class.collapsed]="!showSidebar">
+      <div class="sidebar-top">
+        <button mat-icon-button class="new-chat-btn" (click)="startNewConversation()" matTooltip="Neues Gespräch">
+          <mat-icon>add</mat-icon>
+        </button>
+        <span class="sidebar-title">Verlauf</span>
+        <button mat-icon-button class="toggle-sidebar-btn" (click)="showSidebar = !showSidebar">
+          <mat-icon>{{ showSidebar ? 'chevron_left' : 'chevron_right' }}</mat-icon>
+        </button>
+      </div>
+
+      <div class="conversation-list" *ngIf="showSidebar">
+        <div *ngIf="loadingConversations" class="sidebar-loading">
+          <mat-spinner diameter="20"></mat-spinner>
+        </div>
+
+        <div *ngIf="!loadingConversations && conversations.length === 0" class="sidebar-empty">
+          <mat-icon>forum</mat-icon>
+          <span>Noch keine Gespräche</span>
+        </div>
+
+        <div *ngFor="let conv of conversations"
+             class="conversation-item"
+             [class.active]="currentConversationId === conv.id"
+             (click)="openConversation(conv)">
+          <mat-icon class="conv-icon">chat_bubble_outline</mat-icon>
+          <div class="conv-info">
+            <span class="conv-title">{{ conv.title }}</span>
+            <span class="conv-meta">{{ conv.message_count }} Nachrichten</span>
+          </div>
+          <button mat-icon-button class="conv-delete" (click)="deleteConversation(conv, $event)" matTooltip="Löschen">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-main">
+      <!-- Mobile: History Button -->
+      <div class="mobile-header">
+        <button mat-icon-button (click)="showSidebar = true" matTooltip="Verlauf">
+          <mat-icon>history</mat-icon>
+        </button>
+        <span>YISA Training</span>
+        <button mat-icon-button (click)="startNewConversation()" matTooltip="Neues Gespräch">
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+      <div class="chat-messages" #chatMessagesContainer>
+
+        <!-- Welcome Message (only when no messages) -->
+        <div class="welcome-screen" *ngIf="trainingMessages.length === 0 && !isTrainingLoading">
+          <div class="welcome-icon">
+            <mat-icon>smart_toy</mat-icon>
+          </div>
+          <h2 class="welcome-title">Hallo, ich bin YISA!</h2>
+          <p class="welcome-subtitle">Bring mir neues Wissen bei oder sag mir, wie ich mich verhalten soll. Ich frage aktiv nach, was ich noch wissen muss.</p>
+          <div class="welcome-examples">
+            <div class="example-chip" (click)="trainingInput = 'Unsere Öffnungszeiten sind...'; sendTrainingMessage()">
+              <mat-icon>schedule</mat-icon>
+              <span>Öffnungszeiten mitteilen</span>
+            </div>
+            <div class="example-chip" (click)="trainingInput = 'Wenn ein Kunde stornieren möchte...'; sendTrainingMessage()">
+              <mat-icon>cancel</mat-icon>
+              <span>Stornierungsprozess erklären</span>
+            </div>
+            <div class="example-chip" (click)="trainingInput = 'Dein Verhalten soll freundlich und professionell sein'; sendTrainingMessage()">
+              <mat-icon>psychology</mat-icon>
+              <span>Verhalten festlegen</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <ng-container *ngFor="let msg of trainingMessages">
+          <div class="message-row" [ngClass]="msg.role === 'user' ? 'user-row' : 'bot-row'">
+            <div class="message-avatar" [ngClass]="msg.role === 'user' ? 'user-avatar' : 'bot-avatar'">
+              <mat-icon>{{ msg.role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
+            </div>
+            <div class="message-body">
+              <div class="message-header">
+                <span class="message-sender">{{ msg.role === 'user' ? 'Du' : 'YISA' }}</span>
+                <span class="message-time" *ngIf="msg.timestamp">{{ msg.timestamp | date:'HH:mm' }}</span>
+              </div>
+              <div class="message-text">{{ msg.content }}</div>
+
+              <!-- Saved Items -->
+              <div *ngIf="msg.savedItems && msg.savedItems.length > 0" class="saved-indicator">
+                <mat-icon>check_circle</mat-icon>
+                <span>{{ msg.savedItems.length }} {{ msg.savedItems.length === 1 ? 'Eintrag' : 'Einträge' }} gespeichert:</span>
+                <span *ngFor="let item of msg.savedItems" class="saved-item-tag" [ngClass]="'saved-' + item.type">
+                  {{ item.type === 'knowledge' ? 'Wissen' : 'Instruktion' }}: {{ item.summary }}
+                  <span class="saved-action">{{ item.action === 'updated' ? '(aktualisiert)' : '(neu)' }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Typing Indicator -->
+        <div *ngIf="isTrainingLoading" class="message-row bot-row">
+          <div class="message-avatar bot-avatar">
+            <mat-icon>smart_toy</mat-icon>
+          </div>
+          <div class="message-body">
+            <div class="typing-indicator">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Input Area -->
+      <div class="chat-input-area">
+        <div class="input-wrapper">
+          <mat-form-field appearance="outline" class="chat-input-field">
+            <input matInput
+                   [(ngModel)]="trainingInput"
+                   placeholder="YISA etwas beibringen..."
+                   (keydown.enter)="sendTrainingMessage()"
+                   [disabled]="isTrainingLoading"
+                   autocomplete="off">
+          </mat-form-field>
+          <button class="send-btn"
+                  (click)="sendTrainingMessage()"
+                  [disabled]="!trainingInput.trim() || isTrainingLoading">
+            <mat-icon>send</mat-icon>
+          </button>
+        </div>
+        <p class="input-hint">YISA speichert automatisch was du ihr beibringst</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== TAB 2: Wissensbasis & Instruktionen (bestehend) ========== -->
+  <div *ngIf="activeTab === 'wissensbasis'" class="form-container">
+    <div class="section-card instruction-section">
+      <div class="section-header">
+        <h2>Instruktionen (Verhalten)</h2>
+        <p>Steuert Ton, Ablauf und Rückfragen des Chatbots.</p>
+      </div>
+
+    <mat-form-field class="full-width" appearance="outline">
+      <mat-label>Thema</mat-label>
+      <input matInput
+             [(ngModel)]="newInstruction.topic"
+             placeholder="z.B. 'Reisebuchung'"
+             required>
+      <mat-icon matSuffix>label</mat-icon>
+      <mat-hint>Ein kurzer Titel für die Anweisung.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field class="full-width" appearance="outline">
+      <mat-label>Instruktion</mat-label>
+      <textarea matInput
+                [(ngModel)]="newInstruction.instruction"
+                placeholder="z.B. 'Bei einer Reisebuchung stelle zuerst diese 5 Fragen...'"
+                rows="3"
+                required></textarea>
+      <mat-icon matSuffix>assignment</mat-icon>
+      <mat-hint>Gib klare, umsetzbare Anweisungen.</mat-hint>
+    </mat-form-field>
+
+    <div class="action-buttons">
+      <button mat-stroked-button class="clear-button normal-button" (click)="clearInstructionForm()"
+              [disabled]="isInstructionLoading || (!newInstruction.topic && !newInstruction.instruction)">
+        Formular leeren
+      </button>
+      <button mat-raised-button class="submit-button" color="primary" (click)="submitInstruction()"
+              [disabled]="!newInstruction.topic || !newInstruction.instruction || isInstructionLoading">
+        {{ isInstructionLoading ? 'Wird gespeichert...' : 'Instruktion speichern' }}
+      </button>
+    </div>
+
+    <div class="response-container instruction-container">
+      <div class="header-container">
+        <div class="header-content"><div class="header-text"><p class="header-subtitle">Instruktionen verwalten</p></div></div>
+        <mat-divider class="header-divider"></mat-divider>
+      </div>
+
+      <div *ngFor="let instruction of instructions; trackBy: trackByInstructionId" class="response-item instruction-item" [class.editing]="editingInstruction?.id === instruction.id">
+        <div *ngIf="editingInstruction?.id === instruction.id" class="edit-form instruction-card">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Thema</mat-label>
+            <input matInput [(ngModel)]="editingInstruction!.topic" placeholder="z.B. 'Reisebuchung'" (click)="$event.stopPropagation()">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Instruktion</mat-label>
+            <textarea matInput [(ngModel)]="editingInstruction!.instruction" rows="3"></textarea>
+          </mat-form-field>
+          <div class="action-buttons">
+            <button mat-button class="normal-button" (click)="cancelInstructionEdit()">Abbrechen</button>
+            <button mat-raised-button color="primary" class="normal-button" (click)="saveInstructionEdit()">Speichern</button>
+          </div>
+        </div>
+        <div *ngIf="editingInstruction?.id !== instruction.id" class="response-content" (click)="startInstructionEdit(instruction)">
+          <p><strong>Thema:</strong> {{ instruction.topic }}</p>
+          <p><strong>Instruktion:</strong> {{ instruction.instruction }}</p>
+        </div>
+        <div class="response-actions">
+          <button mat-icon-button color="warn" (click)="deleteInstruction(instruction.id, $event)">
+            <img src="/livechat/close.svg" alt="Delete" width="24" height="24" class="black-icon">
+          </button>
+        </div>
+      </div>
+      <div *ngIf="instructions.length === 0" class="text-center py-4 text-muted">Keine Instruktionen vorhanden</div>
+    </div>
+
+    <div *ngIf="showInstructionSuccess" class="success-message" @fadeIn>
+      <div class="message-content"><div class="message-text"><div class="message-title">Erfolgreich gespeichert!</div><div class="message-subtitle">Die Instruktion wurde gespeichert.</div></div>
+        <button mat-icon-button class="close-btn" (click)="showInstructionSuccess = false"><img src="/livechat/close.svg" alt="Close" width="24" height="24" class="black-icon"></button>
+      </div>
+    </div>
+    <div *ngIf="instructionErrorMessage" class="error-message" @fadeIn>
+      <div class="message-content"><mat-icon class="error-icon">error</mat-icon><div class="message-text"><div class="message-title">Fehler</div><div class="message-subtitle">{{ instructionErrorMessage }}</div></div>
+        <button mat-icon-button class="close-btn" (click)="clearInstructionError()"><mat-icon>close</mat-icon></button>
+      </div>
+    </div>
+    </div>
+
+    <div class="section-card knowledge-section">
+      <div class="section-header">
+        <h2>Wissensbasis (Fakten)</h2>
+        <p>Liefern dem Bot Inhalte und Daten, die er beantworten darf.</p>
+      </div>
+
     <mat-form-field class="full-width" appearance="outline">
       <mat-label>Titel / Thema</mat-label>
-      <input matInput
-             [(ngModel)]="newResponse.input"
-             placeholder="z.B. 'Öffnungszeiten' oder 'Kontakt'"
-             required>
+      <input matInput [(ngModel)]="newResponse.input" placeholder="z.B. 'Oeffnungszeiten' oder 'Kontakt'" required>
       <mat-icon matSuffix>chat</mat-icon>
       <mat-hint>Kurzer Titel, der den Wissenseintrag beschreibt.</mat-hint>
     </mat-form-field>
 
-    <!-- Response Feld -->
     <mat-form-field class="full-width" appearance="outline">
       <mat-label>Wissensinhalt</mat-label>
-      <textarea matInput
-                [(ngModel)]="newResponse.response"
-                placeholder="z.B. 'Unsere Öffnungszeiten sind Montag bis Freitag von 9 bis 18 Uhr.'"
-                rows="3"
-                required></textarea>
+      <textarea matInput [(ngModel)]="newResponse.response" placeholder="z.B. 'Unsere Oeffnungszeiten: 10:00 - 18:00 Uhr Montag bis Freitag.'" rows="3" required></textarea>
       <mat-icon matSuffix>smart_toy</mat-icon>
       <mat-hint>Fakten, die der Chatbot als Kontext nutzen soll.</mat-hint>
     </mat-form-field>
 
-
-
-    <!-- Keywords Section -->
     <div class="keywords-container">
       <div class="keywords-header">
         <span class="keywords-title">Keywords / Synonyme</span>
         <span class="keywords-subtitle">(Hilft dem Chatbot, den Eintrag zu finden)</span>
       </div>
-
       <mat-form-field class="full-width keyword-input" appearance="outline">
         <mat-label>Keyword hinzufügen</mat-label>
-        <input matInput
-               #keywordInput
-               [matChipInputFor]="chipList"
-               [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-               (matChipInputTokenEnd)="addKeyword($event)"
-               (click)="$event.stopPropagation()"
-               placeholder="Keyword eingeben und Enter drücken">
-        <mat-hint>Mehrere Keywords mit Komma trennen oder jeweils mit Enter bestätigen</mat-hint>
+        <input matInput #keywordInput [matChipInputFor]="chipList" [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+               (matChipInputTokenEnd)="addKeyword($event)" (click)="$event.stopPropagation()" placeholder="Keyword eingeben und Enter drücken">
+        <mat-hint>Mehrere Keywords mit Komma trennen</mat-hint>
       </mat-form-field>
-
-      <!-- Chip List -->
       <mat-chip-grid #chipList class="chips-container">
-        <mat-chip-row *ngFor="let keyword of newResponse.keywords"
-                      (removed)="removeKeyword(keyword)"
-                      class="keyword-chip">
+        <mat-chip-row *ngFor="let keyword of newResponse.keywords" (removed)="removeKeyword(keyword)" class="keyword-chip">
           {{ keyword }}
-          <button matChipRemove
-                  class="remove-btn"
-                  [attr.aria-label]="'Keyword ' + keyword + ' entfernen'">
-            <mat-icon>cancel</mat-icon>
-          </button>
+          <button matChipRemove class="remove-btn"><mat-icon>cancel</mat-icon></button>
         </mat-chip-row>
-
-        <!-- Hinweis wenn keine Keywords vorhanden sind -->
-        <div *ngIf="newResponse.keywords.length === 0" class="no-keywords-hint">
-          <span>Noch keine Keywords hinzugefügt</span>
-        </div>
+        <div *ngIf="newResponse.keywords.length === 0" class="no-keywords-hint"><span>Noch keine Keywords</span></div>
       </mat-chip-grid>
     </div>
 
-
-
-
-    <!-- Action Buttons -->
     <div class="action-buttons">
-      <button mat-stroked-button
-              class="clear-button normal-button"
-              (click)="clearForm()"
+      <button mat-stroked-button class="clear-button normal-button" (click)="clearForm()"
               [disabled]="isLoading || (!newResponse.input && !newResponse.response && newResponse.keywords.length === 0)">
         Formular leeren
       </button>
-
-      <button mat-raised-button
-              class="submit-button"
-              color="primary"
-              (click)="submit()"
+      <button mat-raised-button class="submit-button" color="primary" (click)="submit()"
               [disabled]="!newResponse.input || !newResponse.response || isLoading">
         {{ isLoading ? 'Wird gespeichert...' : 'Eintrag speichern' }}
       </button>
     </div>
 
-
-
-    <div class="response-container">
-
-
-        <!-- Verbesserter Header -->
-        <div class="header-container">
-          <div class="header-content">
-            <div class="header-text">
-              <p class="header-subtitle">Wissensbasis verwalten</p>
-            </div>
-          </div>
-          <mat-divider class="header-divider"></mat-divider>
-        </div>
+    <div class="response-container knowledge-container">
+      <div class="header-container">
+        <div class="header-content"><div class="header-text"><p class="header-subtitle">Wissensbasis verwalten</p></div></div>
+        <mat-divider class="header-divider"></mat-divider>
+      </div>
 
       <div *ngFor="let getResponse of paginatedResponses; trackBy: trackById" class="response-item" [class.editing]="editingResponse?.id === getResponse.id">
-
-        <!-- Bearbeitungsmodus -->
         <div *ngIf="editingResponse?.id === getResponse.id" class="edit-form">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Titel / Thema</mat-label>
-            <input matInput [(ngModel)]="editingResponse!.input" placeholder="z.B. 'Öffnungszeiten'" (click)="$event.stopPropagation()">
+          <mat-form-field appearance="outline" class="full-width"><mat-label>Titel / Thema</mat-label>
+            <input matInput [(ngModel)]="editingResponse!.input" (click)="$event.stopPropagation()">
           </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Wissensinhalt</mat-label>
-            <textarea matInput [(ngModel)]="editingResponse!.response" rows="3" placeholder="z.B. 'Unsere Öffnungszeiten sind Montag bis Freitag von 9 bis 18 Uhr.'"></textarea>
+          <mat-form-field appearance="outline" class="full-width"><mat-label>Wissensinhalt</mat-label>
+            <textarea matInput [(ngModel)]="editingResponse!.response" rows="3"></textarea>
           </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Keywords</mat-label>
+          <mat-form-field appearance="outline" class="full-width"><mat-label>Keywords</mat-label>
             <mat-chip-grid #chipGrid>
-              <mat-chip-row *ngFor="let keyword of editingResponse?.keywords; trackBy: trackByKeyword"
-                            (removed)="removeEditKeyword(keyword)">
-                {{ keyword }}
-                <button matChipRemove (click)="$event.stopPropagation()">
-                  <mat-icon>cancel</mat-icon>
-                </button>
+              <mat-chip-row *ngFor="let keyword of editingResponse?.keywords; trackBy: trackByKeyword" (removed)="removeEditKeyword(keyword)">
+                {{ keyword }}<button matChipRemove (click)="$event.stopPropagation()"><mat-icon>cancel</mat-icon></button>
               </mat-chip-row>
             </mat-chip-grid>
-            <input
-              [matChipInputFor]="chipGrid"
-              [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-              (matChipInputTokenEnd)="addEditKeyword($event)"
-              placeholder="Keyword hinzufügen und Enter drücken">
+            <input [matChipInputFor]="chipGrid" [matChipInputSeparatorKeyCodes]="separatorKeysCodes" (matChipInputTokenEnd)="addEditKeyword($event)" placeholder="Keyword hinzufügen">
           </mat-form-field>
-
           <div class="action-buttons">
             <button mat-button class="normal-button" (click)="cancelEdit()">Abbrechen</button>
             <button mat-raised-button color="primary" class="normal-button" (click)="saveEdit()">Speichern</button>
           </div>
         </div>
-
-        <!-- Anzeigemodus -->
         <div *ngIf="editingResponse?.id !== getResponse.id" class="response-content" (click)="startEdit(getResponse)">
           <p><strong>Thema:</strong> {{ getResponse.input }}</p>
           <p><strong>Wissensinhalt:</strong> {{ getResponse.response }}</p>
@@ -153,56 +326,27 @@
             <span *ngFor="let keyword of getResponse.keywords ?? []; trackBy: trackByKeyword" class="keyword-tag">{{ keyword }}</span>
           </p>
         </div>
-
         <div class="response-actions">
-          <button mat-icon-button color="warn"
-                  (click)="deleteResponse(getResponse.id, $event)">
-            <img src="/livechat/close.svg" alt="Minimize" width="24" height="24" class="black-icon">
+          <button mat-icon-button color="warn" (click)="deleteResponse(getResponse.id, $event)">
+            <img src="/livechat/close.svg" alt="Delete" width="24" height="24" class="black-icon">
           </button>
         </div>
-
       </div>
-
-      <!-- Keine Antworten Hinweis -->
-      <div *ngIf="getResponses.length === 0" class="text-center py-4 text-muted">
-        <i class="bi bi-inbox display-4 d-block mb-2"></i>
-        Keine Einträge vorhanden
-      </div>
+      <div *ngIf="getResponses.length === 0" class="text-center py-4 text-muted">Keine Einträge vorhanden</div>
     </div>
 
-    <mat-paginator
-      [length]="getResponses.length"
-      [pageSize]="pageSize"
-      [pageSizeOptions]="[5, 10, 15, 20, 50]"
-      (page)="onPageChange($event)">
-    </mat-paginator>
+    <mat-paginator [length]="getResponses.length" [pageSize]="pageSize" [pageSizeOptions]="[5, 10, 15, 20, 50]" (page)="onPageChange($event)"></mat-paginator>
 
-    <!-- Success Message -->
     <div *ngIf="showSuccess" class="success-message" @fadeIn>
-      <div class="message-content">
-        <div class="message-text">
-          <div class="message-title">Erfolgreich gespeichert!</div>
-          <div class="message-subtitle">Der Wissenseintrag wurde in der Datenbank gespeichert.</div>
-        </div>
-        <button mat-icon-button class="close-btn" (click)="showSuccess = false" [attr.aria-label]="'Meldung schließen'">
-          <img src="/livechat/close.svg" alt="Minimize" width="24" height="24" class="black-icon">
-        </button>
+      <div class="message-content"><div class="message-text"><div class="message-title">Erfolgreich gespeichert!</div><div class="message-subtitle">Der Wissenseintrag wurde gespeichert.</div></div>
+        <button mat-icon-button class="close-btn" (click)="showSuccess = false"><img src="/livechat/close.svg" alt="Close" width="24" height="24" class="black-icon"></button>
       </div>
     </div>
-
-    <!-- Error Message -->
     <div *ngIf="errorMessage" class="error-message" @fadeIn>
-      <div class="message-content">
-        <mat-icon class="error-icon">error</mat-icon>
-        <div class="message-text">
-          <div class="message-title">Fehler beim Speichern</div>
-          <div class="message-subtitle">{{ errorMessage }}</div>
-        </div>
-        <button mat-icon-button class="close-btn" (click)="clearError()" [attr.aria-label]="'Fehlermeldung schließen'">
-          <mat-icon>close</mat-icon>
-        </button>
+      <div class="message-content"><mat-icon class="error-icon">error</mat-icon><div class="message-text"><div class="message-title">Fehler</div><div class="message-subtitle">{{ errorMessage }}</div></div>
+        <button mat-icon-button class="close-btn" (click)="clearError()"><mat-icon>close</mat-icon></button>
       </div>
+    </div>
     </div>
   </div>
 </div>
-

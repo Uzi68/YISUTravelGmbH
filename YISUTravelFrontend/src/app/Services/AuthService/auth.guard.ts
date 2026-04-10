@@ -1,10 +1,16 @@
-import { inject } from '@angular/core';
+import { inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformServer } from '@angular/common';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { catchError, map } from 'rxjs/operators';
 import {of} from "rxjs";
 
 export const authGuard: CanActivateFn = (route, state) => {
+  const platformId = inject(PLATFORM_ID);
+  if (isPlatformServer(platformId)) {
+    return true; // SSR hat keine Cookies - Client prüft Auth nach Hydration
+  }
+
   const router = inject(Router);
   const authService = inject(AuthService);
   const requiredRoles = route.data?.['roles'] as string[] | undefined;
@@ -46,6 +52,11 @@ export const authGuard: CanActivateFn = (route, state) => {
 
 // Guard nur für Admins
 export const adminGuard: CanActivateFn = (route, state) => {
+  const platformId = inject(PLATFORM_ID);
+  if (isPlatformServer(platformId)) {
+    return true;
+  }
+
   const router = inject(Router);
   const authService = inject(AuthService);
 

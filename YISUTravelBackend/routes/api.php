@@ -4,6 +4,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BroadcastAuthController;
 use App\Http\Controllers\ChatAssignmentController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\ChatbotInstructionsController;
 use App\Http\Controllers\ChatbotResponses;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatRequestController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\MessagePusherController;
 use App\Http\Controllers\MessageAttachmentController;
 use App\Http\Controllers\HomepageStatisticsController;
 use App\Http\Controllers\WhatsAppWebhookController;
+use App\Http\Controllers\TrainingChatController;
 use App\Http\Controllers\WhatsAppMessageController;
 use App\Http\Controllers\OfferController;
 use App\Http\Controllers\AppointmentController;
@@ -22,6 +24,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\MobileAuthController;
 use App\Http\Controllers\PushSubscriptionController;
 use Pusher\Pusher;
 
@@ -35,6 +38,22 @@ Route::post('/password/reset', [AuthController::class, 'resetPassword']);
 
 // Customer registration (public)
 Route::post('/customer/register', [CustomerController::class, 'register']);
+
+// Mobile App Auth (kein Passwort, Token-basiert)
+Route::prefix('mobile')->group(function () {
+    Route::post('/register', [MobileAuthController::class, 'register']);
+    Route::post('/login',    [MobileAuthController::class, 'login']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me',           [MobileAuthController::class, 'me']);
+        Route::patch('/me',         [MobileAuthController::class, 'update']);
+        Route::get('/chat-history', [MobileAuthController::class, 'chatHistory']);
+        Route::get('/sessions',                [MobileAuthController::class, 'sessions']);
+        Route::post('/sessions',               [MobileAuthController::class, 'createSession']);
+        Route::delete('/sessions/{sessionId}', [MobileAuthController::class, 'deleteSession']);
+        Route::post('/sessions/{sessionId}/read',  [MobileAuthController::class, 'markSessionAsRead']);
+        Route::post('/push-token',             [MobileAuthController::class, 'registerPushToken']);
+    });
+});
 
 //Überprüfe ob der Nutzer Authentifiziert ist
 Route::get('/check-auth', function (Request $request) {
@@ -60,8 +79,8 @@ Route::middleware('auth')->get('/user-role', function (Request $request) {
 
 Route::get('/chats/updates', [ChatbotController::class, 'getUpdatedChats'])->middleware('auth');
 
-//Chatbot
-Route::post('/chatbot/input', [ChatbotController::class, 'handleInput']);
+//Chatbot (auth:sanctum damit Bearer-Token für Mobile App funktioniert)
+Route::post('/chatbot/input', [ChatbotController::class, 'handleInput'])->middleware('auth:sanctum');
 
 Route::post('/chatbot/test-input', function (Request $request) {
     // Simuliere eine einfache Antwort
@@ -98,6 +117,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::post('/chatbot/send-message', [ChatbotController::class, 'sendAgentMessage']);
+Route::post('/chat/{sessionId}/typing', [ChatbotController::class, 'sendTypingIndicator']);
 // Pusher
 Route::post('messages', [MessagePusherController::class, 'message']);
 
@@ -137,8 +157,26 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/staff/{id}', [UserManagementController::class, 'deleteStaffUser']);
     });
 
+    // YISA Training Chat (Admin only)
+    Route::post('/admin/train-chat', [TrainingChatController::class, 'handle'])
+        ->middleware('role:Admin');
+    Route::get('/admin/training-conversations', [TrainingChatController::class, 'getConversations'])
+        ->middleware('role:Admin');
+    Route::get('/admin/training-conversations/{id}', [TrainingChatController::class, 'getConversation'])
+        ->middleware('role:Admin');
+    Route::delete('/admin/training-conversations/{id}', [TrainingChatController::class, 'deleteConversation'])
+        ->middleware('role:Admin');
+
     // Close chat
     Route::post('/chat/{chat}/close', [ChatbotController::class, 'closeChat'])
+        ->middleware('role:Admin|Agent');
+
+    // Archive / Unarchive chat
+    Route::post('/chat/{chat}/archive', [ChatbotController::class, 'archiveChat'])
+        ->middleware('role:Admin|Agent');
+    Route::post('/chat/{chat}/unarchive', [ChatbotController::class, 'unarchiveChat'])
+        ->middleware('role:Admin|Agent');
+    Route::get('/chats/archived', [ChatbotController::class, 'getArchivedChats'])
         ->middleware('role:Admin|Agent');
 
     // Transfer chat
@@ -175,6 +213,16 @@ Route::get('get-chatbotresponses', [ChatbotResponses::class, 'getTrainedData']);
 Route::delete('delete-chatbotresponse/{id}', [ChatbotResponses::class, 'deleteChatbotResponse']);
 
 Route::put('update-chatbotresponse/{id}', [ChatbotResponses::class, 'updateChatbotResponse']);
+
+// Chatbot instructions
+Route::post('insert-chatbotinstruction', [ChatbotInstructionsController::class, 'insertInstruction'])
+    ->middleware('auth');
+Route::get('get-chatbotinstructions', [ChatbotInstructionsController::class, 'getInstructions'])
+    ->middleware('auth');
+Route::delete('delete-chatbotinstruction/{id}', [ChatbotInstructionsController::class, 'deleteInstruction'])
+    ->middleware('auth');
+Route::put('update-chatbotinstruction/{id}', [ChatbotInstructionsController::class, 'updateInstruction'])
+    ->middleware('auth');
 
 //Besucher registrieren
 Route::post('register-visitor', [ChatbotController::class, 'registerVisitor']);

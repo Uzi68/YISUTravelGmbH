@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Chat;
 use App\Models\Message;
 use App\Models\PushSubscription;
+use App\Models\User;
+use App\Models\Visitor;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -63,6 +65,61 @@ class PushNotificationService
 
         $payload = $this->buildPayload($chat, $message);
         $this->dispatchToRecipients($recipients, $payload);
+    }
+
+    /**
+     * Sendet eine FCM-Benachrichtigung an den mobilen App-Nutzer,
+     * wenn ein Mitarbeiter eine Nachricht schreibt.
+     */
+    public function notifyMobileUserAboutAgentMessage(Chat $chat, Message $message): void
+    {
+        if (!$this->isEnabled()) return;
+
+        // Visitor ermitteln (via Relationship oder Fallback auf session_id)
+        $visitor = $chat->visitor ?? Visitor::where('session_id', $chat->visitor_session_id)->first();
+        if (!$visitor || !$visitor->phone) return;
+
+        // Mobilen User-Account anhand der Telefonnummer finden
+        $mobileUser = User::where('phone', $visitor->phone)
+            ->where('user_type', User::USER_TYPE_CUSTOMER)
+            ->first();
+
+        if (!$mobileUser) return;
+
+        $subscriptions = PushSubscription::active()
+            ->where('user_id', $mobileUser->id)
+            ->get();
+
+        if ($subscriptions->isEmpty()) return;
+
+        // Absender-Namen aus Metadaten lesen
+        $metadata = is_array($message->metadata)
+            ? $message->metadata
+            : json_decode($message->metadata ?? '{}', true);
+        $senderName = $metadata['agent_name'] ?? 'YISA Team';
+
+        $payload = [
+            'notification' => [
+                'title' => $senderName,
+                'body'  => Str::limit($message->text ?? 'Neue Nachricht', 120),
+            ],
+            'android' => [
+                'notification' => [
+                    'sound'      => 'default',
+                    'channel_id' => 'chat-messages',
+                ],
+            ],
+            'apns' => [
+                'payload' => ['aps' => ['sound' => 'default']],
+            ],
+            'data' => [
+                'chat_id'    => (string) $chat->id,
+                'session_id' => (string) $chat->session_id,
+                'type'       => 'agent_message',
+            ],
+        ];
+
+        $this->dispatchToRecipients($subscriptions, $payload);
     }
 
     private function resolveRecipients(Chat $chat): Collection

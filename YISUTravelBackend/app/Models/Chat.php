@@ -27,6 +27,7 @@ class Chat extends Model
         'assigned_at',
         'closed_at',
         'close_reason',
+        'archived_at',
         'closed_by_agent',
         'state',
         'context',
@@ -38,6 +39,7 @@ class Chat extends Model
     protected $casts = [
         'assigned_at' => 'datetime',
         'closed_at' => 'datetime',
+        'archived_at' => 'datetime',
         'last_activity' => 'datetime',
         'chat_id' => 'string'
     ];
@@ -178,6 +180,16 @@ class Chat extends Model
             'assigned_at' => null,
             'status' => 'human'
         ]);
+    }
+
+    public function scopeNotArchived($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    public function scopeArchived($query)
+    {
+        return $query->whereNotNull('archived_at');
     }
 
     /**

@@ -29,9 +29,7 @@
   top: 0;
   z-index: 1000;
   background: rgba(255, 255, 255, 0.9);
-  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toolbarbackground--scrolled {
@@ -152,7 +150,7 @@ body:not(.dark-mode) .toolbarbackground--scrolled .desktop-menu a svg path {
 
 .adminicon{
   fill: var(--yisu-nav-items);
-  transition: all 0.3s ease;
+  transition: fill 0.3s ease, background-color 0.3s ease, transform 0.3s ease;
   padding: 0.5rem;
   border-radius: 8px;
   cursor: pointer;
@@ -196,7 +194,7 @@ body.dark-mode .adminicon {
 .logo-img {
   height: 50px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
   flex-shrink: 0;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
   border-radius: 60px;
@@ -204,8 +202,6 @@ body.dark-mode .adminicon {
   
   &:hover {
     transform: translateY(-2px);
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   }
   
   @media (max-width: 940px) {
@@ -218,10 +214,6 @@ body.dark-mode .adminicon {
 body.dark-mode .logo-img {
   background: rgba(30, 41, 59, 0.95);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  
-  &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  }
 }
 
 .instagram-btn {
@@ -330,24 +322,6 @@ body.dark-mode .logo-img {
 
 mat-slide-toggle {
   align-content: center;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-
-/* Optimize Material Slide Toggle transitions */
-::ng-deep .mat-mdc-slide-toggle .mdc-switch {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-
-::ng-deep .mat-mdc-slide-toggle .mdc-switch__track {
-  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: background-color;
-}
-
-::ng-deep .mat-mdc-slide-toggle .mdc-switch__handle {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
 }
 
 
@@ -374,20 +348,21 @@ mat-slide-toggle {
       position: absolute;
       bottom: 6px;
       left: 50%;
-      transform: translateX(-50%);
-      width: 0;
+      width: 75%;
       height: 3px;
       background: var(--yisu-nav-items-hover);
-      transition: width 0.3s ease;
       border-radius: 2px;
+      transform: translateX(-50%) scaleX(0);
+      transform-origin: center;
+      transition: transform 0.3s ease;
     }
-    
+
     &:hover {
       color: var(--yisu-nav-items-hover);
       background: var(--yisu-nav-items-hover-background);
-      
+
       &::after {
-        width: 75%;
+        transform: translateX(-50%) scaleX(1);
       }
     }
     
@@ -398,7 +373,7 @@ mat-slide-toggle {
       
       &::after {
         background: var(--yisu-nav-items-active);
-        width: 80%;
+        transform: translateX(-50%) scaleX(1.07);
       }
       
       &:hover {
@@ -408,7 +383,7 @@ mat-slide-toggle {
         
         &::after {
           background: var(--yisu-nav-items-active-hover);
-          width: 90%;
+          transform: translateX(-50%) scaleX(1.2);
         }
       }
     }
@@ -425,15 +400,17 @@ mat-slide-toggle {
   color: var(--yisu-text-white);
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(25, 118, 210, 0.35);
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .desktop-menu a.cta::after {
   background: rgba(255, 255, 255, 0.8) !important;
   height: 3px;
   bottom: 6px;
-  width: 0;
+  width: 75%;
   border-radius: 999px;
+  transform: translateX(-50%) scaleX(0);
+  transform-origin: center;
 }
 
 .desktop-menu a.cta:hover {
@@ -443,16 +420,16 @@ mat-slide-toggle {
 }
 
 .desktop-menu a.cta:hover::after {
-  width: 75%;
+  transform: translateX(-50%) scaleX(1);
 }
 
 .desktop-menu a.cta.active-list-item::after {
-  width: 80%;
+  transform: translateX(-50%) scaleX(1.07);
   background: rgba(255, 255, 255, 0.9) !important;
 }
 
 .desktop-menu a.cta.active-list-item:hover::after {
-  width: 90%;
+  transform: translateX(-50%) scaleX(1.2);
   background: #fff !important;
 }
 
@@ -470,18 +447,18 @@ body.dark-mode .desktop-menu a.cta:hover {
   color: var(--yisu-text-white);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45);
   &::after {
-    width: 75%;
+    transform: translateX(-50%) scaleX(1);
     background: rgba(255, 255, 255, 0.9) !important;
   }
 }
 
 body.dark-mode .desktop-menu a.cta.active-list-item::after {
-  width: 80%;
+  transform: translateX(-50%) scaleX(1.07);
   background: rgba(255, 255, 255, 0.95) !important;
 }
 
 body.dark-mode .desktop-menu a.cta.active-list-item:hover::after {
-  width: 90%;
+  transform: translateX(-50%) scaleX(1.2);
   background: #fff !important;
 }
 
@@ -503,7 +480,7 @@ body.dark-mode .desktop-menu a::after {
 
 body.dark-mode .desktop-menu a:hover::after {
   background: rgba(255, 255, 255, 0.9) !important; /* Sehr helle Linie beim Hover */
-  width: 75% !important;
+  transform: translateX(-50%) scaleX(1) !important;
 }
 
 body.dark-mode .desktop-menu a.active-list-item {
@@ -514,7 +491,7 @@ body.dark-mode .desktop-menu a.active-list-item {
 
 body.dark-mode .desktop-menu a.active-list-item::after {
   background: rgba(255, 255, 255, 0.9) !important;
-  width: 80% !important;
+  transform: translateX(-50%) scaleX(1.07) !important;
 }
 
 body.dark-mode .desktop-menu a.active-list-item:hover {
@@ -525,7 +502,7 @@ body.dark-mode .desktop-menu a.active-list-item:hover {
 
 body.dark-mode .desktop-menu a.active-list-item:hover::after {
   background: rgba(255, 255, 255, 1) !important;
-  width: 90% !important;
+  transform: translateX(-50%) scaleX(1.2) !important;
 }
 
 /* Dark Mode Quick Access Buttons */
@@ -565,7 +542,6 @@ body.dark-mode .desktop-menu2 a {
   align-items: center;
   padding: 0;
   transition: background-color 0.3s ease, transform 0.3s ease;
-  will-change: transform;
 
   @media (max-width: 940px) {
     display: inline-flex;
@@ -583,7 +559,6 @@ body.dark-mode .desktop-menu2 a {
   border-radius: 4px;
   background: var(--yisu-nav-items);
   transition: transform 0.35s ease, opacity 0.25s ease, background-color 0.3s ease;
-  will-change: transform, opacity;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -605,8 +580,7 @@ body.dark-mode .mobile-menu-btn .burger-line {
 }
 
 .mobile-menu-btn.open .burger-line-top {
-  transform: translateX(-50%) rotate(45deg);
-  top: 22.5px;
+  transform: translateX(-50%) translateY(6.5px) rotate(45deg);
 }
 
 .mobile-menu-btn.open .burger-line-middle {
@@ -614,8 +588,7 @@ body.dark-mode .mobile-menu-btn .burger-line {
 }
 
 .mobile-menu-btn.open .burger-line-bottom {
-  transform: translateX(-50%) rotate(-45deg);
-  top: 22.5px;
+  transform: translateX(-50%) translateY(-6.5px) rotate(-45deg);
 }
 
 mat-sidenav-content {
@@ -676,7 +649,7 @@ mat-sidenav {
     border-radius: 50%;
     color: #1976d2;
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     
     i {
@@ -784,9 +757,9 @@ body.dark-mode .additional-info span:hover {
   border-radius: 50%;
   color: white !important;
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  
+
   i {
     font-size: 20px;
     color: white !important;
@@ -805,7 +778,7 @@ body.dark-mode .additional-info span:hover {
 #btntransition1,
 #btntransition2,
 #btntransition3 {
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 
@@ -892,7 +865,7 @@ body.dark-mode .mat-nav-list a:hover .sidenav-icon {
 
 .mat-nav-list a {
   padding: 0.875rem 1rem;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease;
   border-radius: 6px;
   margin: 0.25rem 0.5rem;
   

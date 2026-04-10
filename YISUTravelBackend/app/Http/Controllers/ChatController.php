@@ -359,6 +359,10 @@ class ChatController extends Controller
                 ])
             ]);
 
+            $chat->update([
+                'state' => ChatbotController::STATE_AWAITING_ESCALATION_CONSENT
+            ]);
+
             // Pusher-Event senden
             broadcast(new MessageSent($escalationMessage, $chat->session_id))->toOthers();
 
